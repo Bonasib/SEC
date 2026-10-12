@@ -33,6 +33,11 @@
 </tbody></table><% } %>
 <h2><%= t('participants') %></h2>
 <table class="tbl"><% participants.forEach(p => { %><tr><td><%= p.employee_no %></td><td><%= nm(p) %></td><td><%= p.job_title_en || '' %></td><td><%= p.p_role === 'leader' ? t('team_leader') : '' %></td></tr><% }) %></table>
+<% if (woItems.length) { %>
+<h2><%= t('materials_tools') %></h2>
+<table class="tbl small"><tr><th><%= t('code') %></th><th><%= t('item') %></th><th><%= t('item_kind') %></th><th><%= t('quantity') %></th><th><%= t('used') %></th><th><%= t('damaged') %></th></tr>
+<% woItems.forEach(x => { %><tr><td><%= x.code %></td><td><%= lang === 'en' && x.name_en ? x.name_en : x.name_ar %></td><td><%= t('ik_' + x.kind) %></td><td><%= x.qty %> <%= t('uom_' + x.uom) %></td><td><%= x.kind === 'material' ? (x.used_qty ?? '—') : '—' %></td><td><%= x.damaged_qty || '—' %></td></tr><% }) %></table>
+<% } %>
 <% if (rec.lines.length) { %>
 <h2><%= t('materials') %> - <%= t('reconciliation') %>: <%= rec.status %></h2>
 <table class="tbl small"><tr><th><%= t('material_number') %></th><th><%= t('issued') %></th><th><%= t('used') %></th><th><%= t('returned') %></th><th><%= t('damaged') %></th><th><%= t('transferred') %></th><th><%= t('remaining') %></th><th><%= t('variance') %></th></tr>

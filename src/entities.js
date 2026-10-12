@@ -17,6 +17,7 @@ const EQUIP_TYPES = ['vehicle', 'thermal_camera', 'binoculars', 'test_set', 'fau
 const EQUIP_STATUS = ['available', 'under_maintenance', 'out_of_service'];
 const VEHICLE_TYPES = ['pickup_4x4', 'crew_cab', 'bucket_truck', 'crane_truck', 'line_truck', 'van', 'sedan', 'trailer', 'other'];
 const MAT_SOURCES = ['warehouse', 'site_stock', 'emergency_stock', 'contractor'];
+const ITEM_UOMS = ['piece', 'meter', 'kg', 'liter', 'set', 'roll', 'box', 'pair'];
 
 // ---------- value normalization (Excel cells can be objects, numbers, Dates) ----------
 function cellValue(v) {
@@ -441,6 +442,92 @@ const ENTITIES = {
         make_model=excluded.make_model, model_year=excluded.model_year, seats=excluded.seats, section_id=excluded.section_id`,
         d.code, d.type, d.name, d.status, d.location, d.expiry_date, d.calibration_due, d.plate_number, d.vehicle_type, d.make_model, d.model_year, d.seats, d.section_id);
       audit(req, 'import', 'equipment', d.code, null, d);
+    },
+  },
+
+  items: {
+    label: 'materials_tools', key: 'code', importRoles: ['admin', 'warehouse'], exportRoles: ['*'],
+    columns: [
+      ['code', 'رمز الصنف (فريد)', 'Item code (unique)', true],
+      ['kind', 'النوع: material/tool/equipment (مادة/عدة/معدة)', 'Kind: material/tool/equipment', true],
+      ['name_ar', 'الاسم بالعربية', 'Arabic name', true],
+      ['name_en', 'الاسم بالإنجليزية', 'English name'],
+      ['category', 'الفئة', 'Category'],
+      ['uom', `الوحدة: ${ITEM_UOMS.join('/')}`, `Unit: ${ITEM_UOMS.join('/')}`],
+      ['quantity', 'الكمية الموجودة (تُسجل كحركة مخزون)', 'Quantity on hand (recorded as a stock movement)'],
+      ['min_qty', 'الحد الأدنى للتنبيه', 'Minimum (low-stock alert)'],
+      ['location', 'الموقع / المستودع', 'Location / warehouse'],
+      ['section_code', 'رمز القسم', 'Section code'],
+      ['status', 'الحالة: active/inactive', 'Status: active/inactive'],
+      ['notes', 'ملاحظات', 'Notes'],
+    ],
+    exportRows: () => all(`SELECT i.code, i.kind, i.name_ar, i.name_en, i.category, i.uom, i.quantity, i.min_qty, i.location, s.code section_code, i.status, i.notes
+      FROM items i LEFT JOIN org_units s ON s.id = i.section_id ORDER BY i.kind, i.code`),
+    validate(row) {
+      const r = collect(row, {
+        code: (v) => required(text, 'code')(v)?.toUpperCase(), kind: required((v) => oneOf(str(v).toLowerCase(), ['material', 'tool', 'equipment'], 'kind'), 'kind'),
+        name_ar: required(text, 'name_ar'), name_en: text, category: text, uom: (v) => oneOf(str(v).toLowerCase(), ITEM_UOMS, 'uom') || 'piece',
+        quantity: (v) => { const n = num(v, 'quantity'); if (n != null && n < 0) throw new Error('quantity: negative'); return n; },
+        min_qty: (v) => Math.max(0, num(v, 'min_qty') || 0), location: text,
+        section_id: () => (str(row.section_code) ? mustUnit(row.section_code, 'section_code').id : null),
+        status: (v) => oneOf(str(v).toLowerCase(), ['active', 'inactive'], 'status') || 'active', notes: text,
+      });
+      r.mode = r.data.code && get('SELECT 1 FROM items WHERE code = ?', r.data.code) ? 'update' : 'insert';
+      return r;
+    },
+    apply(d, mode, req) {
+      run(`INSERT INTO items(code, kind, name_ar, name_en, category, uom, min_qty, location, section_id, status, notes) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(code) DO UPDATE SET kind=excluded.kind, name_ar=excluded.name_ar, name_en=excluded.name_en, category=excluded.category, uom=excluded.uom,
+        min_qty=excluded.min_qty, location=excluded.location, section_id=excluded.section_id, status=excluded.status, notes=excluded.notes`,
+        d.code, d.kind, d.name_ar, d.name_en, d.category, d.uom, d.min_qty, d.location, d.section_id, d.status, d.notes);
+      const it = get('SELECT * FROM items WHERE code = ?', d.code);
+      // The imported quantity becomes the stock on hand through an audited movement
+      if (d.quantity != null && d.quantity !== it.quantity) {
+        const delta = Math.round((d.quantity - it.quantity) * 1000) / 1000;
+        run('UPDATE items SET quantity = ? WHERE id = ?', d.quantity, it.id);
+        run('INSERT INTO item_movements(item_id, kind, qty, balance, note, created_by) VALUES (?,?,?,?,?,?)', it.id, mode === 'insert' ? 'receive' : 'adjust', delta, d.quantity, 'Excel import / استيراد', req.user.id);
+      }
+      audit(req, 'import', 'item', d.code, null, d);
+    },
+  },
+
+  tasks: {
+    label: 'daily_tasks', importRoles: ['admin', 'team_leader', 'section_head', 'division_manager', 'department_manager', 'sector_head'], exportRoles: ['*'],
+    columns: [
+      ['task_date', 'التاريخ YYYY-MM-DD', 'Date YYYY-MM-DD', true],
+      ['start_time', 'وقت البداية HH:MM', 'Start time HH:MM'],
+      ['end_time', 'وقت النهاية HH:MM', 'End time HH:MM'],
+      ['title', 'عنوان المهمة', 'Task title', true],
+      ['details', 'التفاصيل', 'Details'],
+      ['location', 'الموقع', 'Location'],
+      ['section_code', 'رمز القسم', 'Section code'],
+      ['priority', 'الأولوية: normal/high/urgent', 'Priority: normal/high/urgent'],
+      ['assignee_nos', 'أرقام الموظفين مفصولة بفاصلة', 'Employee IDs, comma separated', true],
+      ['wo_number', 'أمر العمل المرتبط', 'Linked work order'],
+      ['status', 'الحالة: open/done/cancelled', 'Status: open/done/cancelled'],
+    ],
+    exportRows: (q = {}) => {
+      const from = /^\d{4}-\d{2}-\d{2}$/.test(q.from || '') ? q.from : '0000-00-00', to = /^\d{4}-\d{2}-\d{2}$/.test(q.to || '') ? q.to : '9999-12-31';
+      return all(`SELECT t.id, t.task_date, t.start_time, t.end_time, t.title, t.details, t.location, s.code section_code, t.priority,
+          (SELECT GROUP_CONCAT(e.employee_no, ',') FROM task_assignees a JOIN employees e ON e.id = a.employee_id WHERE a.task_id = t.id) assignee_nos, w.wo_number, t.status
+        FROM tasks t LEFT JOIN org_units s ON s.id = t.section_id LEFT JOIN work_orders w ON w.id = t.wo_id WHERE t.task_date BETWEEN ? AND ? ORDER BY t.task_date, t.start_time`, from, to);
+    },
+    validate(row) {
+      const time = (k) => (v) => { const x = v instanceof Date ? v.toISOString().slice(11, 16) : str(v); if (!x) return null; if (!/^\d{1,2}:\d{2}/.test(x)) throw new Error(`${k}: use HH:MM`); return x.padStart(5, '0').slice(0, 5); };
+      const r = collect(row, {
+        task_date: required(dateOnly, 'task_date'), start_time: time('start_time'), end_time: time('end_time'), title: required(text, 'title'), details: text, location: text,
+        section_id: () => (str(row.section_code) ? mustUnit(row.section_code, 'section_code').id : null),
+        priority: (v) => oneOf(str(v).toLowerCase(), ['normal', 'high', 'urgent'], 'priority') || 'normal',
+        assignee_ids: (v) => { const nos = str(v).split(/[,;\s]+/).filter(Boolean); if (!nos.length) throw new Error('assignee_nos: required'); return nos.map((n) => mustEmp(n, 'assignee_nos').id); },
+        wo_number: (v) => (str(v) ? str(v).toUpperCase() : null),
+        status: (v) => oneOf(str(v).toLowerCase(), ['open', 'done', 'cancelled'], 'status') || 'open',
+      });
+      if (r.data.wo_number && !get('SELECT 1 FROM work_orders WHERE wo_number = ?', r.data.wo_number)) r.errors.push(`wo_number "${r.data.wo_number}" not found`);
+      r.mode = 'insert';
+      return r;
+    },
+    apply(d, mode, req) {
+      require('./tasks').save({ ...d, assignee_ids: d.assignee_ids }, req);
     },
   },
 

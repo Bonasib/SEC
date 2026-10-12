@@ -11,10 +11,13 @@
   <div class="kpi crit <%= stats.expired ? '' : 'zero' %>"><span class="kpi-icon"><%- ic('alert') %></span><span class="kpi-body"><b><%= stats.expired %></b><span class="kpi-label"><%= t('registration_expired') %></span></span></div>
   <div class="kpi"><span class="kpi-icon"><%- ic('users') %></span><span class="kpi-body"><b><%= stats.seats %></b><span class="kpi-label"><%= t('seats_available') %></span></span></div>
 </div>
-<form class="filters card" method="get">
+<form class="filters card" method="get" role="search">
+  <div class="search-field"><%- ic('search') %><input name="q" value="<%= query.q || '' %>" placeholder="<%= t('plate_number') %> / <%= t('fleet_no') %> / <%= t('make_model') %>" aria-label="<%= t('search') %>"></div>
   <select name="section" aria-label="<%= t('section') %>"><option value=""><%= t('section') %>: <%= t('all') %></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(query.section) === String(s.id) ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select>
   <select name="vtype" aria-label="<%= t('vehicle_type') %>"><option value=""><%= t('vehicle_type') %>: <%= t('all') %></option><% VEHICLE_TYPES.forEach(v => { %><option value="<%= v %>" <%= query.vtype === v ? 'selected' : '' %>><%= t('vt_' + v) %></option><% }) %></select>
   <select name="status" aria-label="<%= t('status') %>"><option value=""><%= t('status') %>: <%= t('all') %></option><% EQUIP_STATUS.forEach(v => { %><option value="<%= v %>" <%= query.status === v ? 'selected' : '' %>><%= t('es_' + v) %></option><% }) %></select>
+  <select name="sort" aria-label="<%= t('sort_by') %>"><% [['code','fleet_no'],['plate','plate_number'],['type','vehicle_type'],['seats','seats'],['expiry','registration_expiry'],['section','section'],['year','model_year']].forEach(([k, l]) => { %><option value="<%= k %>" <%= (query.sort || 'code') === k ? 'selected' : '' %>><%= t('sort_by') %>: <%= t(l) %></option><% }) %></select>
+  <select name="dir" aria-label="<%= t('sort_dir') %>"><option value="asc"><%= t('ascending') %></option><option value="desc" <%= query.dir === 'desc' ? 'selected' : '' %>><%= t('descending') %></option></select>
   <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button><a class="btn ghost" href="/fleet"><%= t('clear') %></a>
 </form>
 <div class="fleet-grid">

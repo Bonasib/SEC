@@ -393,6 +393,88 @@ CREATE TABLE IF NOT EXISTS material_lines (
   recorded_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
+-- Catalog of materials (consumed), tools and equipment (returned) with stock on hand
+CREATE TABLE IF NOT EXISTS items (
+  id INTEGER PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  name_ar TEXT NOT NULL,
+  name_en TEXT,
+  kind TEXT NOT NULL CHECK (kind IN ('material','tool','equipment')),
+  category TEXT,
+  uom TEXT NOT NULL DEFAULT 'piece',
+  quantity REAL NOT NULL DEFAULT 0,
+  min_qty REAL NOT NULL DEFAULT 0,
+  location TEXT,
+  section_id INTEGER REFERENCES org_units(id),
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive')),
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+-- Every stock change (receipt, consumption on closure, damage, manual adjustment)
+CREATE TABLE IF NOT EXISTS item_movements (
+  id INTEGER PRIMARY KEY,
+  item_id INTEGER NOT NULL REFERENCES items(id),
+  wo_id INTEGER REFERENCES work_orders(id),
+  kind TEXT NOT NULL CHECK (kind IN ('receive','consume','damage','adjust')),
+  qty REAL NOT NULL,
+  balance REAL NOT NULL,
+  note TEXT,
+  created_by INTEGER REFERENCES employees(id),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+-- Catalog items specified on a work order (reserved while the work order is active)
+CREATE TABLE IF NOT EXISTS wo_items (
+  id INTEGER PRIMARY KEY,
+  wo_id INTEGER NOT NULL REFERENCES work_orders(id),
+  item_id INTEGER NOT NULL REFERENCES items(id),
+  qty REAL NOT NULL,
+  used_qty REAL,
+  damaged_qty REAL NOT NULL DEFAULT 0,
+  notes TEXT,
+  settled INTEGER NOT NULL DEFAULT 0,
+  added_by INTEGER REFERENCES employees(id),
+  added_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  UNIQUE (wo_id, item_id)
+);
+
+-- Daily tasks (short jobs that are not full work orders) and their assignees
+CREATE TABLE IF NOT EXISTS tasks (
+  id INTEGER PRIMARY KEY,
+  task_date TEXT NOT NULL,
+  start_time TEXT,
+  end_time TEXT,
+  title TEXT NOT NULL,
+  details TEXT,
+  location TEXT,
+  section_id INTEGER REFERENCES org_units(id),
+  priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal','high','urgent')),
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','done','cancelled')),
+  wo_id INTEGER REFERENCES work_orders(id),
+  created_by INTEGER REFERENCES employees(id),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(task_date);
+CREATE TABLE IF NOT EXISTS task_assignees (
+  task_id INTEGER NOT NULL REFERENCES tasks(id),
+  employee_id INTEGER NOT NULL REFERENCES employees(id),
+  PRIMARY KEY (task_id, employee_id)
+);
+-- Log of daily task messages sent (who sent, for which day, to whom)
+CREATE TABLE IF NOT EXISTS task_dispatches (
+  id INTEGER PRIMARY KEY,
+  day TEXT NOT NULL,
+  mode TEXT NOT NULL,
+  recipients INTEGER NOT NULL DEFAULT 0,
+  emails INTEGER NOT NULL DEFAULT 0,
+  items INTEGER NOT NULL DEFAULT 0,
+  message TEXT,
+  detail_json TEXT,
+  sent_by INTEGER REFERENCES employees(id),
+  automatic INTEGER NOT NULL DEFAULT 0,
+  sent_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
 CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY,
   employee_id INTEGER NOT NULL REFERENCES employees(id),
@@ -472,6 +554,7 @@ for (const [table, col, def] of [
   ['equipment', 'plate_number', 'TEXT'], ['equipment', 'vehicle_type', 'TEXT'], ['equipment', 'make_model', 'TEXT'],
   ['equipment', 'seats', 'INTEGER'], ['equipment', 'section_id', 'INTEGER'], ['equipment', 'model_year', 'INTEGER'],
   ['employees', 'national_id', 'TEXT'], ['employees', 'notes', 'TEXT'], ['work_orders', 'involves_travel', 'TEXT'],
+  ['material_lines', 'item_id', 'INTEGER'],
 ]) {
   if (!db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
 }
@@ -507,6 +590,7 @@ const DEFAULT_SETTINGS = {
   approval_reminder_hours: '24',
   missing_photo_hours: '4',
   wo_sequence_warn_at: '990000',
+  daily_dispatch_time: '',
 };
 
 function setting(key) {

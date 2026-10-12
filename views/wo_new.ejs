@@ -1,10 +1,14 @@
-<%- include('partials/header', { pageTitle: t('new_wo') }) %>
+<% const editing = typeof locals.editing !== 'undefined' && locals.editing; const datesLocked = editing && editing.status === 'in_progress'; %>
+<%- include('partials/header', { pageTitle: editing ? editing.wo_number : t('new_wo') }) %>
 <div class="page-head">
-  <div><div class="eyebrow"><%- ic('clipboard') %><%= t('work_orders') %></div><h1><%= t('new_wo') %></h1>
-  <p class="page-sub"><%= lang === 'ar' ? 'يُولَّد رقم أمر العمل تلقائيًا بصيغة WO + ستة أرقام عند الحفظ، ولا يمكن تعديله أو إعادة استخدامه.' : 'The work order number (WO + six digits) is generated automatically when saved and can never be edited or reused.' %></p></div>
+  <div><div class="eyebrow"><%- ic('clipboard') %><%= t('work_orders') %></div>
+  <% if (editing) { %><a class="small" href="/wo/<%= editing.id %>"><%- ic('arrow', 'ic-back') %> <%= editing.wo_number %></a><h1><%= t('edit_wo') %> <span class="mono result-count"><%= editing.wo_number %></span></h1>
+  <p class="page-sub"><%= t('edit_wo_hint') %></p>
+  <% } else { %><h1><%= t('new_wo') %></h1>
+  <p class="page-sub"><%= lang === 'ar' ? 'يُولَّد رقم أمر العمل تلقائيًا بصيغة WO + ستة أرقام عند الحفظ، ولا يمكن تعديله أو إعادة استخدامه.' : 'The work order number (WO + six digits) is generated automatically when saved and can never be edited or reused.' %></p><% } %></div>
 </div>
 <% if (typeof error !== 'undefined' && error) { %><div class="flash flash-error" role="alert"><%- ic('x-circle') %><div><%= error %></div></div><% } %>
-<form method="post" action="/wo" class="card form-grid" id="wo-form" data-msg-ok="<%= t('crew_ok') %>" data-msg-short="<%= t('crew_short') %>" data-msg-none="<%= t('crew_no_vehicle') %>">
+<form method="post" action="<%= editing ? '/wo/' + editing.id + '/edit' : '/wo' %>" class="card form-grid" id="wo-form" data-msg-ok="<%= t('crew_ok') %>" data-msg-short="<%= t('crew_short') %>" data-msg-none="<%= t('crew_no_vehicle') %>">
   <div class="form-section" style="border:0;padding-top:0;margin-top:0"><h3><%- ic('file') %><%= t('details') %></h3></div>
   <label class="span2"><span><%= t('title') %> <span class="req">*</span></span><input name="title" required value="<%= form.title || '' %>"></label>
   <label><span><%= t('type') %> <span class="req">*</span></span><select name="type" required><% WO_TYPES.forEach(x => { %><option value="<%= x %>" <%= form.type === x ? 'selected' : '' %>><%= t('wt_' + x) %></option><% }) %></select></label>
@@ -22,8 +26,9 @@
   <label><%= t('location') %><input name="location" value="<%= form.location || '' %>"></label>
 
   <div class="form-section"><h3><%- ic('calendar') %><%= t('planned_start') %></h3></div>
-  <label><span><%= t('planned_start') %> <span class="req">*</span></span><input type="datetime-local" name="planned_start" required value="<%= form.planned_start || '' %>"></label>
-  <label><span><%= t('planned_end') %> <span class="req">*</span></span><input type="datetime-local" name="planned_end" required value="<%= form.planned_end || '' %>"></label>
+  <label><span><%= t('planned_start') %> <span class="req">*</span></span><input type="datetime-local" name="planned_start" required value="<%= form.planned_start || '' %>" <%= datesLocked ? 'disabled' : '' %>></label>
+  <label><span><%= t('planned_end') %> <span class="req">*</span></span><input type="datetime-local" name="planned_end" required value="<%= form.planned_end || '' %>" <%= datesLocked ? 'disabled' : '' %>></label>
+  <% if (datesLocked) { %><p class="muted small span2" style="margin:0"><%- ic('clock') %> <%= t('dates_locked') %> — <a href="/wo/<%= editing.id %>#schedule"><%= t('schedule_changes') %></a></p><% } %>
   <div class="form-section"><h3><%- ic('route') %><%= t('travel') %></h3></div>
   <div class="span2">
     <p style="margin-bottom:8px"><b><%= t('involves_travel_q') %></b> <span class="req">*</span></p>
@@ -81,7 +86,11 @@
     <% }) %>
   </div></div>
 
-  <div class="form-section"><h3><%- ic('package') %><%= t('materials') %></h3></div>
+<% if (!editing) { %>
+  <div class="form-section"><h3><%- ic('boxes') %><%= t('materials_tools') %></h3><p class="muted small"><%= t('wo_items_hint') %></p></div>
+  <div class="span2"><%- include('partials/item_picker', { sel: { ids: form.item_ids, qtys: form.item_qtys } }) %></div>
+
+  <div class="form-section"><h3><%- ic('package') %><%= t('warehouse_reservation') %></h3></div>
   <div class="span2">
     <p style="margin-bottom:8px"><b><%= t('materials_withdrawn') %></b> <span class="req">*</span></p>
     <div class="segmented" role="radiogroup">
@@ -93,6 +102,10 @@
     <label><span><%= t('reservation_number') %> <span class="req">*</span></span><input name="reservation_number" value="<%= form.reservation_number || '' %>" dir="ltr"></label>
     <label><%= t('warehouse') %><input name="warehouse" value="<%= form.warehouse || '' %>"></label>
   </div>
-  <div class="form-actions form-section"><button class="btn primary"><%- ic('save') %><%= t('save') %></button><a class="btn ghost" href="/wo"><%= t('cancel') %></a></div>
+<% } else { %>
+  <div class="form-section"><h3><%- ic('pen') %><%= t('edit_reason') %> <span class="req">*</span></h3></div>
+  <label class="span2"><textarea name="edit_reason" rows="2" required aria-label="<%= t('edit_reason') %>"><%= form.edit_reason || '' %></textarea><small class="muted"><%= lang === 'ar' ? 'المواد والعدد وحجوزات المستودع تُعدّل من صفحة أمر العمل.' : 'Materials, tools and warehouse reservations are edited on the work order page.' %></small></label>
+<% } %>
+  <div class="form-actions form-section"><button class="btn primary"><%- ic('save') %><%= t('save') %></button><a class="btn ghost" href="<%= editing ? '/wo/' + editing.id : '/wo' %>"><%= t('cancel') %></a></div>
 </form>
 <%- include('partials/footer') %>

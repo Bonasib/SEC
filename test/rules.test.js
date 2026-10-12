@@ -339,3 +339,91 @@ test('a travel job beyond 20 in a band needs Sector Head approval and alerts the
   assert.ok(head >= 1, 'section head alerted');
   assert.strictEqual(TV.checkAlerts(), 0, 'alerts are not repeated');
 });
+
+// ---------- materials, tools & equipment ----------
+const I = require('../src/items');
+const itemOf = (code) => get('SELECT * FROM items WHERE code = ?', code);
+
+test('items on a work order are reserved; requests over the available quantity are blocked', () => {
+  const ins = itemOf('MAT-INS-380');
+  const avail = I.withStock(ins).available;
+  assert.throws(() => W.createWorkOrder(base({ team_leader_id: emp('F013').id, planned_start: localToUtc(day(20) + 'T08:00'), planned_end: localToUtc(day(20) + 'T12:00'),
+    items: [{ item_id: ins.id, qty: avail + 1 }] }), req('DEMO-H1')), /available/);
+  const { wo } = W.createWorkOrder(base({ team_leader_id: emp('F013').id, planned_start: localToUtc(day(20) + 'T08:00'), planned_end: localToUtc(day(20) + 'T12:00'),
+    items: [{ item_id: ins.id, qty: 3 }, { item_id: itemOf('TL-TORQ-01').id, qty: 1 }] }), req('DEMO-H1'));
+  assert.strictEqual(I.withStock(itemOf('MAT-INS-380')).available, avail - 3, 'reserved while active');
+  assert.strictEqual(I.ofWo(wo.id).length, 2);
+  W.cancelWorkOrder(wo, 'test', req('DEMO-H1'));
+  assert.strictEqual(I.withStock(itemOf('MAT-INS-380')).available, avail, 'released on cancellation');
+});
+
+test('closure consumes used materials, writes off damaged tools and keeps a movement log', () => {
+  const { wo } = W.createWorkOrder(base({ team_leader_id: emp('F013').id, planned_start: localToUtc(day(21) + 'T08:00'), planned_end: localToUtc(day(21) + 'T12:00'),
+    items: [{ item_id: itemOf('MAT-CLMP-01').id, qty: 10 }, { item_id: itemOf('TL-HARNESS').id, qty: 2 }] }), req('DEMO-H1'));
+  const clamps = itemOf('MAT-CLMP-01').quantity, harness = itemOf('TL-HARNESS').quantity;
+  const lines = I.ofWo(wo.id);
+  I.updateWoLine(wo, lines.find((l) => l.code === 'MAT-CLMP-01').id, { qty: 10, used_qty: 7 }, req('F013'));
+  I.updateWoLine(wo, lines.find((l) => l.code === 'TL-HARNESS').id, { qty: 2, damaged_qty: 1 }, req('F013'));
+  assert.throws(() => I.updateWoLine(wo, lines[0].id, { qty: 10, used_qty: 11 }, req('F013')), /between/);
+  I.settle(get('SELECT * FROM work_orders WHERE id = ?', wo.id), req('DEMO-H1'));
+  assert.strictEqual(itemOf('MAT-CLMP-01').quantity, clamps - 7, '7 clamps consumed');
+  assert.strictEqual(itemOf('TL-HARNESS').quantity, harness - 1, 'only the damaged harness is written off');
+  assert.ok(get("SELECT 1 FROM item_movements WHERE wo_id = ? AND kind = 'consume'", wo.id));
+  I.settle(get('SELECT * FROM work_orders WHERE id = ?', wo.id), req('DEMO-H1'));
+  assert.strictEqual(itemOf('MAT-CLMP-01').quantity, clamps - 7, 'settling twice changes nothing');
+});
+
+test('stock cannot go negative and low stock alerts the warehouse once', () => {
+  const g = itemOf('MAT-GREASE');
+  assert.throws(() => I.stockMove(g.id, { kind: 'adjust', qty: -(g.quantity + 1), note: 'count' }, req('DEMO-WH')), /below zero/);
+  assert.throws(() => I.stockMove(g.id, { kind: 'adjust', qty: -1 }, req('DEMO-WH')), /reason/);
+  const n = () => get("SELECT COUNT(*) n FROM notifications WHERE type = 'stock_low' AND employee_id = ?", emp('DEMO-WH').id).n;
+  const before = n();
+  I.lowStockCheck([g.id]); I.lowStockCheck([g.id]);
+  assert.strictEqual(n(), before, 'already alerted during seeding, not repeated');
+  I.stockMove(g.id, { kind: 'receive', qty: 50, note: 'GRN-1' }, req('DEMO-WH'));
+  I.stockMove(g.id, { kind: 'adjust', qty: -50, note: 'count' }, req('DEMO-WH'));
+  assert.strictEqual(n(), before + 1, 'alerted again after recovering and dropping');
+});
+
+// ---------- work order editing ----------
+test('editing a work order re-checks availability, needs a reason and notifies the team', () => {
+  const { wo } = W.createWorkOrder(base({ team_leader_id: emp('F013').id, planned_start: localToUtc(day(22) + 'T08:00'), planned_end: localToUtc(day(22) + 'T12:00') }), req('DEMO-H1'));
+  const data = { ...base({ team_leader_id: emp('F013').id, participant_ids: [emp('F015').id], title: 'Edited', priority: 'C3', planned_start: localToUtc(day(22) + 'T09:00'), planned_end: localToUtc(day(22) + 'T13:00') }) };
+  assert.throws(() => W.updateWorkOrder(wo, data, '', req('DEMO-H1')), /reason/);
+  assert.throws(() => W.updateWorkOrder(wo, { ...data, participant_ids: [emp('F003').id], planned_start: localToUtc(day(1) + 'T08:00'), planned_end: localToUtc(day(1) + 'T10:00') }, 'x', req('DEMO-H1')), /F003/);
+  const { wo: w2 } = W.updateWorkOrder(wo, data, 'Scope change', req('DEMO-H1'));
+  assert.strictEqual(w2.title, 'Edited');
+  assert.ok(w2.due_at, 'critical priority sets a response deadline');
+  assert.strictEqual(w2.wo_number, wo.wo_number);
+  assert.ok(get("SELECT 1 FROM notifications WHERE type = 'wo_assigned' AND employee_id = ? AND title LIKE ?", emp('F015').id, wo.wo_number + '%'));
+  assert.ok(get("SELECT 1 FROM audit_log WHERE entity = 'work_order' AND action = 'update' AND entity_id = ? AND reason = 'Scope change'", wo.wo_number));
+});
+
+// ---------- daily tasks ----------
+const TK = require('../src/tasks');
+
+test('daily tasks: one click sends each person only their own items; chosen recipients get the full list', () => {
+  const d = day(30);
+  const a = TK.save({ task_date: d, start_time: '07:00', title: 'Task A', assignee_ids: [emp('F013').id] }, req('DEMO-H1')).id;
+  const b = TK.save({ task_date: d, start_time: '09:00', title: 'Task B', assignee_ids: [emp('F015').id, emp('F013').id] }, req('DEMO-H1')).id;
+  assert.throws(() => TK.save({ task_date: d, title: 'No one', assignee_ids: [] }, req('DEMO-H1')), /employee/);
+  const ag = TK.agenda({ day: d });
+  const r = TK.dispatch({ day: d, mode: 'each', taskIds: ag.tasks.map((x) => x.id), woIds: ag.wos.map((x) => x.id) }, req('DEMO-H1'));
+  const f13 = r.messages.find((m) => m.employee?.employee_no === 'F013'), f15 = r.messages.find((m) => m.employee?.employee_no === 'F015');
+  assert.strictEqual(f13.lines.length, 2);
+  assert.strictEqual(f15.lines.length, 1, 'F015 only receives Task B');
+  assert.ok(get("SELECT 1 FROM emails WHERE subject LIKE ? AND to_email = ?", '%' + d + '%', emp('F015').email));
+  const sel = TK.dispatch({ day: d, mode: 'selected', taskIds: [a, b], recipientIds: [emp('F020').id], externalEmails: TK.parseEmails('ext@contractor.com') }, req('DEMO-H1'));
+  assert.strictEqual(sel.recipients, 2);
+  assert.ok(sel.messages.every((m) => m.lines.length === 2));
+  assert.throws(() => TK.parseEmails('bad-address'), /Invalid email/);
+  assert.throws(() => TK.dispatch({ day: d, mode: 'selected', taskIds: [a] }, req('DEMO-H1')), /recipients/);
+  TK.setStatus(a, 'done', req('F013'));
+  assert.throws(() => TK.setStatus(b, 'done', req('F020')), /Forbidden/);
+});
+
+test('daily tasks: WhatsApp links use the international number', () => {
+  assert.match(TK.waLink('0551234567', 'hi'), /^https:\/\/wa\.me\/966551234567\?text=hi$/);
+  assert.strictEqual(TK.waLink('', 'x'), null);
+});

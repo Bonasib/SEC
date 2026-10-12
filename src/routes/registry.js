@@ -33,6 +33,21 @@ router.post('/assets', requireRole('admin'), (req, res) => {
 // ---------- vehicle fleet ----------
 const FLEET_EDIT = (req) => can(req.user, 'fleet.manage') === true;
 
+router.post('/assets/:id(\\d+)', requireRole('admin'), (req, res) => {
+  const a = get('SELECT * FROM assets WHERE id = ?', Number(req.params.id));
+  if (!a) throw new HttpError(404, 'Not found');
+  const b = req.body;
+  const code = (b.code || '').trim();
+  if (!code || !ASSET_TYPES.includes(b.type)) throw new HttpError(400, 'Code and type are required');
+  if (get('SELECT 1 FROM assets WHERE code = ? AND id <> ?', code, a.id)) throw new HttpError(400, 'Code already exists / الرمز موجود');
+  const after = { code, type: b.type, name_ar: b.name_ar || null, name_en: b.name_en || null, voltage_kv: Number(b.voltage_kv) || null, line_code: b.line_code || null,
+    region: b.region || null, lat: Number(b.lat) || null, lng: Number(b.lng) || null, status: ['in_service', 'out_of_service', 'retired'].includes(b.status) ? b.status : a.status };
+  run('UPDATE assets SET code=?, type=?, name_ar=?, name_en=?, voltage_kv=?, line_code=?, region=?, lat=?, lng=?, status=? WHERE id=?', ...Object.values(after), a.id);
+  audit(req, 'update', 'asset', a.code, a, after);
+  res.flash('success', res.locals.t('saved'));
+  res.redirect('/assets');
+});
+
 router.get('/fleet', (req, res) => {
   const today = todayRiyadh();
   const horizon = new Date(Date.parse(today) + Number(setting('expiry_alert_days')) * 864e5).toISOString().slice(0, 10);
@@ -41,7 +56,10 @@ router.get('/fleet', (req, res) => {
   if (req.query.section) { cond.push('q.section_id = ?'); p.push(Number(req.query.section)); }
   if (req.query.vtype) { cond.push('q.vehicle_type = ?'); p.push(req.query.vtype); }
   if (req.query.status) { cond.push('q.status = ?'); p.push(req.query.status); }
-  const rows = all(`SELECT q.*, s.code section_code FROM equipment q LEFT JOIN org_units s ON s.id = q.section_id WHERE ${cond.join(' AND ')} ORDER BY q.code`, ...p);
+  if (req.query.q) { cond.push('(q.code LIKE ? OR q.plate_number LIKE ? OR q.make_model LIKE ? OR q.name LIKE ?)'); p.push(...Array(4).fill(`%${req.query.q}%`)); }
+  const SORT = { code: 'q.code', plate: 'q.plate_number', type: 'q.vehicle_type', seats: 'q.seats', expiry: 'q.expiry_date', section: 's.code', year: 'q.model_year' };
+  const rows = all(`SELECT q.*, s.code section_code FROM equipment q LEFT JOIN org_units s ON s.id = q.section_id WHERE ${cond.join(' AND ')}
+    ORDER BY ${SORT[req.query.sort] || 'q.code'} ${req.query.dir === 'desc' ? 'DESC' : 'ASC'}, q.code`, ...p);
   for (const q of rows) {
     q.flag = q.expiry_date && q.expiry_date < today ? 'expired' : q.expiry_date && q.expiry_date <= horizon ? 'soon' : null;
     q.current = get(`SELECT w.id, w.wo_number, w.title, w.planned_end FROM wo_equipment x JOIN work_orders w ON w.id = x.wo_id
@@ -107,7 +125,7 @@ router.get('/equipment', (req, res) => {
     const dates = [q.expiry_date, q.calibration_due].filter(Boolean);
     q.flag = dates.some((d) => d < today) ? 'expired' : dates.some((d) => d <= horizon) ? 'soon' : null;
   });
-  res.render('equipment', { rows, EQUIP_TYPES: EQUIP_TYPES.filter((x) => x !== 'vehicle'), EQUIP_STATUS, canEdit: can(req.user, 'fleet.manage') === true });
+  res.render('equipment', { rows, EQUIP_TYPES: EQUIP_TYPES.filter((x) => x !== 'vehicle'), EQUIP_STATUS, sections: sections(), canEdit: ['admin', 'safety'].includes(req.user.role) });
 });
 
 router.post('/equipment', requireRole('admin', 'safety'), (req, res) => {
@@ -124,9 +142,15 @@ router.post('/equipment/:id', requireRole('admin', 'safety'), (req, res) => {
   const q = get('SELECT * FROM equipment WHERE id = ?', Number(req.params.id));
   if (!q) throw new HttpError(404, 'Not found');
   const b = req.body;
-  const after = { status: EQUIP_STATUS.includes(b.status) ? b.status : q.status, expiry_date: b.expiry_date || null, calibration_due: b.calibration_due || null, location: b.location || null };
-  run('UPDATE equipment SET status=?, expiry_date=?, calibration_due=?, location=? WHERE id=?', ...Object.values(after), q.id);
+  const after = {
+    name: (b.name || q.name).trim(), type: EQUIP_TYPES.includes(b.type) && b.type !== 'vehicle' ? b.type : q.type,
+    status: EQUIP_STATUS.includes(b.status) ? b.status : q.status, expiry_date: b.expiry_date || null, calibration_due: b.calibration_due || null, location: b.location || null,
+    section_id: b.section_id === undefined ? q.section_id : Number(b.section_id) || null,
+  };
+  if (!after.name) throw new HttpError(400, 'Name is required / الاسم مطلوب');
+  run('UPDATE equipment SET name=?, type=?, status=?, expiry_date=?, calibration_due=?, location=?, section_id=? WHERE id=?', ...Object.values(after), q.id);
   audit(req, 'update', 'equipment', q.code, q, after);
+  res.flash('success', res.locals.t('saved'));
   res.redirect('/equipment');
 });
 

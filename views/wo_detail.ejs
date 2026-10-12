@@ -18,6 +18,7 @@
     </div>
   </div>
   <div class="btns">
+<% if (can.edit) { %><a class="btn" href="/wo/<%= wo.id %>/edit"><%- ic('pen') %><%= t('edit') %></a><% } %>
     <a class="btn" href="/wo/<%= wo.id %>/print" target="_blank" rel="noopener"><%- ic('printer') %><%= t('print') %> / PDF</a>
     <% if (wo.status === 'open' && (can.manage || isMember)) { %>
       <form method="post" action="/wo/<%= wo.id %>/start"><button class="btn primary"><%- ic('play') %><%= t('start_work') %></button></form>
@@ -45,7 +46,8 @@
   <a href="#schedule"><%- ic('clock') %><%= t('schedule_changes') %><% if (extensions.some(x => x.status === 'pending') || handovers.some(h => h.status === 'scheduled')) { %> <span class="pill warn">!</span><% } %></a>
   <a href="#execution"><%- ic('wrench') %><%= t('execution') %></a>
   <a href="#photos"><%- ic('camera') %><%= t('photos') %> <span class="pill"><%= photos.length %></span></a>
-  <a href="#materials"><%- ic('package') %><%= t('materials') %></a>
+  <a href="#items"><%- ic('boxes') %><%= t('materials_tools') %> <span class="pill"><%= woItems.length %></span></a>
+  <a href="#materials"><%- ic('package') %><%= t('warehouse_reservation') %></a>
   <a href="#closure"><%- ic('check-circle') %><%= t('closure_checklist') %> <span class="pill <%= okCount === checklist.length ? 'ok' : 'warn' %>"><%= okCount %>/<%= checklist.length %></span></a>
   <a href="#approvals"><%- ic('pen') %><%= t('approvals') %></a>
   <a href="#away"><%- ic('calendar') %><%= lang === 'ar' ? 'الغائبون' : 'Away' %> <span class="pill <%= away.people.length ? 'warn' : '' %>"><%= away.people.length %></span></a>
@@ -247,6 +249,48 @@
   <% }) %>
 </section>
 
+<section class="card" id="items">
+  <div class="card-head"><h2><%- ic('boxes') %><%= t('materials_tools') %></h2><a class="small" href="/materials"><%= t('catalog') %> →</a></div>
+  <p class="muted small"><%= t('wo_items_detail_hint') %></p>
+  <div class="table-wrap"><table class="tbl small">
+    <thead><tr><th><%= t('code') %></th><th><%= t('item') %></th><th><%= t('item_kind') %></th><th class="num"><%= t('quantity') %></th><th class="num"><%= t('used') %></th><th class="num"><%= t('damaged') %></th><th><%= t('notes') %></th><th></th></tr></thead>
+    <tbody>
+    <% if (!woItems.length) { %><tr><td colspan="8" class="muted"><%= t('none') %></td></tr><% } %>
+    <% woItems.forEach(x => { %>
+      <tr>
+        <td><a class="mono" href="/materials/<%= x.item_id %>"><b><%= x.code %></b></a></td>
+        <td><%= lang === 'en' && x.name_en ? x.name_en : x.name_ar %></td>
+        <td><span class="pill ik-<%= x.kind %>"><%= t('ik_' + x.kind) %></span></td>
+        <td class="num"><b><%= x.qty %></b> <small class="muted"><%= t('uom_' + x.uom) %></small></td>
+        <td class="num"><%= x.kind === 'material' ? (x.used_qty ?? '—') : '—' %></td>
+        <td class="num"><%= x.damaged_qty || '—' %></td>
+        <td><%= x.notes || '' %><% if (x.settled) { %> <span class="pill ok"><%- ic('check') %><%= t('settled') %></span><% } %></td>
+        <td class="nowrap"><% if (can.items && !x.settled) { %>
+          <details><summary class="btn small ghost"><%- ic('pen') %><%= t('edit') %></summary>
+            <form method="post" action="/wo/<%= wo.id %>/items/<%= x.id %>" class="mini-grid">
+              <label><%= t('quantity') %><input type="number" name="qty" min="0" step="any" value="<%= x.qty %>" required></label>
+              <% if (x.kind === 'material') { %><label><%= t('used') %><input type="number" name="used_qty" min="0" step="any" value="<%= x.used_qty ?? '' %>"></label><% } %>
+              <label><%= t('damaged') %><input type="number" name="damaged_qty" min="0" step="any" value="<%= x.damaged_qty || 0 %>"></label>
+              <label><%= t('notes') %><input name="notes" value="<%= x.notes || '' %>"></label>
+              <button class="btn small primary"><%- ic('save') %><%= t('save') %></button>
+            </form>
+            <form method="post" action="/wo/<%= wo.id %>/items/<%= x.id %>/delete" data-confirm="<%= t('confirm_remove') %>"><button class="btn small ghost danger"><%- ic('trash') %><%= t('remove') %></button></form>
+          </details><% } %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% if (can.items) { %>
+  <details class="add-line"><summary class="btn small"><%- ic('plus') %><%= t('add_items') %></summary>
+    <form method="post" action="/wo/<%= wo.id %>/items" class="upload-panel">
+      <%- include('partials/item_picker', { items: itemOptions, sel: {} }) %>
+      <label style="margin-top:10px"><%= t('notes') %><input name="notes"></label>
+      <div class="form-actions" style="margin-top:10px"><button class="btn primary"><%- ic('save') %><%= t('save') %></button></div>
+    </form>
+  </details>
+  <% } %>
+</section>
+
 <section class="card" id="materials">
   <div class="card-head"><h2><%- ic('package') %><%= t('materials') %></h2>
     <span class="pill <%= rec.status === 'fully_reconciled' ? 'ok' : rec.status === 'none' ? '' : 'bad' %>"><%- ic(rec.status === 'fully_reconciled' ? 'check' : rec.status === 'none' ? 'package' : 'alert') %><%= t('reconciliation') %>: <%= rec.status %></span></div>
@@ -310,6 +354,7 @@
   <% if (can.materials) { %>
   <details class="add-line"><summary class="btn small"><%- ic('plus') %><%= lang === 'ar' ? 'إضافة مادة' : 'Add material line' %></summary>
     <form method="post" action="/wo/<%= wo.id %>/materials" class="form-grid upload-panel">
+      <label class="span2"><%= t('pick_from_catalog') %><select name="item_id" data-catalog-fill><option value=""></option><% itemOptions.forEach(i => { %><option value="<%= i.id %>" data-code="<%= i.code %>" data-name="<%= i.name_ar %>" data-uom="<%= i.uom %>"><%= i.code %> · <%= lang === 'en' && i.name_en ? i.name_en : i.name_ar %> (<%= t('ik_' + i.kind) %>)</option><% }) %></select></label>
       <label><span><%= t('material_number') %> <span class="req">*</span></span><input name="material_number" required dir="ltr"></label>
       <label><%= t('description') %><input name="description"></label>
       <label><%= t('source') %><select name="source"><% MAT_SOURCES.forEach(s => { %><option><%= s %></option><% }) %></select></label>

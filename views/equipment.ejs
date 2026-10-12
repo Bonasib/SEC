@@ -6,19 +6,27 @@
   <label><%= t('code') %> *<input name="code" required></label>
   <label><%= t('type') %><select name="type"><% EQUIP_TYPES.forEach(x => { %><option><%= x %></option><% }) %></select></label>
   <label><%= t('name') %> *<input name="name" required></label>
-  <label><%= t('status') %><select name="status"><% EQUIP_STATUS.forEach(x => { %><option><%= x %></option><% }) %></select></label>
+  <label><%= t('status') %><select name="status"><% EQUIP_STATUS.forEach(x => { %><option value="<%= x %>"><%= t('es_' + x) %></option><% }) %></select></label>
   <label><%= t('expiry_date') %><input type="date" name="expiry_date"></label><label><%= t('calibration_due') %><input type="date" name="calibration_due"></label>
   <label><%= t('location') %><input name="location"></label>
   <div class="span2"><button class="btn primary"><%- ic('save') %><%= t('save') %></button></div></form></details>
 <% } %>
 <div class="card table-card"><div class="table-wrap"><table class="tbl">
-  <tr><th><%= t('code') %></th><th><%= t('name') %></th><th><%= t('type') %></th><th><%= t('status') %></th><th><%= t('expiry_date') %></th><th><%= t('calibration_due') %></th><th>WO</th><% if (canEdit) { %><th></th><% } %></tr>
+  <thead><tr><th><%= t('code') %></th><th><%= t('name') %></th><th><%= t('type') %></th><th><%= t('status') %></th><th><%= t('location') %></th><th><%= t('expiry_date') %></th><th><%= t('calibration_due') %></th><th>WO</th><% if (canEdit) { %><th></th><% } %></tr></thead>
+  <tbody>
+  <% if (!rows.length) { %><tr><td colspan="9" class="empty"><%- ic('wrench') %><%= t('no_records') %></td></tr><% } %>
   <% rows.forEach(q => { %><tr class="<%= q.flag === 'expired' ? 'row-bad' : q.flag === 'soon' ? 'row-warn' : '' %>">
-    <td><b><%= q.code %></b></td><td><%= q.name %></td><td><%= q.type %></td><td><%= q.status %></td><td><%= q.expiry_date || '—' %></td><td><%= q.calibration_due || '—' %></td><td><%= q.booked_on || '' %></td>
-    <% if (canEdit) { %><td><details><summary><%= t('edit') %></summary><form method="post" action="/equipment/<%= q.id %>" class="mini-grid">
-      <select name="status"><% EQUIP_STATUS.forEach(x => { %><option <%= q.status === x ? 'selected' : '' %>><%= x %></option><% }) %></select>
-      <input type="date" name="expiry_date" value="<%= q.expiry_date || '' %>"><input type="date" name="calibration_due" value="<%= q.calibration_due || '' %>">
-      <input name="location" value="<%= q.location || '' %>"><button class="btn small primary"><%= t('save') %></button></form></details></td><% } %>
+    <td><b class="mono"><%= q.code %></b></td><td><%= q.name %></td><td><%= q.type %></td><td><span class="pill <%= q.status === 'available' ? 'ok' : 'warn' %>"><%= t('es_' + q.status) %></span></td><td><%= q.location || '' %></td><td class="mono"><%= q.expiry_date || '—' %></td><td class="mono"><%= q.calibration_due || '—' %></td><td class="mono"><%= q.booked_on || '' %></td>
+    <% if (canEdit) { %><td><details><summary class="btn small ghost"><%- ic('pen') %><%= t('edit') %></summary><form method="post" action="/equipment/<%= q.id %>" class="mini-grid">
+      <label><%= t('name') %><input name="name" value="<%= q.name %>" required></label>
+      <label><%= t('type') %><select name="type"><% EQUIP_TYPES.forEach(x => { %><option <%= q.type === x ? 'selected' : '' %>><%= x %></option><% }) %></select></label>
+      <label><%= t('status') %><select name="status"><% EQUIP_STATUS.forEach(x => { %><option value="<%= x %>" <%= q.status === x ? 'selected' : '' %>><%= t('es_' + x) %></option><% }) %></select></label>
+      <label><%= t('section') %><select name="section_id"><option value=""></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= q.section_id === s.id ? 'selected' : '' %>><%= s.code %></option><% }) %></select></label>
+      <label><%= t('expiry_date') %><input type="date" name="expiry_date" value="<%= q.expiry_date || '' %>"></label>
+      <label><%= t('calibration_due') %><input type="date" name="calibration_due" value="<%= q.calibration_due || '' %>"></label>
+      <label><%= t('location') %><input name="location" value="<%= q.location || '' %>"></label>
+      <button class="btn small primary"><%- ic('save') %><%= t('save') %></button></form></details></td><% } %>
   </tr><% }) %>
+  </tbody>
 </table></div></div>
 <%- include('partials/footer') %>

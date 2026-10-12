@@ -17,12 +17,20 @@ router.get('/employees', requireRole(...PEOPLE_VIEW), (req, res) => {
   if (req.query.role) { cond.push('e.role = ?'); p.push(req.query.role); }
   if (req.query.q) { cond.push('(e.employee_no LIKE ? OR e.name_ar LIKE ? OR e.name_en LIKE ? OR e.job_title_en LIKE ?)'); p.push(...Array(4).fill(`%${req.query.q}%`)); }
   const today = todayRiyadh();
-  const rows = all(`SELECT e.*, s.code section_code,
+  if (req.query.status) { cond.push('e.status = ?'); p.push(req.query.status); }
+  if (req.query.nationality) { cond.push('e.nationality = ?'); p.push(req.query.nationality); }
+  const SORT = { no: 'e.employee_no', name: 'e.name_ar', section: 's.code', role: 'e.role', hired: 'e.hire_date', title: 'e.job_title_en' };
+  const order = `${SORT[req.query.sort] || 'e.employee_no'} ${req.query.dir === 'desc' ? 'DESC' : 'ASC'}`;
+  let rows = all(`SELECT e.*, s.code section_code,
       (SELECT type FROM leaves l WHERE l.employee_id = e.id AND l.status='approved' AND l.start_date <= ? AND l.end_date >= ? LIMIT 1) leave_today,
       (SELECT COUNT(*) FROM wo_participants x JOIN work_orders w ON w.id = x.wo_id WHERE x.employee_id = e.id AND w.status = 'in_progress') busy
-    FROM employees e LEFT JOIN org_units s ON s.id = e.section_id ${cond.length ? 'WHERE ' + cond.join(' AND ') : ''} ORDER BY e.employee_no`, today, today, ...p);
+    FROM employees e LEFT JOIN org_units s ON s.id = e.section_id ${cond.length ? 'WHERE ' + cond.join(' AND ') : ''} ORDER BY ${order}, e.employee_no`, today, today, ...p);
+  if (req.query.availability === 'available') rows = rows.filter((e) => e.status === 'active' && !e.leave_today && !e.busy);
+  if (req.query.availability === 'away') rows = rows.filter((e) => e.leave_today);
+  if (req.query.availability === 'busy') rows = rows.filter((e) => e.busy);
   const pts = Object.fromEntries(require('../points').leaderboard().rows.map((r) => [r.id, r]));
-  res.render('employees', { rows, sections: sections(), ROLES, pts, canManage: canManagePeople(req.user) });
+  res.render('employees', { rows, sections: sections(), ROLES, pts, canManage: canManagePeople(req.user),
+    nationalities: all("SELECT DISTINCT nationality FROM employees WHERE nationality IS NOT NULL AND nationality <> '' ORDER BY nationality").map((r) => r.nationality) });
 });
 
 router.get('/employees/:id(\\d+)', (req, res) => {
@@ -165,6 +173,31 @@ router.post('/leaves', requireRole('hr', 'admin'), (req, res) => {
   res.redirect('/leaves');
 });
 
+router.post('/leaves/:id(\\d+)', requireRole('hr', 'admin'), (req, res) => {
+  const l = get('SELECT * FROM leaves WHERE id = ?', Number(req.params.id));
+  if (!l) throw new HttpError(404, 'Not found');
+  const b = req.body;
+  if (!b.start_date || !b.end_date || b.end_date < b.start_date) throw new HttpError(400, 'Invalid leave dates / تواريخ غير صحيحة');
+  const type = LEAVE_TYPES.includes(b.type) ? b.type : l.type;
+  const mode = MODE_TYPES.includes(type) ? (MODES.includes(b.mode) ? b.mode : null) : null;
+  if (MODE_TYPES.includes(type) && !mode) throw new HttpError(400, 'Choose remote or in person / اختر عن بُعد أو حضوري');
+  const after = { type, start_date: b.start_date, end_date: b.end_date, mode, location: b.location || null, notes: b.notes || null, status: ['approved', 'pending', 'cancelled'].includes(b.status) ? b.status : l.status };
+  run('UPDATE leaves SET type=?, start_date=?, end_date=?, mode=?, location=?, notes=?, status=? WHERE id=?', ...Object.values(after), l.id);
+  audit(req, 'update', 'leave', l.id, l, after);
+  const clashes = after.status === 'approved' ? all(`SELECT DISTINCT w.id, w.wo_number, w.team_leader_id, w.officials_json FROM wo_participants p JOIN work_orders w ON w.id = p.wo_id
+    WHERE p.employee_id = ? AND w.status IN ('awaiting_authorization','open','in_progress') AND substr(w.planned_start,1,10) <= ? AND substr(w.planned_end,1,10) >= ?`,
+  l.employee_id, after.end_date, after.start_date) : [];
+  const emp = get('SELECT employee_no, name_ar FROM employees WHERE id = ?', l.employee_id);
+  for (const w of clashes) {
+    notify([w.team_leader_id, JSON.parse(w.officials_json || '{}').section_head?.employee_id], {
+      type: 'leave_conflict', severity: 'warning', title: `${w.wo_number} - تعارض إجازة: ${emp.employee_no} ${emp.name_ar} / Leave conflicts with assignment`,
+      body: `${after.type}: ${after.start_date} → ${after.end_date}`, link: `/wo/${w.id}`,
+    });
+  }
+  res.flash(clashes.length ? 'warning' : 'success', clashes.length ? `Conflicts with: ${clashes.map((c) => c.wo_number).join(', ')}` : res.locals.t('saved'));
+  res.redirect('/leaves');
+});
+
 router.post('/leaves/:id/cancel', requireRole('hr', 'admin'), (req, res) => {
   const l = get('SELECT * FROM leaves WHERE id = ?', Number(req.params.id));
   if (!l) throw new HttpError(404, 'Not found');
@@ -202,6 +235,23 @@ router.post('/acting', requireRole('hr', 'admin'), (req, res) => {
     type: 'acting_assigned', title: `تكليف إداري: ${u.name_ar} / Acting assignment: ${u.name_en}`,
     body: `${b.start_at} → ${b.end_at}${b.decision_no ? `\nقرار / Decision: ${b.decision_no}` : ''}`, link: '/acting',
   });
+  res.redirect('/acting');
+});
+
+router.post('/acting/:id(\\d+)', requireRole('hr', 'admin'), (req, res) => {
+  const a = get('SELECT * FROM acting_assignments WHERE id = ?', Number(req.params.id));
+  if (!a) throw new HttpError(404, 'Not found');
+  const b = req.body;
+  const start = localToUtc(b.start_at), end = localToUtc(b.end_at);
+  if (!b.acting_employee_id || !start || !end || end <= start) throw new HttpError(400, 'Invalid acting assignment / بيانات غير صحيحة');
+  const after = { acting_employee_id: Number(b.acting_employee_id), assignment_type: b.assignment_type || a.assignment_type, start_at: start, end_at: end, decision_no: b.decision_no || null, approving_authority: b.approving_authority || null };
+  run('UPDATE acting_assignments SET acting_employee_id=?, assignment_type=?, start_at=?, end_at=?, decision_no=?, approving_authority=? WHERE id=?', ...Object.values(after), a.id);
+  audit(req, 'update', 'acting_assignment', a.id, a, after);
+  const u = get('SELECT * FROM org_units WHERE id = ?', a.unit_id);
+  notify([after.acting_employee_id, a.acting_employee_id !== after.acting_employee_id ? a.acting_employee_id : null, u.manager_id], {
+    type: 'acting_updated', title: `تحديث تكليف إداري: ${u.name_ar} / Acting assignment updated: ${u.name_en}`, body: `${b.start_at} → ${b.end_at}`, link: '/acting',
+  });
+  res.flash('success', res.locals.t('saved'));
   res.redirect('/acting');
 });
 

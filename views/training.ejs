@@ -13,6 +13,16 @@
     <% if (scope) { %><input type="hidden" name="scope" value="<%= scope %>"><% } %>
   </form>
 </div>
+<form class="filters card" method="get" role="search">
+  <input type="hidden" name="year" value="<%= year %>"><% if (scope) { %><input type="hidden" name="scope" value="<%= scope %>"><% } %>
+  <div class="search-field"><%- ic('search') %><input name="q" value="<%= query.q || '' %>" placeholder="<%= t('course') %> / <%= t('provider') %> / <%= t('city') %>" aria-label="<%= t('search') %>"></div>
+  <select name="category" aria-label="<%= t('category') %>"><option value=""><%= t('category') %>: <%= t('all') %></option><% CATEGORIES.forEach(x => { %><option value="<%= x %>" <%= query.category === x ? 'selected' : '' %>><%= t('cat_' + x) %></option><% }) %></select>
+  <select name="mode" aria-label="<%= t('mode') %>"><option value=""><%= t('mode') %>: <%= t('all') %></option><option value="in_person" <%= query.mode === 'in_person' ? 'selected' : '' %>><%= t('mode_in_person') %></option><option value="remote" <%= query.mode === 'remote' ? 'selected' : '' %>><%= t('mode_remote') %></option></select>
+  <select name="status" aria-label="<%= t('status') %>"><option value=""><%= t('status') %>: <%= t('all') %></option><% ['planned','completed','cancelled'].forEach(x => { %><option value="<%= x %>" <%= query.status === x ? 'selected' : '' %>><%= t('cs_' + x) %></option><% }) %></select>
+  <select name="sort" aria-label="<%= t('sort_by') %>"><% [['date','date'],['title','course'],['category','category'],['city','city'],['hours','hours'],['status','status']].forEach(([k, l]) => { %><option value="<%= k %>" <%= (query.sort || 'date') === k ? 'selected' : '' %>><%= t('sort_by') %>: <%= t(l) %></option><% }) %></select>
+  <select name="dir" aria-label="<%= t('sort_dir') %>"><option value="asc"><%= t('ascending') %></option><option value="desc" <%= query.dir === 'desc' ? 'selected' : '' %>><%= t('descending') %></option></select>
+  <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button><a class="btn ghost" href="/training?year=<%= year %>"><%= t('clear') %></a>
+</form>
 <div class="kpis">
   <div class="kpi"><span class="kpi-icon"><%- ic('file') %></span><span class="kpi-body"><b><%= stats.courses %></b><span class="kpi-label"><%= t('courses') %></span></span></div>
   <div class="kpi violet"><span class="kpi-icon"><%- ic('globe') %></span><span class="kpi-body"><b><%= stats.international %></b><span class="kpi-label"><%= t('scope_international') %></span></span></div>

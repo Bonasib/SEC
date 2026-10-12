@@ -1,0 +1,198 @@
+<%- include('partials/header', { pageTitle: t('daily_tasks') }) %>
+<% const range = to ? `${day} → ${to}` : day;
+   const dayName = (d) => new Date(d + 'T12:00:00Z').toLocaleDateString(lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+   const keep = (extra) => { const p = new URLSearchParams(Object.entries(q).filter(([k, v]) => v && !['day', 'to'].includes(k))); Object.entries(extra).forEach(([k, v]) => p.set(k, v)); return '?' + p.toString(); };
+   const ft = editTask || {};
+   const selAssignees = (ft.assignee_ids || []).map(String); %>
+<div class="page-head">
+  <div><div class="eyebrow"><%- ic('tasks') %><%= t('grp_operations') %></div>
+    <h1><%= t('daily_tasks') %></h1>
+    <p class="page-sub"><%= to ? range : dayName(day) %><%= day === today && !to ? ' · ' + t('today') : '' %></p></div>
+  <div class="btns">
+    <a class="btn" href="<%= keep({ day: prev }) %>" aria-label="<%= t('previous_day') %>"><%- ic('chevron', 'flip-rtl ic-back') %><%= t('previous_day') %></a>
+    <a class="btn <%= day === today && !to ? 'primary' : '' %>" href="<%= keep({ day: today }) %>"><%= t('today') %></a>
+    <a class="btn" href="<%= keep({ day: next }) %>"><%= t('next_day') %><%- ic('chevron', 'flip-rtl') %></a>
+    <a class="btn" href="/data/export/tasks?from=<%= day %>&to=<%= to || day %>"><%- ic('sheet') %>Excel</a>
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><span class="kpi-icon"><%- ic('tasks') %></span><span class="kpi-body"><b><%= stats.tasks %></b><span class="kpi-label"><%= t('tasks') %></span></span></div>
+  <div class="kpi warn <%= stats.open ? '' : 'zero' %>"><span class="kpi-icon"><%- ic('hourglass') %></span><span class="kpi-body"><b><%= stats.open %></b><span class="kpi-label"><%= t('task_open') %></span></span></div>
+  <div class="kpi ok"><span class="kpi-icon"><%- ic('check-circle') %></span><span class="kpi-body"><b><%= stats.done %></b><span class="kpi-label"><%= t('task_done') %></span></span></div>
+  <div class="kpi crit <%= stats.urgent ? '' : 'zero' %>"><span class="kpi-icon"><%- ic('siren') %></span><span class="kpi-body"><b><%= stats.urgent %></b><span class="kpi-label"><%= t('tp_urgent') %></span></span></div>
+  <div class="kpi violet"><span class="kpi-icon"><%- ic('clipboard') %></span><span class="kpi-body"><b><%= stats.wos %></b><span class="kpi-label"><%= t('work_orders') %></span></span></div>
+  <div class="kpi"><span class="kpi-icon"><%- ic('users') %></span><span class="kpi-body"><b><%= stats.people %></b><span class="kpi-label"><%= t('employees') %></span></span></div>
+</div>
+
+<% if (sent) { %>
+<section class="card" role="status">
+  <div class="flash flash-success" style="margin:0 0 12px"><%- ic('check-circle') %><div><b><%= t('dispatch_done') %></b> — <%= sent.recipients %> <%= t('recipients') %> · <%= sent.emails %> <%= t('emails') %> · <%= sent.items %> <%= t('items') %></div></div>
+  <p class="muted small"><%= t('whatsapp_hint') %></p>
+  <%- include('partials/dispatch_messages', { messages: sent.messages }) %>
+</section>
+<% } %>
+<% if (preview) { %>
+<section class="card" id="preview">
+  <div class="card-head"><h2><%- ic('mail') %><%= t('preview') %></h2><span class="pill"><%= preview.messages.length %> <%= t('recipients') %></span></div>
+  <% if (!preview.messages.length) { %><p class="muted"><%= t('no_recipients') %></p><% } %>
+  <%- include('partials/dispatch_messages', { messages: preview.messages }) %>
+</section>
+<% } %>
+
+<form class="filters card" method="get" role="search">
+  <label class="inline"><%= t('from') %><input type="date" name="day" value="<%= day %>"></label>
+  <label class="inline"><%= t('to') %><input type="date" name="to" value="<%= to %>" min="<%= day %>"></label>
+  <div class="search-field"><%- ic('search') %><input name="q" value="<%= q.q || '' %>" placeholder="<%= t('search') %>" aria-label="<%= t('search') %>"></div>
+  <select name="section" aria-label="<%= t('section') %>"><option value=""><%= t('section') %>: <%= t('all') %></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(q.section) === String(s.id) ? 'selected' : '' %>><%= s.code %></option><% }) %></select>
+  <% if (manager) { %><select name="assignee" aria-label="<%= t('employee') %>"><option value=""><%= t('employee') %>: <%= t('all') %></option><% employees.forEach(e => { %><option value="<%= e.id %>" <%= String(q.assignee) === String(e.id) ? 'selected' : '' %>><%= e.employee_no %> · <%= nm(e) %></option><% }) %></select><% } %>
+  <select name="priority" aria-label="<%= t('priority') %>"><option value=""><%= t('priority') %>: <%= t('all') %></option><% PRIORITIES.forEach(p => { %><option value="<%= p %>" <%= q.priority === p ? 'selected' : '' %>><%= t('tp_' + p) %></option><% }) %></select>
+  <select name="status" aria-label="<%= t('status') %>"><option value=""><%= t('status') %>: <%= t('all') %></option><% STATUSES.forEach(s => { %><option value="<%= s %>" <%= q.status === s ? 'selected' : '' %>><%= t('task_' + s) %></option><% }) %></select>
+  <select name="kinds" aria-label="<%= t('type') %>"><option value=""><%= t('tasks') %> + <%= t('work_orders') %></option><option value="tasks" <%= q.kinds === 'tasks' ? 'selected' : '' %>><%= t('tasks') %></option><option value="wo" <%= q.kinds === 'wo' ? 'selected' : '' %>><%= t('work_orders') %></option></select>
+  <select name="sort" aria-label="<%= t('sort_by') %>"><% [['time','time'],['priority','priority'],['title','title'],['status','status'],['section','section']].forEach(([k, l]) => { %><option value="<%= k %>" <%= (q.sort || 'time') === k ? 'selected' : '' %>><%= t('sort_by') %>: <%= t(l) %></option><% }) %></select>
+  <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button><a class="btn ghost" href="/tasks"><%= t('clear') %></a>
+</form>
+
+<% if (manager) { %>
+<div class="card dispatch-quick">
+  <div><b><%- ic('send', 'ic-dir') %> <%= t('send_all_title') %></b><p class="muted small" style="margin:4px 0 0"><%= t('send_all_hint') %></p></div>
+  <form method="post" action="/tasks/dispatch" data-confirm="<%= t('send_all_confirm').replace('{d}', range) %>">
+    <input type="hidden" name="day" value="<%= day %>"><input type="hidden" name="to" value="<%= to %>"><input type="hidden" name="action" value="all">
+    <button class="btn primary" <%= stats.open + stats.wos ? '' : 'disabled' %>><%- ic('send', 'ic-dir') %><%= t('send_all_btn') %></button>
+  </form>
+</div>
+<% } %>
+
+<form method="post" action="/tasks/dispatch" id="dispatch-form">
+<input type="hidden" name="day" value="<%= day %>"><input type="hidden" name="to" value="<%= to %>">
+<section class="card table-card">
+  <div class="card-head"><h2><%- ic('tasks') %><%= t('tasks') %></h2><span class="pill"><%= agenda.tasks.length %></span></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><% if (manager) { %><th style="width:44px"><input type="checkbox" data-check-all="task_ids" aria-label="<%= t('select_all') %>" checked></th><% } %><th><%= t('time') %></th><th><%= t('title') %></th><th><%= t('assignees') %></th><th><%= t('priority') %></th><th><%= t('section') %></th><th><%= t('status') %></th><th></th></tr></thead>
+    <tbody>
+    <% if (!agenda.tasks.length) { %><tr><td colspan="8" class="empty"><%- ic('tasks') %><%= t('no_tasks_day') %></td></tr><% } %>
+    <% agenda.tasks.forEach(tk => { %>
+      <tr class="<%= tk.status === 'done' ? 'muted' : '' %>">
+        <% if (manager) { %><td><input type="checkbox" name="task_ids" value="<%= tk.id %>" <%= tk.status === 'open' ? 'checked' : 'disabled' %> aria-label="<%= tk.title %>"></td><% } %>
+        <td class="nowrap mono" data-sort-value="<%= tk.task_date %> <%= tk.start_time || '99' %>"><%= to ? tk.task_date + ' ' : '' %><%= tk.start_time || '—' %><%= tk.end_time ? '–' + tk.end_time : '' %></td>
+        <td style="min-width:220px"><span class="cell-main"><%= tk.title %></span><span class="cell-sub"><%= tk.location || '' %><%= tk.wo_number ? ' · ' : '' %><% if (tk.wo_number) { %><a class="mono" href="/wo/<%= tk.wo_id %>"><%= tk.wo_number %></a><% } %></span><% if (tk.details) { %><span class="cell-sub pre"><%= tk.details %></span><% } %></td>
+        <td><div class="avatar-stack"><% tk.people.slice(0, 5).forEach(p => { %><a class="avatar" href="/employees/<%= p.id %>" title="<%= p.employee_no %> <%= nm(p) %>"><%= initials(p) %></a><% }) %><% if (tk.people.length > 5) { %><span class="avatar more">+<%= tk.people.length - 5 %></span><% } %></div><span class="cell-sub"><%= tk.people.map(p => nm(p)).join('، ') %></span></td>
+        <td data-sort-value="<%= { urgent: 0, high: 1, normal: 2 }[tk.priority] %>"><span class="pill <%= tk.priority === 'urgent' ? 'bad' : tk.priority === 'high' ? 'warn' : '' %>"><%= t('tp_' + tk.priority) %></span></td>
+        <td class="mono"><%= tk.section_code || '—' %></td>
+        <td><span class="pill <%= tk.status === 'done' ? 'ok' : tk.status === 'cancelled' ? 'bad' : 'info' %>"><%= t('task_' + tk.status) %></span></td>
+        <td class="nowrap">
+          <% if (tk.status === 'open') { %><button class="btn small" form="st-<%= tk.id %>" name="status" value="done"><%- ic('check') %><%= t('mark_done') %></button><% } else if (tk.status === 'done') { %><button class="btn small ghost" form="st-<%= tk.id %>" name="status" value="open"><%= t('reopen') %></button><% } %>
+          <% if (manager) { %><a class="btn small ghost" href="/tasks/<%= tk.id %>/edit#task-form"><%- ic('pen') %><%= t('edit') %></a><% } %>
+        </td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="card table-card">
+  <div class="card-head"><h2><%- ic('clipboard') %><%= t('wo_of_day') %></h2><span class="pill"><%= agenda.wos.length %></span></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><% if (manager) { %><th style="width:44px"><input type="checkbox" data-check-all="wo_ids" aria-label="<%= t('select_all') %>" checked></th><% } %><th><%= t('wo_number') %></th><th><%= t('title') %></th><th><%= t('participants') %></th><th><%= t('planned_start') %></th><th><%= t('planned_end') %></th><th><%= t('priority') %></th><th><%= t('status') %></th></tr></thead>
+    <tbody>
+    <% if (!agenda.wos.length) { %><tr><td colspan="8" class="empty"><%- ic('clipboard') %><%= t('no_records') %></td></tr><% } %>
+    <% agenda.wos.forEach(w => { %>
+      <tr>
+        <% if (manager) { %><td><input type="checkbox" name="wo_ids" value="<%= w.id %>" checked aria-label="<%= w.wo_number %>"></td><% } %>
+        <td><a class="wo-link" href="/wo/<%= w.id %>"><%= w.wo_number %></a></td>
+        <td><span class="cell-main"><%= w.title %></span><span class="cell-sub"><%= w.location || '' %><%= w.vehicles.length ? ' · ' + w.vehicles.map(v => v.plate_number || v.code).join(', ') : '' %></span></td>
+        <td><div class="avatar-stack"><% w.people.slice(0, 5).forEach(p => { %><a class="avatar <%= p.role === 'leader' ? 'av-ok' : '' %>" href="/employees/<%= p.id %>" title="<%= p.employee_no %> <%= nm(p) %>"><%= initials(p) %></a><% }) %><% if (w.people.length > 5) { %><span class="avatar more">+<%= w.people.length - 5 %></span><% } %></div></td>
+        <td class="nowrap" data-sort-value="<%= w.planned_start %>"><%= fmt(w.planned_start) %></td>
+        <td class="nowrap" data-sort-value="<%= w.planned_end %>"><%= fmt(w.planned_end) %></td>
+        <td><span class="pill pr-<%= w.priority %>"><%= w.priority === 'normal' ? t('pr_normal') : w.priority %></span></td>
+        <td><span class="st st-<%= w.status %>"><%= t('st_' + w.status) %></span></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</section>
+
+<% if (manager) { %>
+<section class="card" id="send">
+  <h2><%- ic('send', 'ic-dir') %><%= t('send_selected') %></h2>
+  <div class="segmented" role="radiogroup" aria-label="<%= t('send_to') %>" style="margin-bottom:12px">
+    <label><input type="radio" name="mode" value="each" <%= form.mode !== 'selected' ? 'checked' : '' %>><%= t('mode_each') %></label>
+    <label><input type="radio" name="mode" value="selected" <%= form.mode === 'selected' ? 'checked' : '' %>><%= t('mode_selected') %></label>
+  </div>
+  <p class="muted small" data-mode-hint="each"><%= t('mode_each_hint') %></p>
+  <div data-mode-panel="selected" class="<%= form.mode === 'selected' ? '' : 'hidden' %>">
+    <p class="muted small"><%= t('mode_selected_hint') %></p>
+    <div class="recipient-tools">
+      <div class="search-field" style="position:relative;flex:1 1 240px"><%- ic('search') %><input class="picker-filter" style="padding-inline-start:38px" placeholder="<%= t('search') %>…" data-target="recipient-picker" aria-label="<%= t('search') %>"></div>
+      <select data-pick-section aria-label="<%= t('section') %>"><option value=""><%= t('select_section') %></option><% sections.forEach(s => { %><option value="<%= s.id %>"><%= s.code %> · <%= nm(s) %></option><% }) %></select>
+      <button type="button" class="btn small" data-pick-all="recipient-picker"><%= t('select_all') %></button>
+      <button type="button" class="btn small ghost" data-pick-none="recipient-picker"><%= t('clear') %></button>
+    </div>
+    <% const selR = [].concat(form.recipient_ids || []).map(String); %>
+    <div class="picker" id="recipient-picker">
+      <% employees.forEach(e => { %><label data-text="<%= e.employee_no %> <%= e.name_ar %> <%= e.name_en || '' %> <%= e.section_code || '' %>" data-section="<%= e.section_id || '' %>"><input type="checkbox" name="recipient_ids" value="<%= e.id %>" <%= selR.includes(String(e.id)) ? 'checked' : '' %>><span class="picker-meta"><span><b class="mono"><%= e.employee_no %></b> <%= nm(e) %></span><small><%= e.section_code || '' %> · <%= e.email || t('no_email') %></small></span></label><% }) %>
+    </div>
+    <label style="margin-top:12px"><%= t('external_emails') %><textarea name="external_emails" rows="2" dir="ltr" placeholder="contractor@example.com, supervisor@example.com"><%= form.external_emails || '' %></textarea><small class="muted"><%= t('external_emails_hint') %></small></label>
+  </div>
+  <label style="margin-top:12px"><%= t('message_optional') %><textarea name="message" rows="2" maxlength="1000" placeholder="<%= lang === 'ar' ? 'مثال: الالتزام بتصاريح العمل ومعدات السلامة، الاجتماع الصباحي 6:30' : 'e.g. Work permits and PPE required, toolbox talk at 06:30' %>"><%= form.message || '' %></textarea></label>
+  <div class="form-actions" style="margin-top:12px">
+    <button class="btn" name="action" value="preview"><%- ic('mail') %><%= t('preview') %></button>
+    <button class="btn primary" name="action" value="send"><%- ic('send', 'ic-dir') %><%= t('send') %></button>
+    <small class="muted" style="align-self:center"><%= t('send_channels') %></small>
+  </div>
+</section>
+<% } %>
+</form>
+<% agenda.tasks.forEach(tk => { %><form id="st-<%= tk.id %>" method="post" action="/tasks/<%= tk.id %>/status" hidden></form><% }) %>
+
+<% if (manager) { %>
+<section class="card" id="task-form">
+  <h2><%- ic(editTask ? 'pen' : 'plus') %><%= editTask ? t('edit_task') : t('add_task') %></h2>
+  <form method="post" action="<%= editTask ? '/tasks/' + editTask.id : '/tasks' %>" class="form-grid">
+    <label class="span2"><span><%= t('title') %> <span class="req">*</span></span><input name="title" required value="<%= ft.title || '' %>" placeholder="<%= lang === 'ar' ? 'مثال: فحص حراري لمحطة 380 ك.ف' : 'e.g. Thermal scan of 380 kV substation' %>"></label>
+    <label><span><%= t('date') %> <span class="req">*</span></span><input type="date" name="task_date" required value="<%= ft.task_date || day %>"></label>
+    <label><%= t('priority') %><select name="priority"><% PRIORITIES.forEach(p => { %><option value="<%= p %>" <%= ft.priority === p ? 'selected' : '' %>><%= t('tp_' + p) %></option><% }) %></select></label>
+    <label><%= t('start_time') %><input type="time" name="start_time" value="<%= ft.start_time || '' %>"></label>
+    <label><%= t('end_time') %><input type="time" name="end_time" value="<%= ft.end_time || '' %>"></label>
+    <label><%= t('location') %><input name="location" value="<%= ft.location || '' %>"></label>
+    <label><%= t('section') %><select name="section_id"><option value=""></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= ft.section_id === s.id ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select></label>
+    <label><%= t('linked_wo') %><input name="wo_number" value="<%= ft.wo_number || '' %>" placeholder="WO000123" dir="ltr"></label>
+    <% if (editTask) { %><label><%= t('status') %><select name="status"><% STATUSES.forEach(s => { %><option value="<%= s %>" <%= ft.status === s ? 'selected' : '' %>><%= t('task_' + s) %></option><% }) %></select></label>
+    <% } else { %><div class="field-stack"><label><%= t('repeat_until') %><input type="date" name="repeat_until" min="<%= day %>"></label><label class="inline small"><input type="checkbox" name="skip_weekend" value="1" checked><%= t('skip_weekend') %></label></div><% } %>
+    <label class="span2"><%= t('details') %><textarea name="details" rows="2"><%= ft.details || '' %></textarea></label>
+    <div class="span2">
+      <p style="margin-bottom:8px"><b><%= t('assignees') %></b> <span class="req">*</span></p>
+      <div class="search-field" style="position:relative"><%- ic('search') %><input class="picker-filter" style="padding-inline-start:38px" placeholder="<%= t('search') %>…" data-target="assignee-picker" aria-label="<%= t('search') %>"></div>
+      <div class="picker" id="assignee-picker">
+        <% employees.forEach(e => { %><label data-text="<%= e.employee_no %> <%= e.name_ar %> <%= e.name_en || '' %> <%= e.section_code || '' %>"><input type="checkbox" name="assignee_ids" value="<%= e.id %>" <%= selAssignees.includes(String(e.id)) ? 'checked' : '' %>><span class="picker-meta"><span><b class="mono"><%= e.employee_no %></b> <%= nm(e) %></span><small><%= e.section_code || '' %></small></span></label><% }) %>
+      </div>
+    </div>
+    <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button><% if (editTask) { %><a class="btn ghost" href="/tasks?day=<%= ft.task_date %>"><%= t('cancel') %></a><% } %></div>
+  </form>
+</section>
+
+<div class="grid2">
+<section class="card table-card">
+  <div class="card-head"><h2><%- ic('clock') %><%= t('dispatch_history') %></h2></div>
+  <div class="table-wrap"><table class="tbl small">
+    <thead><tr><th><%= t('date') %></th><th><%= t('day') %></th><th><%= t('send_to') %></th><th class="num"><%= t('recipients') %></th><th class="num"><%= t('emails') %></th><th><%= t('by') %></th></tr></thead>
+    <tbody>
+    <% if (!history.length) { %><tr><td colspan="6" class="muted"><%= t('no_records') %></td></tr><% } %>
+    <% history.forEach(h => { %><tr><td class="nowrap" data-sort-value="<%= h.sent_at %>"><%= fmt(h.sent_at) %></td><td class="mono"><%= h.day %></td><td><%= h.mode === 'each' ? t('mode_each') : t('mode_selected') %></td><td class="num"><%= h.recipients %></td><td class="num"><%= h.emails %></td><td><%= h.automatic ? t('automatic') : nm(h) %></td></tr><% }) %>
+    </tbody>
+  </table></div>
+</section>
+<section class="card" id="auto">
+  <h2><%- ic('clock') %><%= t('auto_send') %></h2>
+  <p class="muted small"><%= t('auto_send_hint') %></p>
+  <% if (user.role === 'admin') { %>
+  <form method="post" action="/tasks/auto" class="inline-form">
+    <label class="inline"><input type="checkbox" name="enabled" value="1" <%= autoTime ? 'checked' : '' %>><%= t('enabled') %></label>
+    <input type="time" name="time" value="<%= autoTime || '06:00' %>" aria-label="<%= t('time') %>">
+    <button class="btn small primary"><%- ic('save') %><%= t('save') %></button>
+  </form>
+  <% } else { %><p><span class="pill <%= autoTime ? 'ok' : '' %>"><%= autoTime ? t('enabled') + ' · ' + autoTime : t('disabled') %></span></p><% } %>
+</section>
+</div>
+<% } %>
+<%- include('partials/footer') %>

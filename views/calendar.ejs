@@ -123,7 +123,17 @@
       <% holidays.forEach(h => { %>
         <li><span class="ev-tag ev-holiday"><%- ic('star') %><span class="mono"><%= h.start_date.slice(5) %><%= h.end_date !== h.start_date ? ' → ' + h.end_date.slice(5) : '' %></span></span>
           <span class="grow"><span class="cell-main"><%= lang === 'en' ? h.name_en : h.name_ar %></span><% if (h.approximate) { %><span class="cell-sub"><%- ic('alert') %> <%= t('approximate') %></span><% } %></span>
-          <% if (canEditHolidays) { %><form method="post" action="/holidays/<%= h.id %>/delete" onsubmit="return confirm('<%= t('cancel') %>?')"><button class="icon-btn" aria-label="delete"><%- ic('x') %></button></form><% } %></li>
+          <% if (canEditHolidays) { %><details class="hol-edit"><summary class="icon-btn" aria-label="<%= t('edit') %>"><%- ic('pen') %></summary>
+            <form method="post" action="/holidays/<%= h.id %>" class="mini-grid">
+              <label><%= t('from') %><input type="date" name="start_date" value="<%= h.start_date %>" required></label>
+              <label><%= t('to') %><input type="date" name="end_date" value="<%= h.end_date %>"></label>
+              <label><%= t('name_ar') %><input name="name_ar" value="<%= h.name_ar %>" required></label>
+              <label><%= t('name_en') %><input name="name_en" value="<%= h.name_en %>" required></label>
+              <label><%= t('type') %><select name="kind"><option value="public">public</option><option value="company" <%= h.kind === 'company' ? 'selected' : '' %>>company</option></select></label>
+              <label class="inline"><input type="checkbox" name="approximate" value="1" <%= h.approximate ? 'checked' : '' %>><%= t('approximate') %></label>
+              <button class="btn small primary"><%- ic('save') %><%= t('save') %></button>
+            </form></details>
+            <form method="post" action="/holidays/<%= h.id %>/delete" data-confirm="<%= t('remove') %>?"><button class="icon-btn" aria-label="<%= t('remove') %>"><%- ic('trash') %></button></form><% } %></li>
       <% }) %>
     </ul>
     <% if (canEditHolidays) { %>

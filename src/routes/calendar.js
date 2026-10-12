@@ -86,6 +86,19 @@ router.post('/holidays', requireRole('admin', 'hr'), (req, res) => {
   res.redirect(`/calendar?year=${b.start_date.slice(0, 4)}#holidays`);
 });
 
+router.post('/holidays/:id(\\d+)', requireRole('admin', 'hr'), (req, res) => {
+  const h = get('SELECT * FROM holidays WHERE id = ?', Number(req.params.id));
+  if (!h) throw new HttpError(404, 'Not found');
+  const b = req.body;
+  if (!b.start_date || !b.name_ar || !b.name_en) throw new HttpError(400, 'Date and both names are required / التاريخ والاسمان مطلوبة');
+  const end = b.end_date || b.start_date;
+  if (end < b.start_date) throw new HttpError(400, 'End before start / النهاية قبل البداية');
+  const after = { start_date: b.start_date, end_date: end, name_ar: b.name_ar, name_en: b.name_en, kind: b.kind === 'company' ? 'company' : 'public', approximate: b.approximate ? 1 : 0 };
+  run('UPDATE holidays SET start_date=?, end_date=?, name_ar=?, name_en=?, kind=?, approximate=? WHERE id=?', ...Object.values(after), h.id);
+  audit(req, 'update', 'holiday', h.id, h, after);
+  res.redirect(`/calendar?year=${b.start_date.slice(0, 4)}#holidays`);
+});
+
 router.post('/holidays/:id/delete', requireRole('admin', 'hr'), (req, res) => {
   const h = get('SELECT * FROM holidays WHERE id = ?', Number(req.params.id));
   if (!h) throw new HttpError(404, 'Not found');

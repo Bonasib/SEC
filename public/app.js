@@ -164,6 +164,156 @@
     });
   });
 
+  // ---- confirmation before destructive actions ----
+  document.querySelectorAll('form[data-confirm]').forEach(function (f) {
+    f.addEventListener('submit', function (e) {
+      if (!window.confirm(f.dataset.confirm)) { e.preventDefault(); e.stopImmediatePropagation(); }
+    });
+  });
+
+  // ---- materials / tools picker rows (item + quantity) ----
+  document.querySelectorAll('[data-item-picker]').forEach(function (box) {
+    var list = box.querySelector('.item-rows');
+    var tpl = box.querySelector('template');
+    var wire = function (row) {
+      var sel = row.querySelector('select'), qty = row.querySelector('input'), uom = row.querySelector('.item-uom');
+      var sync = function () {
+        var o = sel.options[sel.selectedIndex];
+        uom.textContent = o && o.value ? o.dataset.uom : '';
+        qty.max = o && o.value ? o.dataset.avail : '';
+        qty.required = !!(o && o.value);
+        if (o && o.value && !qty.value) qty.value = 1;
+      };
+      sel.addEventListener('change', sync); sync();
+      row.querySelector('[data-remove-row]').addEventListener('click', function () {
+        if (list.children.length > 1) row.remove(); else { sel.value = ''; qty.value = ''; sync(); }
+      });
+    };
+    Array.from(list.children).forEach(wire);
+    box.querySelector('[data-add-row]').addEventListener('click', function () {
+      var row = tpl.content.firstElementChild.cloneNode(true);
+      list.appendChild(row); wire(row); row.querySelector('select').focus();
+    });
+  });
+
+  // ---- material line: fill number / description / unit from the catalog ----
+  document.querySelectorAll('[data-catalog-fill]').forEach(function (sel) {
+    sel.addEventListener('change', function () {
+      var o = sel.options[sel.selectedIndex], f = sel.form;
+      if (!o || !o.value) return;
+      f.material_number.value = o.dataset.code; f.description.value = o.dataset.name; f.uom.value = o.dataset.uom;
+    });
+  });
+
+  // ---- daily tasks: select all, send mode, recipient helpers, copy text ----
+  document.querySelectorAll('[data-check-all]').forEach(function (box) {
+    var form = box.form || box.closest('form') || document;
+    var items = function () { return Array.from(form.querySelectorAll('input[name="' + box.dataset.checkAll + '"]:not(:disabled)')); };
+    box.addEventListener('change', function () { items().forEach(function (i) { if (!i.closest('tr') || !i.closest('tr').hidden) i.checked = box.checked; }); });
+  });
+  var modePanel = document.querySelector('[data-mode-panel]');
+  if (modePanel) {
+    var hint = document.querySelector('[data-mode-hint]');
+    var syncMode2 = function () {
+      var m = document.querySelector('input[name=mode]:checked');
+      var sel = !!m && m.value === 'selected';
+      modePanel.classList.toggle('hidden', !sel);
+      if (hint) hint.classList.toggle('hidden', sel);
+    };
+    document.querySelectorAll('input[name=mode]').forEach(function (r) { r.addEventListener('change', syncMode2); });
+    syncMode2();
+  }
+  document.querySelectorAll('[data-pick-all]').forEach(function (b) {
+    b.addEventListener('click', function () { document.querySelectorAll('#' + b.dataset.pickAll + ' label').forEach(function (l) { if (l.style.display !== 'none') l.querySelector('input').checked = true; }); });
+  });
+  document.querySelectorAll('[data-pick-none]').forEach(function (b) {
+    b.addEventListener('click', function () { document.querySelectorAll('#' + b.dataset.pickNone + ' input').forEach(function (i) { i.checked = false; }); });
+  });
+  document.querySelectorAll('[data-pick-section]').forEach(function (sel) {
+    sel.addEventListener('change', function () {
+      if (!sel.value) return;
+      document.querySelectorAll('#recipient-picker label[data-section="' + sel.value + '"] input').forEach(function (i) { i.checked = true; });
+      sel.value = '';
+    });
+  });
+  document.querySelectorAll('[data-copy]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var done = function () { var old = b.innerHTML; b.textContent = '✓'; setTimeout(function () { b.innerHTML = old; }, 1500); };
+      if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.copy).then(done, function () {});
+    });
+  });
+
+  // ---- every table: click a column to sort, type to filter rows ----
+  var TXT = rtl ? { filter: 'تصفية الصفوف…', of: 'من', sort: 'ترتيب حسب' } : { filter: 'Filter rows…', of: 'of', sort: 'Sort by' };
+  var collator = new Intl.Collator(root.lang || undefined, { numeric: true, sensitivity: 'base' });
+  var cellValue = function (row, i) {
+    var c = row.cells[i];
+    if (!c) return '';
+    return (c.dataset.sortValue != null ? c.dataset.sortValue : c.textContent).trim();
+  };
+  var asNumber = function (v) {
+    var s = v.replace(/[,\s%٬]/g, '').replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); });
+    return /^[-+−]?\d*\.?\d+$/.test(s) ? parseFloat(s.replace('−', '-')) : null;
+  };
+  document.querySelectorAll('table.tbl').forEach(function (tbl, ti) {
+    if (tbl.hasAttribute('data-nosort') || tbl.classList.contains('kv-table')) return;
+    var head = tbl.tHead && tbl.tHead.rows[0];
+    if (!head) {
+      var first = tbl.rows[0];
+      if (!first || !Array.prototype.every.call(first.cells, function (c) { return c.tagName === 'TH'; })) return;
+      head = first;
+    }
+    var dataRows = function () {
+      return Array.prototype.filter.call(tbl.rows, function (r) {
+        return r !== head && r.parentNode.tagName !== 'THEAD' && r.parentNode.tagName !== 'TFOOT' && !(r.cells.length === 1 && r.cells[0].colSpan > 1);
+      });
+    };
+    var rows = dataRows();
+    if (!rows.length) return;
+    // Quick filter for longer tables
+    if (rows.length >= 6 && !tbl.hasAttribute('data-nofilter')) {
+      var bar = document.createElement('div');
+      bar.className = 'table-tools';
+      bar.innerHTML = '<label class="search-field"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="' + TXT.filter + '" aria-label="' + TXT.filter + '"></label><span class="muted small" aria-live="polite"></span>';
+      var anchor = tbl.closest('.table-wrap') || tbl;
+      anchor.parentNode.insertBefore(bar, anchor);
+      var input = bar.querySelector('input'), count = bar.querySelector('span');
+      var apply = function () {
+        var q = input.value.trim().toLowerCase(), shown = 0, all = dataRows();
+        all.forEach(function (r) { var ok = !q || r.textContent.toLowerCase().indexOf(q) >= 0; r.hidden = !ok; if (ok) shown++; });
+        count.textContent = q ? shown + ' ' + TXT.of + ' ' + all.length : all.length;
+      };
+      input.addEventListener('input', apply); apply();
+    }
+    if (rows.length < 2 || tbl.hasAttribute('data-server-sort')) return;
+    Array.prototype.forEach.call(head.cells, function (th, ci) {
+      var label = th.textContent.trim();
+      if (!label || th.colSpan > 1 || th.querySelector('a, input, button, select')) return;
+      th.classList.add('sortable');
+      th.setAttribute('aria-sort', 'none');
+      var btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'th-sort'; btn.title = TXT.sort + ': ' + label;
+      while (th.firstChild) btn.appendChild(th.firstChild);
+      btn.insertAdjacentHTML('beforeend', '<svg class="ic sort-ic" aria-hidden="true"><use href="#i-sort"/></svg>');
+      th.appendChild(btn);
+      btn.addEventListener('click', function () {
+        var dir = th.getAttribute('aria-sort') === 'ascending' ? -1 : 1;
+        Array.prototype.forEach.call(head.cells, function (o) { if (o.classList.contains('sortable')) o.setAttribute('aria-sort', 'none'); });
+        th.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
+        var list = dataRows(), parent = list[0].parentNode;
+        var nums = list.map(function (r) { return asNumber(cellValue(r, ci)); });
+        var numeric = nums.every(function (n, k) { return n !== null || cellValue(list[k], ci) === '' || cellValue(list[k], ci) === '—'; }) && nums.some(function (n) { return n !== null; });
+        list.map(function (r, k) { return { r: r, v: cellValue(r, ci), n: nums[k] }; })
+          .sort(function (a, b) {
+            var ea = a.v === '' || a.v === '—', eb = b.v === '' || b.v === '—';
+            if (ea !== eb) return ea ? 1 : -1;
+            return dir * (numeric ? (a.n || 0) - (b.n || 0) : collator.compare(a.v, b.v));
+          })
+          .forEach(function (x) { parent.appendChild(x.r); });
+      });
+    });
+  });
+
   // ---- submit buttons: prevent double submit, show progress ----
   document.querySelectorAll('form').forEach(function (f) {
     f.addEventListener('submit', function (e) {

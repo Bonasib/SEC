@@ -116,7 +116,11 @@ function createWorkOrder(data, req, { importedNumber } = {}) {
   if (data.reservation_number && get('SELECT 1 FROM material_reservations WHERE reservation_number = ?', data.reservation_number))
     throw new HttpError(400, `Reservation ${data.reservation_number} is already linked to another work order / رقم الحجز مستخدم`);
 
-  const errors = availabilityErrors({ participantIds, equipmentIds, plannedStart: data.planned_start, plannedEnd: data.planned_end });
+  const itemLines = data.items || [];
+  const errors = [
+    ...availabilityErrors({ participantIds, equipmentIds, plannedStart: data.planned_start, plannedEnd: data.planned_end }),
+    ...require('./items').checkLines(itemLines),
+  ];
   if (errors.length) throw new HttpError(400, errors.join('\n'));
 
   const travel = require('./travel').normalize(data);
@@ -152,6 +156,7 @@ function createWorkOrder(data, req, { importedNumber } = {}) {
     const id = Number(r.lastInsertRowid);
     for (const pid of participantIds) run('INSERT INTO wo_participants(wo_id, employee_id, role) VALUES (?,?,?)', id, pid, pid === Number(data.team_leader_id) ? 'leader' : 'member');
     for (const eid of equipmentIds) run('INSERT INTO wo_equipment(wo_id, equipment_id) VALUES (?,?)', id, eid);
+    require('./items').addLines(id, itemLines, req);
     if (data.reservation_number) {
       run('INSERT INTO material_reservations(wo_id, reservation_number, warehouse, received_by) VALUES (?,?,?,?)', id, data.reservation_number, data.warehouse || null, Number(data.team_leader_id));
     }
@@ -160,7 +165,7 @@ function createWorkOrder(data, req, { importedNumber } = {}) {
       run("INSERT INTO wo_approvals(wo_id, phase, step, seq, expected_employee_id) VALUES (?, 'authorization', 'sector_head', 2, ?)", id, officials.sector_head?.employee_id ?? null);
     }
     const w = get('SELECT * FROM work_orders WHERE id = ?', id);
-    audit(req, importedNumber || req?.importing ? 'import' : 'create', 'work_order', w.wo_number, null, { ...w, participants: participantIds, equipment: equipmentIds, distance_counts: counts });
+    audit(req, importedNumber || req?.importing ? 'import' : 'create', 'work_order', w.wo_number, null, { ...w, participants: participantIds, equipment: equipmentIds, items: itemLines, distance_counts: counts });
     return w;
   });
 
@@ -213,6 +218,10 @@ function woDetails(wo) {
     ['النهاية / End', fmt(wo.planned_end, 'en')],
     ['قائد الفريق / Leader', leader ? `${leader.employee_no} ${leader.name_ar}` : '—'],
     ['الحالة / Status', both('st_' + wo.status)],
+    ...(() => {
+      const items = require('./items').ofWo(wo.id);
+      return items.length ? [['المواد والعدد / Materials & tools', items.map((i) => `${i.code} ${i.name_ar} × ${i.qty} ${i.uom}`).join(' · ')]] : [];
+    })(),
   ];
 }
 
@@ -416,6 +425,7 @@ function decide(wo, decision, comment, req) {
     });
   } else if (finalStatus === 'closed') {
     require('./points').awardClosure(fresh, participants, req.user.id);
+    require('./items').settle(fresh, req);
     const o = JSON.parse(wo.officials_json || '{}');
     notify([...participants, o.section_head?.employee_id], { type: 'wo_closed', title: `${wo.wo_number} - تم إغلاق أمر العمل / Work order closed`, body: wo.title, link, details: woDetails(fresh) });
   } else if (finalStatus === 'open') {
@@ -423,6 +433,95 @@ function decide(wo, decision, comment, req) {
   } else {
     notifyApprover(fresh, pendingApproval(wo.id));
   }
+}
+
+// ---------- edit ----------
+const EDITABLE = ['awaiting_authorization', 'open', 'in_progress'];
+/**
+ * Edit a work order's details, crew and vehicles. Dates are locked once work has started
+ * (use an extension). Availability, travel bands and assignment limits are re-checked.
+ */
+function updateWorkOrder(wo, data, reason, req) {
+  if (!EDITABLE.includes(wo.status)) throw new HttpError(400, 'This work order can no longer be edited / لا يمكن تعديل أمر العمل في هذه الحالة');
+  if (!reason) throw new HttpError(400, 'A reason for the change is required / سبب التعديل مطلوب');
+  if (!data.title) throw new HttpError(400, 'Title is required / العنوان مطلوب');
+  if (!data.team_leader_id) throw new HttpError(400, 'Team leader is required / قائد الفريق مطلوب');
+  if (!data.section_id) throw new HttpError(400, 'Section is required / القسم مطلوب');
+  const started = wo.status === 'in_progress';
+  const start = started || !data.planned_start ? wo.planned_start : data.planned_start;
+  const end = started || !data.planned_end ? wo.planned_end : data.planned_end;
+  const participantIdsNew = [...new Set([data.team_leader_id, ...(data.participant_ids || [])].filter(Boolean).map(Number))];
+  const equipmentIds = [...new Set((data.equipment_ids || []).filter(Boolean).map(Number))];
+  const before = { ...wo, participants: participantIds(wo.id), equipment: all('SELECT equipment_id FROM wo_equipment WHERE wo_id = ?', wo.id).map((r) => r.equipment_id) };
+
+  const errors = availabilityErrors({ participantIds: participantIdsNew, equipmentIds, plannedStart: start, plannedEnd: end, excludeWoId: wo.id });
+  if (errors.length) throw new HttpError(400, errors.join('\n'));
+  const travel = require('./travel').normalize(data);
+  const year = riyadhDate(start).slice(0, 4);
+  const threshold = Number(setting('distance_threshold'));
+  const counts = travel.category === 'A' ? [] : distanceCounts(participantIdsNew, travel.category, year, wo.id);
+  const over = counts.filter((c) => c.count + 1 > threshold);
+  if (over.length && travel.category === 'C' && !data.selection_reason)
+    throw new HttpError(400, `Assignment ${threshold + 1}+ over 200 km requires a selection reason / يلزم تبرير الاختيار: ${over.map((o) => o.employee_no).join(', ')}`);
+  const wasAuthorized = !!get("SELECT 1 FROM wo_approvals WHERE wo_id = ? AND phase = 'authorization' AND decision = 'approved'", wo.id);
+  const needsAuth = over.length > 0 && !wo.needs_sector_approval && wo.status === 'open' && !wasAuthorized;
+
+  const priority = data.priority || wo.priority;
+  const sla = CRITICAL.includes(priority) ? Number(setting(`sla_hours_${priority}`)) : null;
+  const dueAt = priority === wo.priority ? wo.due_at : sla ? new Date(Date.now() + sla * 3600e3).toISOString() : null;
+  const sectionChanged = Number(data.section_id) !== wo.section_id;
+  const officials = sectionChanged ? officialsAt(Number(data.section_id), nowIso()) : null;
+
+  const after = {
+    type: data.type || wo.type, title: data.title, description: data.description || null, priority, asset_id: data.asset_id || null, voltage_kv: data.voltage_kv || null,
+    location: data.location || null, section_id: Number(data.section_id), distance_km: travel.distance_km, distance_category: travel.category, involves_travel: travel.involves_travel,
+    selection_reason: data.selection_reason || null, planned_start: start, planned_end: end, due_at: dueAt, overnight: data.overnight ? 1 : 0,
+    travel_hours: data.travel_hours ?? null, team_leader_id: Number(data.team_leader_id),
+  };
+  tx(() => {
+    run(`UPDATE work_orders SET type=?, title=?, description=?, priority=?, asset_id=?, voltage_kv=?, location=?, section_id=?, distance_km=?, distance_category=?, involves_travel=?,
+      selection_reason=?, planned_start=?, planned_end=?, due_at=?, overnight=?, travel_hours=?, team_leader_id=? WHERE id=?`, ...Object.values(after), wo.id);
+    if (officials) run('UPDATE work_orders SET officials_json = ? WHERE id = ?', JSON.stringify(officials), wo.id);
+    run('DELETE FROM wo_participants WHERE wo_id = ?', wo.id);
+    for (const pid of participantIdsNew) run('INSERT INTO wo_participants(wo_id, employee_id, role) VALUES (?,?,?)', wo.id, pid, pid === after.team_leader_id ? 'leader' : 'member');
+    run('DELETE FROM wo_equipment WHERE wo_id = ?', wo.id);
+    for (const eid of equipmentIds) run('INSERT INTO wo_equipment(wo_id, equipment_id) VALUES (?,?)', wo.id, eid);
+    if (needsAuth) {
+      const o = officials || JSON.parse(wo.officials_json || '{}');
+      run("UPDATE work_orders SET needs_sector_approval = 1, status = 'awaiting_authorization' WHERE id = ?", wo.id);
+      run("INSERT INTO wo_approvals(wo_id, phase, step, seq, expected_employee_id) VALUES (?, 'authorization', 'department_manager', 1, ?)", wo.id, o.department_manager?.employee_id ?? null);
+      run("INSERT INTO wo_approvals(wo_id, phase, step, seq, expected_employee_id) VALUES (?, 'authorization', 'sector_head', 2, ?)", wo.id, o.sector_head?.employee_id ?? null);
+    }
+    audit(req, 'update', 'work_order', wo.wo_number, before, { ...after, participants: participantIdsNew, equipment: equipmentIds }, reason);
+  });
+
+  // ----- tell the people affected -----
+  const fresh = get('SELECT * FROM work_orders WHERE id = ?', wo.id);
+  const link = `/wo/${wo.id}`;
+  const details = woDetails(fresh);
+  const added = participantIdsNew.filter((x) => !before.participants.includes(x));
+  const removed = before.participants.filter((x) => !participantIdsNew.includes(x));
+  const kept = participantIdsNew.filter((x) => before.participants.includes(x));
+  const changed = Object.keys(after).filter((k) => String(after[k] ?? '') !== String(wo[k] ?? ''));
+  if (added.length) notify(added, { type: 'wo_assigned', severity: isCritical(fresh) ? 'critical' : 'info', title: `${wo.wo_number} - تم إسناد أمر عمل لك / Work order assigned to you`, body: fresh.title, link, details });
+  if (removed.length) notify(removed, { type: 'wo_unassigned', severity: 'warning', title: `${wo.wo_number} - تم استبعادك من أمر العمل / You were removed from the work order`, body: reason, link: '/' });
+  if (kept.length && (changed.length || [...equipmentIds].sort().join() !== [...before.equipment].sort().join())) {
+    notify(kept, { type: 'wo_updated', title: `${wo.wo_number} - تم تعديل أمر العمل / Work order updated`, body: `${reason}\n${changed.join(', ')}`, link, details });
+  }
+  if (needsAuth) {
+    const o = JSON.parse(fresh.officials_json || '{}');
+    notify([o.department_manager?.employee_id], { type: 'approval_request', severity: 'warning', title: `${wo.wo_number} - مطلوب مراجعة: تجاوز ${threshold} مهمة / Review required: over ${threshold} assignments`, body: over.map((x) => `${x.employee_no} ${x.name_ar}: ${x.count + 1}`).join('\n'), link, details });
+  }
+  if (travel.category !== 'A') require('./travel').checkAlerts(Number(year), participantIdsNew);
+  const crew = crewSummary(wo.id);
+  return {
+    wo: fresh,
+    warnings: [
+      crew.vehicles.length && crew.seats < crew.people ? `Vehicle seats (${crew.seats}) are fewer than the crew (${crew.people}) / المقاعد أقل من عدد الفريق` : null,
+      needsAuth ? `Sector Head authorization required (assignment > ${threshold}) / يتطلب اعتماد رئيس القطاع` : null,
+      over.length && !needsAuth ? `Over ${threshold} assignments in this distance band: ${over.map((x) => x.employee_no).join(', ')}` : null,
+    ].filter(Boolean),
+  };
 }
 
 function cancelWorkOrder(wo, reason, req) {
@@ -440,5 +539,5 @@ function cancelWorkOrder(wo, reason, req) {
 module.exports = {
   CRITICAL, ACTIVE_STATUSES, isCritical, nextWoNumber, availabilityErrors, distanceCounts, createWorkOrder,
   closureChecklist, reconciliation, lineVariance, lineErrors, pendingApproval, canDecide, startWork,
-  submitForClosure, decide, cancelWorkOrder, participantIds, woDetails, riyadhDate, holderAt, teamAway, holidaysBetween, crewSummary,
+  submitForClosure, decide, cancelWorkOrder, updateWorkOrder, participantIds, woDetails, riyadhDate, holderAt, teamAway, holidaysBetween, crewSummary,
 };

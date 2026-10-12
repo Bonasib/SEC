@@ -14,9 +14,25 @@
 </form>
 <% } %>
 <div class="card table-card"><div class="table-wrap"><table class="tbl">
-  <tr><th><%= t('employee') %></th><th><%= t('type') %></th><th><%= t('mode') %> / <%= t('location') %></th><th><%= t('from') %></th><th><%= t('to') %></th><th><%= t('status') %></th><th><%= t('notes') %></th><th></th></tr>
-  <% rows.forEach(l => { %><tr><td><a href="/employees/<%= l.employee_id %>"><%= l.employee_no %></a> <%= nm(l) %></td><td><span class="ev-tag ev-<%= l.type %>"><%= t('lt_' + l.type) %></span></td><td><%= l.mode ? t('mode_' + l.mode) : '' %><%= l.location ? (l.mode ? ' · ' : '') + l.location : '' %></td><td class="mono"><%= l.start_date %></td><td class="mono"><%= l.end_date %></td><td><%= l.status %></td><td><%= l.notes || '' %></td>
-    <td><% if (['hr','admin'].includes(user.role) && l.status !== 'cancelled') { %><form method="post" action="/leaves/<%= l.id %>/cancel"><button class="btn small ghost"><%= t('cancel') %></button></form><% } %></td></tr><% }) %>
-  <% if (!rows.length) { %><tr><td colspan="8" class="muted"><%= t('no_records') %></td></tr><% } %>
+  <thead><tr><th><%= t('employee') %></th><th><%= t('type') %></th><th><%= t('mode') %> / <%= t('location') %></th><th><%= t('from') %></th><th><%= t('to') %></th><th><%= t('status') %></th><th><%= t('notes') %></th><th></th></tr></thead>
+  <tbody>
+  <% if (!rows.length) { %><tr><td colspan="8" class="empty"><%= t('no_records') %></td></tr><% } %>
+  <% const hrEdit = ['hr','admin'].includes(user.role);
+     rows.forEach(l => { %><tr class="<%= l.status === 'cancelled' ? 'muted' : '' %>"><td><a href="/employees/<%= l.employee_id %>"><%= l.employee_no %></a> <%= nm(l) %></td><td><span class="ev-tag ev-<%= l.type %>"><%= t('lt_' + l.type) %></span></td><td><%= l.mode ? t('mode_' + l.mode) : '' %><%= l.location ? (l.mode ? ' · ' : '') + l.location : '' %></td><td class="mono"><%= l.start_date %></td><td class="mono"><%= l.end_date %></td><td><%= l.status %></td><td><%= l.notes || '' %></td>
+    <td class="nowrap"><% if (hrEdit && l.status !== 'cancelled') { %>
+      <details><summary class="btn small ghost"><%- ic('pen') %><%= t('edit') %></summary>
+        <form method="post" action="/leaves/<%= l.id %>" class="mini-grid">
+          <label><%= t('type') %><select name="type"><% LEAVE_TYPES.forEach(x => { %><option value="<%= x %>" <%= l.type === x ? 'selected' : '' %>><%= t('lt_' + x) %></option><% }) %></select></label>
+          <label><%= t('mode') %><select name="mode"><option value=""></option><% MODES.forEach(m => { %><option value="<%= m %>" <%= l.mode === m ? 'selected' : '' %>><%= t('mode_' + m) %></option><% }) %></select></label>
+          <label><%= t('from') %><input type="date" name="start_date" value="<%= l.start_date %>" required></label>
+          <label><%= t('to') %><input type="date" name="end_date" value="<%= l.end_date %>" required></label>
+          <label><%= t('location') %><input name="location" value="<%= l.location || '' %>"></label>
+          <label><%= t('status') %><select name="status"><% ['approved','pending'].forEach(x => { %><option <%= l.status === x ? 'selected' : '' %>><%= x %></option><% }) %></select></label>
+          <label><%= t('notes') %><input name="notes" value="<%= l.notes || '' %>"></label>
+          <button class="btn small primary"><%- ic('save') %><%= t('save') %></button>
+        </form>
+        <form method="post" action="/leaves/<%= l.id %>/cancel" data-confirm="<%= t('cancel') %>?"><button class="btn small ghost danger"><%- ic('x') %><%= t('cancel') %></button></form>
+      </details><% } %></td></tr><% }) %>
+  </tbody>
 </table></div></div>
 <%- include('partials/footer') %>

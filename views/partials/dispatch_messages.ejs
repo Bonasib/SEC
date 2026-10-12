@@ -1,0 +1,17 @@
+<div class="dispatch-list">
+<% messages.forEach(m => { %>
+  <article class="dispatch-msg">
+    <header>
+      <% if (m.employee) { %><span class="avatar"><%= initials(m.employee) %></span><span><b><%= nm(m.employee) %></b><small class="muted mono"> <%= m.employee.employee_no %></small><br><small class="muted" dir="ltr"><%= m.email || t('no_email') %></small></span>
+      <% } else { %><span class="avatar"><%- ic('mail') %></span><span><b dir="ltr"><%= m.email %></b><br><small class="muted"><%= t('external') %></small></span><% } %>
+      <span class="pill"><%= m.lines.length %></span>
+    </header>
+    <ol><% m.lines.forEach(l => { %><li><b class="mono"><%= l.when %></b> — <span class="pre"><%= l.what %></span></li><% }) %></ol>
+    <div class="btns">
+      <% if (m.wa) { %><a class="btn small" href="<%= m.wa %>" target="_blank" rel="noopener"><%- ic('message') %>WhatsApp</a><% } %>
+      <% if (m.email) { %><a class="btn small ghost" href="mailto:<%= m.email %>?subject=<%= encodeURIComponent('Daily tasks / المهام اليومية') %>&body=<%= encodeURIComponent(m.text) %>"><%- ic('mail') %><%= t('open_in_mail') %></a><% } %>
+      <button type="button" class="btn small ghost" data-copy="<%= m.text %>"><%- ic('file') %><%= t('copy_text') %></button>
+    </div>
+  </article>
+<% }) %>
+</div>

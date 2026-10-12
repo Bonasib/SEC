@@ -1,0 +1,15 @@
+<form method="post" action="<%= i.id ? '/materials/' + i.id : '/materials' %>" class="form-grid">
+  <label><span><%= t('code') %> <span class="req">*</span></span><input name="code" required value="<%= i.code || '' %>" dir="ltr" placeholder="MAT-INS-380"></label>
+  <label><span><%= t('item_kind') %> <span class="req">*</span></span><select name="kind" required><% KINDS.forEach(k => { %><option value="<%= k %>" <%= i.kind === k ? 'selected' : '' %>><%= t('ik_' + k) %></option><% }) %></select></label>
+  <label><span><%= t('name_ar') %> <span class="req">*</span></span><input name="name_ar" required value="<%= i.name_ar || '' %>" dir="rtl"></label>
+  <label><%= t('name_en') %><input name="name_en" value="<%= i.name_en || '' %>" dir="ltr"></label>
+  <label><%= t('category') %><input name="category" value="<%= i.category || '' %>" list="item-cats"><datalist id="item-cats"><% categories.forEach(c => { %><option><%= c %></option><% }) %></datalist></label>
+  <label><%= t('uom') %><select name="uom"><% UOMS.forEach(u => { %><option value="<%= u %>" <%= (i.uom || 'piece') === u ? 'selected' : '' %>><%= t('uom_' + u) %></option><% }) %></select></label>
+  <% if (!i.id) { %><label><%= t('opening_qty') %><input type="number" name="quantity" min="0" step="any" value="0"></label><% } %>
+  <label><%= t('min_qty') %><input type="number" name="min_qty" min="0" step="any" value="<%= i.min_qty || 0 %>"><small class="muted"><%= t('min_qty_hint') %></small></label>
+  <label><%= t('location') %><input name="location" value="<%= i.location || '' %>" placeholder="<%= lang === 'ar' ? 'المستودع / الرف' : 'Warehouse / bin' %>"></label>
+  <label><%= t('section') %><select name="section_id"><option value=""></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= i.section_id === s.id ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select></label>
+  <% if (i.id) { %><label><%= t('status') %><select name="status"><option value="active"><%= t('active') %></option><option value="inactive" <%= i.status === 'inactive' ? 'selected' : '' %>><%= t('inactive') %></option></select></label><% } %>
+  <label class="span2"><%= t('notes') %><textarea name="notes" rows="2"><%= i.notes || '' %></textarea></label>
+  <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button></div>
+</form>

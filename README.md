@@ -124,15 +124,49 @@ Exports are `.xlsx` or `.csv` (with a BOM so Excel shows Arabic correctly). The 
 
 | Group | Pages |
 |---|---|
-| **Operations** | Dashboard · Work Orders · New Work Order · Work Activity · Travel Assignments · Team Calendar · Alerts |
+| **Operations** | Dashboard · Work Orders · New Work Order · Daily Tasks · Work Activity · Travel Assignments · Team Calendar · Alerts |
 | **People** | Employees · Leave & Absences · Training Courses · Improvement Plans · Points & Ratings · Acting Assignments · Organization |
-| **Assets & Fleet** | Assets · Vehicle Fleet · Devices & equipment |
+| **Assets & Fleet** | Assets · Vehicle Fleet · Devices & equipment · Materials, tools & equipment |
 | **Administration** | Permissions · Import & Export · Email Outbox · Audit Log · Settings |
 
 Everything is connected and updates in real time:
 - **Training registrations** create a training absence that shows on the calendar and blocks conflicting work.
 - **Closing a work order** awards points. Ratings then create improvement plans, and those plans drive the course suggestions.
 - **Extensions and handovers** re-check availability and notify everyone involved.
+
+## Daily tasks (`/tasks`)
+
+- **Tasks:** short jobs for a day with a time, location, section, priority (normal, high or urgent), the people assigned and an optional linked work order. A task can repeat daily until a chosen date, and can skip Fridays and Saturdays.
+- **The day's work orders:** every active work order planned on that day is listed next to the tasks.
+- **Filters:** one day or a date range, section, employee, priority, status, tasks or work orders, search, and sort.
+- **Send to everyone in one click:** each person gets an email and an in-app alert with only their own tasks and work orders for the day.
+- **Send selected items:** tick tasks and work orders, then either send each person their own items, or send the full list to chosen employees (a whole section can be added at once) and to outside email addresses such as contractors. You can add a message and preview before sending.
+- **After sending:** each message has a WhatsApp button (Saudi mobile numbers are converted to the international format), an open-in-mail link and a copy button. Every send is recorded in the send history.
+- **Automatic send:** the administrator can set a time, for example 06:00 Riyadh time. Each morning at that time, everyone receives their items for the day.
+- **Employees** see their own tasks and can mark them done; the person who created the task is notified.
+- **Permission:** `tasks.dispatch` (section heads, managers and team leaders by default; it can be granted to others).
+- **Excel:** tasks can be exported and imported (`tasks`).
+
+## Materials, tools & equipment (`/materials`)
+
+- **Catalog:** code, Arabic and English names, kind (material, tool or equipment), category, unit, quantity on hand, minimum level, location and section.
+- **Stock:** each item shows what is on hand, what is reserved by active work orders, and what is available.
+- **Stock movements:** receipts, stock-count adjustments, damage and use on work orders are all logged with who made them and why.
+- **On the work order:** materials, tools and equipment are chosen with quantities, both in the New Work Order form and on the work order page. Available quantities are shown, and asking for more than is available is blocked. The items appear in assignment emails and on the printed report.
+- **Warehouse material lines:** a line can be filled from the catalog (number, description and unit).
+- **On closure:** used materials are deducted from stock; if no used quantity was recorded, the full quantity is deducted. Damaged tools and equipment are written off. Returned tools go back to being available.
+- **Low stock:** when an item reaches its minimum, the warehouse and the administrator get one alert. They are alerted again only after the item has been restocked and drops again.
+- **Permission:** `materials.manage` (warehouse and administrator by default). Excel import and export: `items`.
+
+## Editing and sorting everywhere
+
+- **Edit forms:** work orders, assets, devices, vehicles, materials, daily tasks, courses, employees, leave, holidays and acting assignments all have edit forms. Every change is recorded in the audit log.
+- **Editing a work order** (team leader, creator or the section's managers):
+  - A reason is required.
+  - Availability, travel bands and the 20-assignment limit are checked again.
+  - Dates are locked once work has started; use an extension instead.
+  - People added get the assignment email, people removed are told, and the rest of the team is notified of the change.
+- **Sorting and filtering:** click any column heading to sort a table. Tables with 6 or more rows have a "Filter rows" box. Work orders, employees, fleet, courses, materials and daily tasks also have sort options and more filters (for example availability, status, nationality, category and stock level).
 
 ## Travel assignments (`/travel`)
 

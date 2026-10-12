@@ -1,0 +1,16 @@
+<%# Rows of [catalog item + quantity]; used by the new work order form and the work order page %>
+<% const KINDS_ORDER = ['material', 'tool', 'equipment'];
+   const h = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+   const selIds = [].concat(sel && sel.ids || []), selQty = [].concat(sel && sel.qtys || []);
+   const option = (i, chosen) => `<option value="${i.id}" data-uom="${h(t('uom_' + i.uom))}" data-avail="${i.available}" ${String(chosen) === String(i.id) ? 'selected' : ''} ${i.available <= 0 ? 'disabled' : ''}>${h(i.code)} · ${h(lang === 'en' && i.name_en ? i.name_en : i.name_ar)} (${t('available')}: ${i.available} ${h(t('uom_' + i.uom))})</option>`;
+   const selectHtml = (chosen) => `<select name="item_ids" aria-label="${t('item')}"><option value=""></option>${KINDS_ORDER.map(k => { const g = items.filter(i => i.kind === k); return g.length ? `<optgroup label="${t('ik_' + k + '_pl')}">${g.map(i => option(i, chosen)).join('')}</optgroup>` : ''; }).join('')}</select>`; %>
+<div class="item-picker" data-item-picker>
+  <div class="item-rows">
+    <% (selIds.length ? selIds : ['']).forEach((id, n) => { %>
+    <div class="item-row"><%- selectHtml(id) %><input type="number" name="item_qtys" min="0" step="any" value="<%= selQty[n] || '' %>" placeholder="<%= t('quantity') %>" aria-label="<%= t('quantity') %>"><span class="item-uom muted small"></span><button type="button" class="icon-btn" data-remove-row aria-label="<%= t('remove') %>"><%- ic('trash') %></button></div>
+    <% }) %>
+  </div>
+  <template><div class="item-row"><%- selectHtml('') %><input type="number" name="item_qtys" min="0" step="any" placeholder="<%= t('quantity') %>" aria-label="<%= t('quantity') %>"><span class="item-uom muted small"></span><button type="button" class="icon-btn" data-remove-row aria-label="<%= t('remove') %>"><%- ic('trash') %></button></div></template>
+  <button type="button" class="btn small" data-add-row><%- ic('plus') %><%= t('add_row') %></button>
+  <% if (!items.length) { %><p class="muted small"><%= t('no_items_yet') %> <a href="/materials"><%= t('materials_tools') %> →</a></p><% } %>
+</div>

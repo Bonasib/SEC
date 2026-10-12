@@ -19,13 +19,24 @@ function courseFromBody(b) {
   };
 }
 
+const COURSE_SORT = { date: 'c.start_date', title: 'c.title_en', category: 'c.category', city: 'c.city', status: 'c.status', hours: 'c.hours' };
+function courseFilters(q) {
+  const c = [], p = [];
+  if (q.category) { c.push('c.category = ?'); p.push(q.category); }
+  if (q.status) { c.push('c.status = ?'); p.push(q.status); }
+  if (q.mode) { c.push('c.mode = ?'); p.push(q.mode); }
+  if (q.q) { c.push('(c.code LIKE ? OR c.title_ar LIKE ? OR c.title_en LIKE ? OR c.provider LIKE ? OR c.city LIKE ? OR c.country LIKE ?)'); p.push(...Array(6).fill(`%${q.q}%`)); }
+  return { sql: c.map((x) => 'AND ' + x).join(' '), params: p };
+}
+
 router.get('/training', (req, res) => {
+  const extra = courseFilters(req.query);
   const year = Number(req.query.year) || Number(todayRiyadh().slice(0, 4));
   const scope = ['local', 'international'].includes(req.query.scope) ? req.query.scope : null;
   const courses = all(`SELECT c.*, (SELECT COUNT(*) FROM course_attendees a WHERE a.course_id = c.id AND a.attendance <> 'cancelled') enrolled,
       (SELECT COUNT(*) FROM course_attendees a WHERE a.course_id = c.id AND a.attendance = 'attended') attended,
       (SELECT COUNT(*) FROM course_attendees a WHERE a.course_id = c.id AND a.result = 'pass') passed
-    FROM courses c WHERE substr(c.start_date,1,4) = ? ${scope ? 'AND c.scope = ?' : ''} ORDER BY c.scope DESC, c.start_date`, String(year), ...(scope ? [scope] : []));
+    FROM courses c WHERE substr(c.start_date,1,4) = ? ${scope ? 'AND c.scope = ?' : ''} ${extra.sql} ORDER BY c.scope DESC, ${COURSE_SORT[req.query.sort] || 'c.start_date'} ${req.query.dir === 'desc' ? 'DESC' : 'ASC'}`, String(year), ...(scope ? [scope] : []), ...extra.params);
   const attendees = all(`SELECT a.*, e.employee_no, e.name_ar, e.name_en, s.code section_code FROM course_attendees a JOIN employees e ON e.id = a.employee_id
     LEFT JOIN org_units s ON s.id = e.section_id JOIN courses c ON c.id = a.course_id WHERE substr(c.start_date,1,4) = ? AND a.attendance <> 'cancelled' ORDER BY e.employee_no`, String(year));
   const byCourse = {};

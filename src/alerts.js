@@ -151,6 +151,10 @@ function runAlertChecks() {
   // 12a. Travel limits (catches imports and hand-overs too)
   count += require('./travel').checkAlerts();
 
+  // Automatic daily task send (Settings: daily_dispatch_time) and low-stock checks
+  count += require('./tasks').autoDispatch();
+  require('./items').lowStockCheck();
+
   // 12. Pending extension requests older than the reminder window
   for (const x of all(`SELECT x.*, w.wo_number, w.section_id FROM wo_extensions x JOIN work_orders w ON w.id = x.wo_id WHERE x.status = 'pending' AND x.requested_at < ?`, new Date(nowMs - remindH * 3600e3).toISOString())) {
     const o = officialsAt(x.section_id, now);

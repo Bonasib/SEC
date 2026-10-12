@@ -105,6 +105,8 @@ app.use(require('./routes/dashboard'));
 app.use(require('./routes/workorders'));
 app.use(require('./routes/people'));
 app.use(require('./routes/registry'));
+app.use(require('./routes/materials'));
+app.use(require('./routes/tasks'));
 app.use(require('./routes/data'));
 app.use(require('./routes/calendar'));
 app.use(require('./routes/points'));

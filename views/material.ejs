@@ -1,0 +1,73 @@
+<%- include('partials/header', { pageTitle: item.code }) %>
+<section class="page-head wo-head">
+  <div style="flex:1;min-width:260px">
+    <a class="small" href="/materials"><%- ic('arrow', 'ic-back') %> <%= t('materials_tools') %></a>
+    <h1 style="margin-top:8px"><%= lang === 'en' && item.name_en ? item.name_en : item.name_ar %></h1>
+    <div class="tags">
+      <span class="wo-num"><%= item.code %></span>
+      <span class="pill ik-<%= item.kind %>"><%- ic(item.kind === 'material' ? 'package' : item.kind === 'tool' ? 'wrench' : 'zap') %><%= t('ik_' + item.kind) %></span>
+      <% if (item.category) { %><span class="pill"><%= item.category %></span><% } %>
+      <% if (item.status === 'inactive') { %><span class="pill bad"><%= t('inactive') %></span><% } %>
+      <span class="pill <%= item.out ? 'bad' : item.low ? 'warn' : 'ok' %>"><%= item.out ? t('stock_out') : item.low ? t('stock_low') : t('stock_ok') %></span>
+    </div>
+  </div>
+</section>
+<div class="kpis">
+  <div class="kpi"><span class="kpi-icon"><%- ic('boxes') %></span><span class="kpi-body"><b><%= item.quantity %></b><span class="kpi-label"><%= t('on_hand') %> (<%= t('uom_' + item.uom) %>)</span></span></div>
+  <div class="kpi violet"><span class="kpi-icon"><%- ic('clipboard') %></span><span class="kpi-body"><b><%= item.reserved %></b><span class="kpi-label"><%= t('reserved') %></span></span></div>
+  <div class="kpi <%= item.out ? 'crit' : item.low ? 'warn' : 'ok' %>"><span class="kpi-icon"><%- ic('check-circle') %></span><span class="kpi-body"><b><%= item.available %></b><span class="kpi-label"><%= t('available') %></span></span></div>
+  <div class="kpi"><span class="kpi-icon"><%- ic('alert') %></span><span class="kpi-body"><b><%= item.min_qty %></b><span class="kpi-label"><%= t('min_qty') %></span></span></div>
+</div>
+<div class="grid2">
+<section class="card">
+  <h2><%- ic('file') %><%= t('details') %></h2>
+  <dl class="kv">
+    <dt><%= t('name_ar') %></dt><dd><%= item.name_ar %></dd>
+    <dt><%= t('name_en') %></dt><dd dir="ltr" style="text-align:start"><%= item.name_en || '—' %></dd>
+    <dt><%= t('location') %></dt><dd><%= item.location || '—' %></dd>
+    <dt><%= t('section') %></dt><dd><%= item.section_code || '—' %></dd>
+    <% if (item.notes) { %><dt><%= t('notes') %></dt><dd class="pre"><%= item.notes %></dd><% } %>
+  </dl>
+  <% if (canEdit) { %>
+  <details class="collapsible" style="margin-top:12px"><summary class="btn small"><%- ic('pen') %><%= t('edit') %></summary>
+    <%- include('partials/item_form', { i: item }) %></details>
+  <% } %>
+</section>
+<% if (canEdit) { %>
+<section class="card">
+  <h2><%- ic('transfer') %><%= t('stock_movement') %></h2>
+  <form method="post" action="/materials/<%= item.id %>/stock" class="form-grid">
+    <label><%= t('movement_type') %><select name="kind">
+      <option value="receive"><%= t('mv_receive') %></option>
+      <option value="adjust"><%= t('mv_adjust') %></option>
+      <option value="damage"><%= t('mv_damage') %></option></select></label>
+    <label><span><%= t('quantity') %> <span class="req">*</span></span><input type="number" name="qty" step="any" required><small class="muted"><%= t('adjust_hint') %></small></label>
+    <label class="span2"><%= t('reason') %> / <%= t('notes') %><input name="note" placeholder="<%= lang === 'ar' ? 'رقم سند الاستلام، الجرد، سبب التلف...' : 'Receipt no., stock count, damage reason...' %>"></label>
+    <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button></div>
+  </form>
+</section>
+<% } %>
+</div>
+
+<section class="card table-card">
+  <div class="card-head"><h2><%- ic('clipboard') %><%= t('work_orders') %></h2><span class="pill"><%= wos.length %></span></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th><%= t('wo_number') %></th><th><%= t('title') %></th><th><%= t('planned_start') %></th><th class="num"><%= t('quantity') %></th><th class="num"><%= t('used') %></th><th class="num"><%= t('damaged') %></th><th><%= t('status') %></th></tr></thead>
+    <tbody>
+    <% if (!wos.length) { %><tr><td colspan="7" class="empty"><%= t('no_records') %></td></tr><% } %>
+    <% wos.forEach(w => { %><tr><td><a class="wo-link" href="/wo/<%= w.wo_id %>#items"><%= w.wo_number %></a></td><td><%= w.title %></td><td class="nowrap" data-sort-value="<%= w.planned_start %>"><%= fmt(w.planned_start) %></td><td class="num"><%= w.qty %></td><td class="num"><%= w.used_qty ?? '—' %></td><td class="num"><%= w.damaged_qty || '—' %></td><td><span class="st st-<%= w.status %>"><%= t('st_' + w.status) %></span><% if (w.settled) { %> <span class="pill ok"><%- ic('check') %><%= t('settled') %></span><% } %></td></tr><% }) %>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="card table-card" id="movements">
+  <div class="card-head"><h2><%- ic('transfer') %><%= t('stock_movements') %></h2><span class="pill"><%= movements.length %></span></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th><%= t('date') %></th><th><%= t('movement_type') %></th><th class="num"><%= t('quantity') %></th><th class="num"><%= t('balance') %></th><th><%= t('wo_number') %></th><th><%= t('notes') %></th><th><%= t('by') %></th></tr></thead>
+    <tbody>
+    <% if (!movements.length) { %><tr><td colspan="7" class="empty"><%= t('no_records') %></td></tr><% } %>
+    <% movements.forEach(m => { %><tr><td class="nowrap" data-sort-value="<%= m.created_at %>"><%= fmt(m.created_at) %></td><td><span class="pill <%= m.qty > 0 ? 'ok' : m.kind === 'damage' ? 'bad' : '' %>"><%= t('mv_' + m.kind) %></span></td><td class="num mono" dir="ltr"><%= m.qty > 0 ? '+' : '' %><%= m.qty %></td><td class="num"><b><%= m.balance %></b></td><td><% if (m.wo_id) { %><a class="wo-link" href="/wo/<%= m.wo_id %>"><%= m.wo_number %></a><% } %></td><td><%= m.note || '' %></td><td><%= m.name_ar ? nm(m) : '—' %></td></tr><% }) %>
+    </tbody>
+  </table></div>
+</section>
+<%- include('partials/footer') %>

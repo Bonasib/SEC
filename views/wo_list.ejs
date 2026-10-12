@@ -21,12 +21,16 @@
   <input type="date" name="to" value="<%= query.to || '' %>" aria-label="<%= t('to') %>" title="<%= t('to') %>">
   <label class="inline"><input type="checkbox" name="missing_photos" value="1" <%= query.missing_photos ? 'checked' : '' %>><%= t('kpi_missing_photos') %></label>
   <% if (query.mine) { %><input type="hidden" name="mine" value="1"><% } %>
+  <select name="sort" aria-label="<%= t('sort_by') %>"><option value=""><%= t('sort_by') %>: <%= t('newest') %></option><% [['number','wo_number'],['start','planned_start'],['end','planned_end'],['priority','priority'],['status','status'],['section','section'],['leader','team_leader'],['title','title']].forEach(([k, l]) => { %><option value="<%= k %>" <%= query.sort === k ? 'selected' : '' %>><%= t('sort_by') %>: <%= t(l) %></option><% }) %></select>
+  <select name="dir" aria-label="<%= t('sort_dir') %>"><option value="asc"><%= t('ascending') %></option><option value="desc" <%= query.dir === 'desc' ? 'selected' : '' %>><%= t('descending') %></option></select>
   <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button><a class="btn ghost" href="/wo"><%= t('clear') %></a>
 </form>
 <div class="card table-card">
 <div class="table-wrap">
-<table class="tbl">
-  <thead><tr><th><%= t('wo_number') %></th><th><%= t('title') %></th><th><%= t('priority') %></th><th><%= t('section') %></th><th><%= t('team_leader') %></th><th><%= t('planned_start') %></th><th><%= t('photos') %></th><th><%= t('status') %></th></tr></thead>
+<table class="tbl" data-server-sort>
+  <% const sl = (key) => { const p = new URLSearchParams(Object.entries(query).filter(([k, v]) => v && !['sort', 'dir', 'page'].includes(k))); p.set('sort', key); p.set('dir', query.sort === key && query.dir !== 'desc' ? 'desc' : 'asc'); return '?' + p.toString(); };
+     const th = (key, label) => `<th${query.sort === key ? ` aria-sort="${query.dir === 'desc' ? 'descending' : 'ascending'}"` : ''}><a href="${sl(key)}">${label}${query.sort === key ? (query.dir === 'desc' ? ' ↓' : ' ↑') : ''}</a></th>`; %>
+  <thead><tr><%- th('number', t('wo_number')) %><%- th('title', t('title')) %><%- th('priority', t('priority')) %><%- th('section', t('section')) %><%- th('leader', t('team_leader')) %><%- th('start', t('planned_start')) %><th><%= t('photos') %></th><%- th('status', t('status')) %></tr></thead>
   <tbody>
   <% if (!rows.length) { %><tr><td colspan="8" class="empty"><%- ic('inbox') %><%= t('no_records') %></td></tr><% } %>
   <% rows.forEach(w => { %>

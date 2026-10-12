@@ -152,6 +152,7 @@ function seed() {
     run("INSERT OR REPLACE INTO sequences(name, value) VALUES ('wo', 0)");
   });
   seedPeopleModules();
+  seedStockAndTasks();
   console.log(`Seeded sample data. Demo password for every account: ${DEMO_PASSWORD}`);
 }
 
@@ -240,6 +241,62 @@ function seedPeopleModules() {
   const admin = get("SELECT * FROM employees WHERE employee_no = 'admin'");
   require('./access').grant({ employeeIds: [id('F001')], permission: 'wo.view_history', sectionId: get("SELECT id FROM org_units WHERE code = 'H1'").id, note: 'Sample grant' }, { user: admin, ip: 'seed', get: () => 'seed' });
   require('./access').grant({ employeeIds: [id('F001')], permission: 'wo.view_all', sectionId: get("SELECT id FROM org_units WHERE code = 'H1'").id, note: 'Sample grant' }, { user: admin, ip: 'seed', get: () => 'seed' });
+}
+
+// Sample materials / tools / equipment catalog and today's daily tasks
+function seedStockAndTasks() {
+  const I = require('./items');
+  const wh = get("SELECT * FROM employees WHERE employee_no = 'DEMO-WH'");
+  const req = { user: wh, ip: 'seed', get: () => 'seed' };
+  const sec = (c) => get('SELECT id FROM org_units WHERE code = ?', c)?.id || null;
+  const items = [
+    ['MAT-INS-380', 'material', 'عازل خزفي 380 ك.ف (عينة)', 'Porcelain insulator 380 kV (sample)', 'Insulators', 'piece', 40, 10, 'Main store A-01', 'H1'],
+    ['MAT-INS-132', 'material', 'عازل بوليمري 132 ك.ف (عينة)', 'Polymer insulator 132 kV (sample)', 'Insulators', 'piece', 6, 8, 'Main store A-02', 'H1'],
+    ['MAT-CLMP-01', 'material', 'مشبك تعليق (عينة)', 'Suspension clamp (sample)', 'Hardware', 'piece', 120, 30, 'Main store B-04', 'H1'],
+    ['MAT-BOLT-M16', 'material', 'طقم مسامير M16 مجلفن (عينة)', 'Galvanized bolt set M16 (sample)', 'Hardware', 'set', 300, 50, 'Main store B-07', null],
+    ['MAT-COND-ACSR', 'material', 'موصل ACSR (عينة)', 'ACSR conductor (sample)', 'Conductors', 'meter', 850, 200, 'Yard C', 'H1'],
+    ['MAT-GREASE', 'material', 'شحم موصلات (عينة)', 'Conductor grease (sample)', 'Consumables', 'kg', 3, 5, 'Main store D-01', null],
+    ['TL-TORQ-01', 'tool', 'مفتاح عزم (عينة)', 'Torque wrench (sample)', 'Hand tools', 'piece', 6, 2, 'Tool room', 'H1'],
+    ['TL-HOTSTICK', 'tool', 'عصا التشغيل المعزولة (عينة)', 'Insulated hot stick (sample)', 'Live-line tools', 'piece', 4, 2, 'Tool room', 'H1'],
+    ['TL-HARNESS', 'tool', 'حزام أمان للعمل على الارتفاعات (عينة)', 'Full-body safety harness (sample)', 'PPE', 'piece', 18, 6, 'Tool room', null],
+    ['TL-LADDER', 'tool', 'سلم ألياف زجاجية (عينة)', 'Fibreglass ladder (sample)', 'Access', 'piece', 3, 1, 'Yard C', 'H2'],
+    ['EQ-EARTH-KIT', 'equipment', 'طقم تأريض مؤقت (عينة)', 'Temporary earthing kit (sample)', 'Safety equipment', 'set', 8, 3, 'Tool room', 'H1'],
+    ['EQ-GEN-5KVA', 'equipment', 'مولد كهربائي متنقل 5 ك.ف.أ (عينة)', 'Portable generator 5 kVA (sample)', 'Power', 'piece', 2, 1, 'Yard C', null],
+    ['EQ-IR-TESTER', 'equipment', 'جهاز قياس العزل (عينة)', 'Insulation resistance tester (sample)', 'Test equipment', 'piece', 3, 1, 'Lab', 'H3'],
+  ];
+  for (const [code, kind, ar, en, cat, uom, qty, min, loc, s] of items) {
+    I.save({ code, kind, name_ar: ar, name_en: en, category: cat, uom, quantity: qty, min_qty: min, location: loc, section_id: sec(s) }, req);
+  }
+  // Two sample open work orders for today that use catalog items
+  const W = require('./workorders');
+  const head0 = get("SELECT * FROM employees WHERE employee_no = 'DEMO-H1'");
+  const emp = (no) => get('SELECT id FROM employees WHERE employee_no = ?', no)?.id;
+  const free = (nos) => nos.map(emp).filter((x) => x && !get("SELECT 1 FROM leaves WHERE employee_id = ? AND status = 'approved' AND start_date <= ? AND end_date >= ?", x, todayRiyadh(), todayRiyadh()));
+  const day0 = todayRiyadh();
+  const mk = (title, from, to, nos, lines) => {
+    const crew = free(nos);
+    if (crew.length < 2) return;
+    try {
+      W.createWorkOrder({ type: 'corrective', title, priority: 'normal', section_id: sec('H1'), location: 'Line 380-01', involves_travel: 'no', distance_km: 0,
+        planned_start: localToUtc(`${day0}T${from}`), planned_end: localToUtc(`${day0}T${to}`), team_leader_id: crew[0], participant_ids: crew.slice(1),
+        materials_withdrawn: 'no', items: lines.map(([c, q]) => ({ item_id: get('SELECT id FROM items WHERE code = ?', c).id, qty: q })) }, { user: head0, ip: 'seed', get: () => 'seed' });
+    } catch (e) { console.warn('sample work order skipped:', e.message); }
+  };
+  mk('استبدال سلسلة عوازل على البرج 090 (عينة)', '07:00', '14:00', ['F010', 'F011', 'F012'], [['MAT-INS-380', 6], ['MAT-CLMP-01', 12], ['TL-HOTSTICK', 2], ['EQ-EARTH-KIT', 2]]);
+  mk('شد مسامير قواعد الأبراج 100-110 (عينة)', '08:00', '15:00', ['F006', 'F007', 'F008'], [['MAT-BOLT-M16', 20], ['TL-TORQ-01', 1], ['TL-HARNESS', 4]]);
+  I.lowStockCheck();
+
+  const T = require('./tasks');
+  const head = get("SELECT * FROM employees WHERE employee_no = 'DEMO-H1'") || get("SELECT * FROM employees WHERE role = 'section_head' LIMIT 1");
+  const treq = { user: head, ip: 'seed', get: () => 'seed' };
+  const today = todayRiyadh();
+  const ids = (...nos) => nos.map((n) => get('SELECT id FROM employees WHERE employee_no = ?', n)?.id).filter(Boolean);
+  const task = (title, start, end, loc, priority, nos, details) =>
+    T.save({ task_date: today, start_time: start, end_time: end, title, location: loc, priority, section_id: sec('H1'), assignee_ids: ids(...nos), details }, treq);
+  task('اجتماع السلامة الصباحي (عينة)', '06:30', '07:00', 'Al-Ahsa office', 'normal', ['F001', 'F002', 'F003', 'F004', 'F005'], 'Toolbox talk / PPE check');
+  task('فحص حراري لخط 380 ك.ف (عينة)', '07:30', '11:00', 'Line 380-01 towers 80-95', 'high', ['F002', 'F003'], 'Thermal camera inspection of joints and clamps');
+  task('استلام مواد من المستودع (عينة)', '08:00', '09:00', 'Main store', 'normal', ['F004'], null);
+  task('معالجة بلاغ عازل مكسور (عينة)', '09:00', '13:00', 'Tower T-380-01-090', 'urgent', ['F001', 'F005'], 'Replace broken insulator string; earthing kit required');
 }
 
 module.exports = { seed, DEMO_PASSWORD };

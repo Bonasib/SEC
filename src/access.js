@@ -15,6 +15,8 @@ const PERMISSIONS = {
   'plans.view': ['عرض خطط التحسين', 'View improvement plans'],
   'fleet.manage': ['إدارة أسطول المركبات', 'Manage the vehicle fleet'],
   'employees.manage': ['إضافة وتعديل الموظفين', 'Add and edit employees'],
+  'materials.manage': ['إدارة المواد والعدد والمعدات والمخزون', 'Manage materials, tools, equipment & stock'],
+  'tasks.dispatch': ['إنشاء المهام اليومية وإرسالها', 'Create and send daily tasks'],
 };
 
 const MANAGERS = ['section_head', 'division_manager', 'department_manager', 'sector_head'];
@@ -28,6 +30,8 @@ const ROLE_DEFAULTS = {
   'plans.view': [...MANAGERS, 'hr', 'admin', 'auditor'],
   'fleet.manage': ['admin', 'safety'],
   'employees.manage': ['hr', 'admin'],
+  'materials.manage': ['warehouse', 'admin'],
+  'tasks.dispatch': [...MANAGERS, 'team_leader', 'admin'],
 };
 const GRANTERS = ['hr', 'admin'];
 

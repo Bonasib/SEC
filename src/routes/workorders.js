@@ -5,13 +5,14 @@ const crypto = require('node:crypto');
 const express = require('express');
 const multer = require('multer');
 const { all, get, run, tx } = require('../db');
-const { localToUtc, audit, HttpError, nowIso } = require('../util');
+const { localToUtc, utcToLocalInput, audit, HttpError, nowIso } = require('../util');
 const W = require('../workorders');
 const { woFilterSql, WO_TYPES, PRIORITIES, RESULTS, MAT_SOURCES } = require('../entities');
 const { sections } = require('../org');
 const { requireRole, canViewWO, canWorkOnWO, canManageWO, WO_CREATORS } = require('../perm');
 const { notify, idsByRole } = require('../notify');
 const WC = require('../wo_changes');
+const Items = require('../items');
 
 const router = express.Router();
 const UPLOAD_DIR = process.env.UPLOAD_DIR || (process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'uploads') : path.join(__dirname, '..', '..', 'uploads'));
@@ -38,6 +39,12 @@ function loadWO(req) {
 const ensure = (ok) => { if (!ok) throw new HttpError(403, 'You do not have permission for this action / ليست لديك صلاحية'); };
 const toArr = (v) => (v == null ? [] : Array.isArray(v) ? v : [v]);
 
+const WO_SORTS = {
+  number: 'w.wo_number', title: 'w.title', priority: "CASE w.priority WHEN 'C1' THEN 1 WHEN 'C2' THEN 2 WHEN 'C3' THEN 3 WHEN 'C4' THEN 4 ELSE 5 END",
+  section: 's.code', leader: 'e.name_ar', start: 'w.planned_start', end: 'w.planned_end', status: 'w.status', created: 'w.created_at',
+};
+const woSort = (q) => `${WO_SORTS[q.sort] || 'w.id'} ${q.dir === 'asc' ? 'ASC' : WO_SORTS[q.sort] ? (q.dir === 'desc' ? 'DESC' : 'ASC') : 'DESC'}, w.id DESC`;
+
 router.get('/wo', (req, res) => {
   const { where, params } = woFilterSql(req.query, req.user);
   const page = Math.max(1, Number(req.query.page) || 1);
@@ -46,16 +53,17 @@ router.get('/wo', (req, res) => {
       (SELECT COUNT(*) FROM wo_photos p WHERE p.wo_id = w.id AND p.stage='before') before_n,
       (SELECT COUNT(*) FROM wo_photos p WHERE p.wo_id = w.id AND p.stage='after') after_n
     FROM work_orders w LEFT JOIN org_units s ON s.id = w.section_id LEFT JOIN employees e ON e.id = w.team_leader_id
-    ${where} ORDER BY w.id DESC LIMIT 50 OFFSET ?`, ...params, (page - 1) * 50);
+    ${where} ORDER BY ${woSort(req.query)} LIMIT 50 OFFSET ?`, ...params, (page - 1) * 50);
   res.render('wo_list', { rows, total, page, sections: sections(), WO_TYPES, PRIORITIES, qs: new URLSearchParams(Object.entries(req.query).filter(([k, v]) => v && k !== 'page')).toString() });
 });
 
-function formLists() {
+function formLists(excludeWoId = 0) {
   return {
     sections: sections(),
     employees: all("SELECT e.id, e.employee_no, e.name_ar, e.name_en, e.job_title_en, s.code section_code FROM employees e LEFT JOIN org_units s ON s.id = e.section_id WHERE e.status = 'active' ORDER BY e.employee_no"),
     assets: all('SELECT id, code, name_ar, name_en, voltage_kv FROM assets ORDER BY code'),
     equipment: all('SELECT * FROM equipment ORDER BY code'),
+    items: Items.pickerOptions(excludeWoId),
     WO_TYPES, PRIORITIES,
   };
 }
@@ -64,9 +72,8 @@ router.get('/wo/new', requireRole(...WO_CREATORS), (req, res) => {
   res.render('wo_new', { ...formLists(), form: {} });
 });
 
-router.post('/wo', requireRole(...WO_CREATORS), (req, res, next) => {
-  const b = req.body;
-  const data = {
+function woDataFromBody(b) {
+  return {
     type: b.type, title: (b.title || '').trim(), description: b.description, priority: b.priority,
     asset_id: b.asset_id ? Number(b.asset_id) : null, voltage_kv: b.voltage_kv ? Number(b.voltage_kv) : null,
     location: b.location, section_id: Number(b.section_id) || null, distance_km: b.involves_travel === 'no' ? 0 : Number(b.distance_km) || 0,
@@ -75,7 +82,13 @@ router.post('/wo', requireRole(...WO_CREATORS), (req, res, next) => {
     team_leader_id: Number(b.team_leader_id) || null, participant_ids: toArr(b.participant_ids).map(Number), equipment_ids: toArr(b.equipment_ids).map(Number),
     overnight: b.overnight === '1', travel_hours: b.travel_hours ? Number(b.travel_hours) : null, selection_reason: b.selection_reason,
     materials_withdrawn: b.materials_withdrawn, reservation_number: (b.reservation_number || '').trim() || null, warehouse: b.warehouse,
+    items: Items.parseLines(b),
   };
+}
+
+router.post('/wo', requireRole(...WO_CREATORS), (req, res, next) => {
+  const b = req.body;
+  const data = woDataFromBody(b);
   try {
     const { wo, warnings } = W.createWorkOrder(data, req);
     res.flash(warnings.length ? 'warning' : 'success', `${wo.wo_number} ✓` + (warnings.length ? '\n' + warnings.join('\n') : ''));
@@ -83,6 +96,37 @@ router.post('/wo', requireRole(...WO_CREATORS), (req, res, next) => {
   } catch (e) {
     if (e.status !== 400) return next(e);
     res.status(400).render('wo_new', { ...formLists(), form: b, error: e.message });
+  }
+});
+
+// ----- edit -----
+function editForm(wo) {
+  const asset = wo.asset_id ? get('SELECT code FROM assets WHERE id = ?', wo.asset_id) : null;
+  return {
+    ...wo, asset_code: asset?.code || '', planned_start: utcToLocalInput(wo.planned_start), planned_end: utcToLocalInput(wo.planned_end),
+    travel_band: wo.distance_category === 'C' ? 'over_200' : wo.distance_category === 'B' ? 'over_100' : '',
+    participant_ids: all('SELECT employee_id FROM wo_participants WHERE wo_id = ?', wo.id).map((r) => r.employee_id),
+    equipment_ids: all('SELECT equipment_id FROM wo_equipment WHERE wo_id = ?', wo.id).map((r) => r.equipment_id),
+  };
+}
+const canEditWO = (wo, user) => canManageWO(wo, user) && ['awaiting_authorization', 'open', 'in_progress'].includes(wo.status);
+
+router.get('/wo/:id(\\d+)/edit', (req, res) => {
+  const wo = loadWO(req);
+  ensure(canEditWO(wo, req.user));
+  res.render('wo_new', { ...formLists(wo.id), form: editForm(wo), editing: wo });
+});
+
+router.post('/wo/:id(\\d+)/edit', (req, res, next) => {
+  const wo = loadWO(req);
+  ensure(canEditWO(wo, req.user));
+  try {
+    const { warnings } = W.updateWorkOrder(wo, woDataFromBody(req.body), (req.body.edit_reason || '').trim(), req);
+    res.flash(warnings.length ? 'warning' : 'success', res.locals.t('saved') + (warnings.length ? '\n' + warnings.join('\n') : ''));
+    res.redirect(`/wo/${wo.id}`);
+  } catch (e) {
+    if (e.status !== 400) return next(e);
+    res.status(400).render('wo_new', { ...formLists(wo.id), form: { ...req.body, id: wo.id }, editing: wo, error: e.message });
   }
 });
 
@@ -111,12 +155,16 @@ router.get('/wo/:id', (req, res) => {
     canHistory: require('../access').can(req.user, 'wo.view_history', wo.section_id) === true,
     handoverCandidates: all("SELECT e.id, e.employee_no, e.name_ar, e.name_en, s.code section_code FROM employees e LEFT JOIN org_units s ON s.id = e.section_id WHERE e.status = 'active' AND e.role IN ('employee','team_leader','section_head') ORDER BY (e.section_id = ?) DESC, e.employee_no", wo.section_id),
     vehicles: all("SELECT q.* FROM wo_equipment x JOIN equipment q ON q.id = x.equipment_id WHERE x.wo_id = ? AND q.type = 'vehicle'", wo.id),
+    woItems: Items.ofWo(wo.id), itemOptions: Items.pickerOptions(wo.id),
+    tasks: all('SELECT * FROM tasks WHERE wo_id = ? ORDER BY task_date, start_time', wo.id),
     can: {
       work: canWorkOnWO(wo, req.user) && wo.status === 'in_progress',
       manage: canManageWO(wo, req.user),
       decide: pending ? W.canDecide(wo, pending, req.user).ok : false,
       warehouse: ['warehouse', 'admin'].includes(req.user.role),
       materials: (canWorkOnWO(wo, req.user) || ['warehouse'].includes(req.user.role)) && ['open', 'in_progress'].includes(wo.status),
+      items: (canManageWO(wo, req.user) || canWorkOnWO(wo, req.user) || Items.canManage(req.user)) && ['awaiting_authorization', 'open', 'in_progress'].includes(wo.status),
+      edit: canManageWO(wo, req.user) && ['awaiting_authorization', 'open', 'in_progress'].includes(wo.status),
     },
     isCritical: W.isCritical(wo),
   });
@@ -265,18 +313,25 @@ function materialFromBody(b) {
     batch: b.batch || null, serial: b.serial || null, install_location: b.install_location || null, damage_reason: b.damage_reason || null,
   };
 }
+// A catalog pick fills the material number, description and unit
+function fromCatalog(b) {
+  const it = b.item_id ? get('SELECT * FROM items WHERE id = ?', Number(b.item_id)) : null;
+  if (!it) return { ...b, item_id: null };
+  return { ...b, item_id: it.id, material_number: (b.material_number || '').trim() || it.code, description: b.description || it.name_ar, uom: b.uom || it.uom };
+}
 
 router.post('/wo/:id/materials', (req, res) => {
   const wo = loadWO(req);
   ensure(canWorkOnWO(wo, req.user) || req.user.role === 'warehouse');
   if (!['open', 'in_progress'].includes(wo.status)) throw new HttpError(400, 'Materials are locked / المواد مقفلة');
-  const m = materialFromBody(req.body);
+  const body = fromCatalog(req.body);
+  const m = materialFromBody(body);
   if (!m.material_number) throw new HttpError(400, 'Material number required / رقم المادة مطلوب');
   if (m.source === 'warehouse' && !m.reservation_id) throw new HttpError(400, 'Choose the reservation for warehouse materials / اختر رقم الحجز');
   if (m.reservation_id && !get('SELECT 1 FROM material_reservations WHERE id = ? AND wo_id = ?', m.reservation_id, wo.id)) throw new HttpError(400, 'Bad reservation');
   const r = run(`INSERT INTO material_lines(wo_id, reservation_id, line_no, material_number, description, uom, source, reserved_qty, issued_qty, used_qty, returned_qty, damaged_qty,
-    transferred_qty, transfer_wo_number, remaining_authorized_qty, batch, serial, install_location, damage_reason, recorded_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    wo.id, ...Object.values(m), req.user.id);
+    transferred_qty, transfer_wo_number, remaining_authorized_qty, batch, serial, install_location, damage_reason, recorded_by, item_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    wo.id, ...Object.values(m), req.user.id, body.item_id);
   audit(req, 'create', 'material_line', `${wo.wo_number}:${m.material_number}:${m.line_no || ''}`, null, { id: Number(r.lastInsertRowid), ...m });
   res.redirect(`/wo/${wo.id}#materials`);
 });
@@ -297,6 +352,31 @@ router.post('/wo/:id/materials/:mid', (req, res) => {
     ...Object.values(m), req.user.id, old.id);
   audit(req, 'update', 'material_line', `${wo.wo_number}:${old.material_number}:${old.line_no || ''}`, old, m, req.body.reason);
   res.redirect(`/wo/${wo.id}#materials`);
+});
+
+// ----- catalog materials, tools & equipment on the work order -----
+const ensureItems = (wo, user) => ensure(canManageWO(wo, user) || canWorkOnWO(wo, user) || Items.canManage(user));
+router.post('/wo/:id/items', (req, res) => {
+  const wo = loadWO(req);
+  ensureItems(wo, req.user);
+  const lines = Items.parseLines(req.body);
+  if (!lines.length) throw new HttpError(400, 'Choose an item and quantity / اختر الصنف والكمية');
+  for (const l of lines) Items.addToWo(wo, { itemId: l.item_id, qty: l.qty, notes: (req.body.notes || '').trim() }, req);
+  res.flash('success', res.locals.t('saved'));
+  res.redirect(`/wo/${wo.id}#items`);
+});
+router.post('/wo/:id/items/:lid(\\d+)', (req, res) => {
+  const wo = loadWO(req);
+  ensureItems(wo, req.user);
+  Items.updateWoLine(wo, Number(req.params.lid), req.body, req);
+  res.flash('success', res.locals.t('saved'));
+  res.redirect(`/wo/${wo.id}#items`);
+});
+router.post('/wo/:id/items/:lid(\\d+)/delete', (req, res) => {
+  const wo = loadWO(req);
+  ensureItems(wo, req.user);
+  Items.removeFromWo(wo, Number(req.params.lid), req);
+  res.redirect(`/wo/${wo.id}#items`);
 });
 
 router.post('/wo/:id/submit', (req, res) => {
@@ -328,7 +408,7 @@ router.get('/wo/:id/print', (req, res) => {
     participants: all('SELECT e.*, p.role p_role FROM wo_participants p JOIN employees e ON e.id = p.employee_id WHERE p.wo_id = ? ORDER BY p.role DESC, e.employee_no', wo.id),
     photos: all('SELECT * FROM wo_photos WHERE wo_id = ? ORDER BY stage, id', wo.id),
     approvals: all("SELECT a.*, e.name_ar, e.name_en, e.employee_no FROM wo_approvals a LEFT JOIN employees e ON e.id = a.decided_by WHERE a.wo_id = ? AND a.decision IN ('approved','rejected') ORDER BY a.id", wo.id),
-    rec: W.reconciliation(wo.id), lineVariance: W.lineVariance, away: W.teamAway(wo), crew: W.crewSummary(wo.id),
+    rec: W.reconciliation(wo.id), lineVariance: W.lineVariance, away: W.teamAway(wo), crew: W.crewSummary(wo.id), woItems: Items.ofWo(wo.id),
     handovers: WC.handoversOf(wo.id), extensions: WC.extensionsOf(wo.id),
     asset: wo.asset_id ? get('SELECT * FROM assets WHERE id = ?', wo.asset_id) : null,
     section: get('SELECT * FROM org_units WHERE id = ?', wo.section_id),

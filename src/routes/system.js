@@ -7,6 +7,8 @@ const { notify, processEmailQueue } = require('../notify');
 const { runAlertChecks } = require('../alerts');
 
 const router = express.Router();
+// Non-numeric settings edited on their own pages (daily task auto-send time: /tasks)
+const TEXT_SETTINGS = ['daily_dispatch_time'];
 
 router.get('/notifications', (req, res) => {
   const rows = all('SELECT * FROM notifications WHERE employee_id = ? ORDER BY id DESC LIMIT 200', req.user.id);
@@ -53,14 +55,14 @@ router.get('/audit', requireRole('admin', 'auditor'), (req, res) => {
 });
 
 router.get('/settings', requireRole('admin'), (req, res) => {
-  const values = Object.fromEntries(Object.keys(DEFAULT_SETTINGS).map((k) => [k, setting(k)]));
+  const values = Object.fromEntries(Object.keys(DEFAULT_SETTINGS).filter((k) => !TEXT_SETTINGS.includes(k)).map((k) => [k, setting(k)]));
   const seq = get("SELECT value FROM sequences WHERE name = 'wo'");
   res.render('settings', { values, seq: seq ? seq.value : 0, queue: all('SELECT status, COUNT(*) n FROM emails GROUP BY status') });
 });
 router.post('/settings', requireRole('admin'), (req, res) => {
   const before = {}, after = {};
   for (const k of Object.keys(DEFAULT_SETTINGS)) {
-    if (req.body[k] == null) continue;
+    if (req.body[k] == null || TEXT_SETTINGS.includes(k)) continue;
     const v = Number(req.body[k]);
     if (!Number.isFinite(v) || v < 0) throw new HttpError(400, `${k}: invalid`);
     before[k] = setting(k);

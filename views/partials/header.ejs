@@ -22,6 +22,7 @@
         <%- L('/', 'dashboard', 'dashboard') %>
         <%- L('/wo', 'work_orders', 'clipboard') %>
         <%- L('/wo/new', 'new_wo', 'plus', canCreate) %>
+        <%- L('/tasks', 'daily_tasks', 'tasks') %>
         <%- L('/activity', 'activity', 'clock', !!hasPerm('wo.view_history')) %>
         <%- L('/travel', 'travel_assignments', 'route') %>
         <%- L('/calendar', 'calendar', 'calendar') %>
@@ -40,6 +41,7 @@
         <%- L('/assets', 'assets', 'tower') %>
         <%- L('/fleet', 'fleet', 'truck') %>
         <%- L('/equipment', 'devices', 'wrench') %>
+        <%- L('/materials', 'materials_tools', 'boxes') %>
       </div>
       <div class="nav-group"><span class="nav-label"><%= t('grp_admin') %></span>
         <%- L('/permissions', 'permissions', 'shield', ['hr','admin','auditor'].includes(r)) %>
