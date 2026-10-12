@@ -1,0 +1,19 @@
+<form method="post" action="<%= c.id ? '/training/' + c.id : '/training' %>" class="form-grid">
+  <label><span><%= t('code') %> <span class="req">*</span></span><input name="code" required value="<%= c.code || '' %>" dir="ltr" placeholder="INT-2026-01"></label>
+  <label><span><%= t('scope') %> <span class="req">*</span></span><select name="scope" required><option value="local" <%= c.scope === 'local' ? 'selected' : '' %>><%= t('scope_local') %></option><option value="international" <%= c.scope === 'international' ? 'selected' : '' %>><%= t('scope_international') %></option></select></label>
+  <label><span><%= t('title') %> (AR) <span class="req">*</span></span><input name="title_ar" required value="<%= c.title_ar || '' %>" dir="rtl"></label>
+  <label><span><%= t('title') %> (EN) <span class="req">*</span></span><input name="title_en" required value="<%= c.title_en || '' %>" dir="ltr"></label>
+  <label><span><%= t('category') %> <span class="req">*</span></span><select name="category" required><% CATEGORIES.forEach(x => { %><option value="<%= x %>" <%= c.category === x ? 'selected' : '' %>><%= t('cat_' + x) %></option><% }) %></select></label>
+  <label><%= t('mode') %><select name="mode"><option value="in_person" <%= c.mode !== 'remote' ? 'selected' : '' %>><%= t('mode_in_person') %></option><option value="remote" <%= c.mode === 'remote' ? 'selected' : '' %>><%= t('mode_remote') %></option></select></label>
+  <label><%= t('country') %><input name="country" value="<%= c.country || '' %>" list="countries"><datalist id="countries"><% ['Saudi Arabia','Canada','Australia','China','USA','Spain','Italy','Germany','UK','UAE'].forEach(x => { %><option><%= x %></option><% }) %></datalist></label>
+  <label><%= t('city') %><input name="city" value="<%= c.city || '' %>" list="cities"><datalist id="cities"><% ['Riyadh','Jeddah','Dammam','Jazan','Hail','Al-Ahsa','Makkah','Madinah','Tabuk','Abha'].forEach(x => { %><option><%= x %></option><% }) %></datalist></label>
+  <label><span><%= t('start_at') %> <span class="req">*</span></span><input type="date" name="start_date" required value="<%= c.start_date || '' %>"></label>
+  <label><span><%= t('end_at') %> <span class="req">*</span></span><input type="date" name="end_date" required value="<%= c.end_date || '' %>"></label>
+  <label><%= t('provider') %><input name="provider" value="<%= c.provider || '' %>"></label>
+  <label><%= t('hours') %><input type="number" min="0" step="0.5" name="hours" value="<%= c.hours || '' %>"></label>
+  <label><%= t('capacity') %><input type="number" min="1" name="capacity" value="<%= c.capacity || '' %>"></label>
+  <label><%= t('language') %><select name="language"><option value=""></option><% ['ar','en','ar/en'].forEach(x => { %><option <%= c.language === x ? 'selected' : '' %>><%= x %></option><% }) %></select></label>
+  <label><%= t('cost') %> (SAR)<input type="number" min="0" name="cost" value="<%= c.cost || '' %>"></label>
+  <label><%= t('status') %><select name="status"><% ['planned','completed','cancelled'].forEach(x => { %><option value="<%= x %>" <%= (c.status || 'planned') === x ? 'selected' : '' %>><%= t('cs_' + x) %></option><% }) %></select></label>
+  <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button><small class="muted" style="align-self:center"><%= t('course_sync_hint') %></small></div>
+</form>

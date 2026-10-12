@@ -1,0 +1,46 @@
+<%- include('partials/header', { pageTitle: t('permissions') }) %>
+<div class="page-head">
+  <div><div class="eyebrow"><%- ic('shield') %><%= t('grp_admin') %></div><h1 class="title-ic"><%= t('permissions') %></h1><p class="page-sub"><%= t('permissions_hint') %></p></div>
+</div>
+<% if (canGrant) { %>
+<section class="card">
+  <h2><%- ic('plus') %><%= t('grant_permission') %></h2>
+  <form method="post" action="/permissions" class="form-grid">
+    <label class="span2"><span><%= t('permission') %> <span class="req">*</span></span><select name="permission" required><% Object.entries(PERMISSIONS).forEach(([k, v]) => { %><option value="<%= k %>" <%= k === 'wo.view_history' ? 'selected' : '' %>><%= lang === 'en' ? v[1] : v[0] %></option><% }) %></select></label>
+    <label><%= t('scope') %><select name="section_id"><option value=""><%= t('all_sections') %></option><% sections.forEach(s => { %><option value="<%= s.id %>"><%= s.code %> · <%= nm(s) %></option><% }) %></select></label>
+    <label><%= t('expires') %><input type="date" name="expires_at"><small class="muted"><%= t('expires_hint') %></small></label>
+    <div class="span2">
+      <div class="search-field" style="position:relative"><%- ic('search') %><input class="picker-filter" style="padding-inline-start:38px" placeholder="<%= t('search') %>…" data-target="perm-picker" aria-label="<%= t('search') %>"></div>
+      <div class="picker" id="perm-picker"><% employees.forEach(e => { %><label data-text="<%= e.employee_no %> <%= e.name_ar %> <%= e.name_en || '' %> <%= e.section_code || '' %> <%= e.role %>"><input type="checkbox" name="employee_ids" value="<%= e.id %>"><span class="picker-meta"><span><b class="mono"><%= e.employee_no %></b> <%= nm(e) %></span><small><%= e.section_code || '' %> · <%= t('role_' + e.role) %></small></span></label><% }) %></div>
+    </div>
+    <label class="span2"><%= t('notes') %><input name="note"></label>
+    <div class="form-actions"><button class="btn primary"><%- ic('shield') %><%= t('grant_permission') %></button></div>
+  </form>
+</section>
+<% } %>
+<section class="card table-card">
+  <div class="card-head"><h2><%- ic('user-check') %><%= t('granted_permissions') %></h2><span class="pill"><%= grants.filter(g => g.state === 'active').length %></span></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th><%= t('employee') %></th><th><%= t('permission') %></th><th><%= t('scope') %></th><th><%= t('expires') %></th><th><%= lang === 'ar' ? 'منحت بواسطة' : 'Granted by' %></th><th><%= t('status') %></th><th></th></tr></thead>
+    <tbody>
+    <% if (!grants.length) { %><tr><td colspan="7" class="empty"><%- ic('shield') %><%= t('no_records') %></td></tr><% } %>
+    <% grants.forEach(g => { %><tr class="<%= g.state !== 'active' ? 'muted' : '' %>">
+      <td><span class="cell-main"><%= nm(g) %></span><span class="cell-sub mono"><%= g.employee_no %> · <%= t('role_' + g.role) %></span></td>
+      <td><%= PERMISSIONS[g.permission] ? (lang === 'en' ? PERMISSIONS[g.permission][1] : PERMISSIONS[g.permission][0]) : g.permission %><% if (g.note) { %><span class="cell-sub"><%= g.note %></span><% } %></td>
+      <td><%= g.section_code || t('all_sections') %></td>
+      <td><%= g.expires_at ? fmt(g.expires_at, false) : '∞' %></td>
+      <td><%= lang === 'en' && g.by_en ? g.by_en : g.by_ar %><span class="cell-sub"><%= fmt(g.granted_at) %></span></td>
+      <td><span class="pill <%= g.state === 'active' ? 'ok' : g.state === 'expired' ? 'warn' : '' %>"><%= t('gs_' + g.state) %></span></td>
+      <td><% if (canGrant && g.state === 'active') { %><form method="post" action="/permissions/<%= g.id %>/revoke" style="margin:0"><button class="btn small ghost"><%- ic('x') %><%= t('revoke') %></button></form><% } %></td>
+    </tr><% }) %>
+    </tbody>
+  </table></div>
+</section>
+<section class="card table-card">
+  <div class="card-head"><h2><%- ic('users') %><%= t('role_defaults') %></h2></div>
+  <div class="table-wrap"><table class="tbl small matrix">
+    <thead><tr><th><%= t('permission') %></th><% ROLE_ORDER.forEach(r => { %><th class="rot"><%= t('role_' + r) %></th><% }) %></tr></thead>
+    <tbody><% Object.entries(PERMISSIONS).forEach(([k, v]) => { %><tr><td><%= lang === 'en' ? v[1] : v[0] %></td><% ROLE_ORDER.forEach(r => { %><td class="c"><%- (ROLE_DEFAULTS[k] || []).includes(r) ? '<span class="ok">' + ic('check') + '</span>' : '<span class="muted">—</span>' %></td><% }) %></tr><% }) %></tbody>
+  </table></div>
+</section>
+<%- include('partials/footer') %>

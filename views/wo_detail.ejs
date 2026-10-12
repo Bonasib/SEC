@@ -1,0 +1,398 @@
+<%- include('partials/header', { pageTitle: wo.wo_number }) %>
+<%
+  const steps = (wo.needs_sector_approval ? ['awaiting_authorization'] : []).concat(['open', 'in_progress', 'pending_closure', 'closed']);
+  const cur = steps.indexOf(wo.status);
+  const isMember = participants.some(p => p.id === user.id);
+  const okCount = checklist.filter(i => i.ok).length;
+%>
+<section class="page-head wo-head">
+  <div style="flex:1;min-width:260px">
+    <span class="wo-num"><%- ic('clipboard') %><%= wo.wo_number %></span>
+    <h1><%= wo.title %></h1>
+    <div class="tags">
+      <span class="st st-<%= wo.status %>"><%= t('st_' + wo.status) %></span>
+      <span class="pill pr-<%= wo.priority %>"><%= t('pr_' + wo.priority) %></span>
+      <span class="pill"><%- ic('wrench') %><%= t('wt_' + wo.type) %></span>
+      <% if (section) { %><span class="pill"><%- ic('network') %><%= section.code %></span><% } %>
+      <% if (wo.imported) { %><span class="pill info"><%- ic('upload') %>import</span><% } %>
+    </div>
+  </div>
+  <div class="btns">
+    <a class="btn" href="/wo/<%= wo.id %>/print" target="_blank" rel="noopener"><%- ic('printer') %><%= t('print') %> / PDF</a>
+    <% if (wo.status === 'open' && (can.manage || isMember)) { %>
+      <form method="post" action="/wo/<%= wo.id %>/start"><button class="btn primary"><%- ic('play') %><%= t('start_work') %></button></form>
+    <% } %>
+    <% if (can.work) { %><a class="btn <%= checklist.every(i => i.ok) ? 'primary' : '' %>" href="#closure"><%- ic('send', 'ic-dir') %><%= t('submit_closure') %></a><% } %>
+  </div>
+  <% if (wo.status !== 'cancelled') { %>
+  <ol class="stepper" aria-label="<%= t('lifecycle') %>">
+    <% steps.forEach((s, i) => { const st = i < cur || wo.status === 'closed' ? 'done' : i === cur ? 'current' : ''; %>
+      <li class="<%= st %>" <%= st === 'current' ? 'aria-current=step' : '' %>><span class="node"><%- st === 'done' ? ic('check') : i + 1 %></span><span class="s-label"><%= t('st_' + s) %></span></li>
+    <% }) %>
+  </ol>
+  <% } %>
+</section>
+
+<% if (wo.split_warning) { %><div class="flash flash-warning"><%- ic('alert') %><div><%= wo.split_warning %></div></div><% } %>
+<% if (wo.needs_sector_approval) { %><div class="flash flash-warning"><%- ic('route') %><div><%= lang === 'ar' ? 'تجاوز عدد المهام المسموح في فئة المسافة - يتطلب مراجعة مدير الإدارة واعتماد رئيس القطاع' : 'Distance-category assignment limit exceeded - Department Manager review and Sector Head approval required' %> (<%= t('dc_' + wo.distance_category) %>)</div></div><% } %>
+<% if (isCritical && wo.due_at && !wo.arrival_at && ['open','in_progress'].includes(wo.status)) { const late = new Date(wo.due_at) < new Date(); %>
+  <div class="flash <%= late ? 'flash-error' : 'flash-warning' %>" role="status"><%- ic('siren') %><div><%= t('due_at') %>: <b><%= fmt(wo.due_at) %></b> · <b class="countdown mono" data-due="<%= wo.due_at %>"></b></div></div>
+<% } %>
+<% if (wo.status === 'cancelled') { %><div class="flash flash-error"><%- ic('x-circle') %><div><%= t('cancel_reason') %>: <%= wo.cancel_reason %></div></div><% } %>
+
+<nav class="section-nav" aria-label="<%= t('details') %>">
+  <a href="#details"><%- ic('file') %><%= t('details') %></a>
+  <a href="#schedule"><%- ic('clock') %><%= t('schedule_changes') %><% if (extensions.some(x => x.status === 'pending') || handovers.some(h => h.status === 'scheduled')) { %> <span class="pill warn">!</span><% } %></a>
+  <a href="#execution"><%- ic('wrench') %><%= t('execution') %></a>
+  <a href="#photos"><%- ic('camera') %><%= t('photos') %> <span class="pill"><%= photos.length %></span></a>
+  <a href="#materials"><%- ic('package') %><%= t('materials') %></a>
+  <a href="#closure"><%- ic('check-circle') %><%= t('closure_checklist') %> <span class="pill <%= okCount === checklist.length ? 'ok' : 'warn' %>"><%= okCount %>/<%= checklist.length %></span></a>
+  <a href="#approvals"><%- ic('pen') %><%= t('approvals') %></a>
+  <a href="#away"><%- ic('calendar') %><%= lang === 'ar' ? 'الغائبون' : 'Away' %> <span class="pill <%= away.people.length ? 'warn' : '' %>"><%= away.people.length %></span></a>
+  <% if (canHistory) { %><a href="#history"><%- ic('clock') %><%= t('history') %></a><% } %>
+</nav>
+
+<div class="grid2" id="details">
+<section class="card">
+  <h2><%- ic('file') %><%= t('details') %></h2>
+  <dl class="kv">
+    <dt><%= t('section') %></dt><dd><%= section ? section.code + ' · ' + nm(section) : '—' %></dd>
+    <dt><%= t('asset') %></dt><dd><% if (asset) { %><span class="mono"><%= asset.code %></span> · <%= nm(asset) %><% if (asset.lat) { %> <a href="https://maps.google.com/?q=<%= asset.lat %>,<%= asset.lng %>" target="_blank" rel="noopener" aria-label="map"><%- ic('map') %></a><% } %><% } else { %>—<% } %></dd>
+    <dt><%= t('voltage') %></dt><dd><%= wo.voltage_kv ? wo.voltage_kv + ' kV' : '—' %></dd>
+    <dt><%= t('location') %></dt><dd><%= wo.location || '—' %></dd>
+    <dt><%= t('involves_travel_q') %></dt><dd><% if (wo.involves_travel === 'yes') { %><span class="pill <%= wo.distance_category === 'C' ? 'bad' : 'warn' %>"><%- ic('route') %><%= t('yes') %> · <%= t(wo.distance_category === 'C' ? 'band_over_200' : 'band_over_100') %></span> <%= wo.distance_km %> km <a class="small" href="/travel?year=<%= wo.planned_start.slice(0, 4) %>#employees"><%= t('travel_assignments') %> →</a><% } else { %><%= t('no') %><% } %></dd>
+    <dt><%= t('planned_start') %></dt><dd><%= fmt(wo.planned_start) %></dd>
+    <dt><%= t('planned_end') %></dt><dd><%= fmt(wo.planned_end) %></dd>
+    <dt><%= t('actual_start') %></dt><dd><%= fmt(wo.actual_start) %></dd>
+    <dt><%= t('actual_end') %></dt><dd><%= fmt(wo.actual_end) %></dd>
+    <dt><%= t('travel_hours') %> / <%= t('overnight') %></dt><dd><%= wo.travel_hours ?? '—' %> / <%= wo.overnight ? t('yes') : t('no') %></dd>
+    <% if (wo.selection_reason) { %><dt><%= t('selection_reason') %></dt><dd><%= wo.selection_reason %></dd><% } %>
+    <% if (wo.description) { %><dt><%= t('description') %></dt><dd class="pre"><%= wo.description %></dd><% } %>
+    <dt><%= t('created_at') %></dt><dd><%= fmt(wo.created_at) %></dd>
+  </dl>
+</section>
+<section class="card">
+  <h2><%- ic('users') %><%= t('officials') %></h2>
+  <p class="muted small"><%= lang === 'ar' ? 'لقطة ثابتة للمسؤولين المكلفين وقت إنشاء أمر العمل (لا تتغير بتغير المدير لاحقًا).' : 'Fixed snapshot of the officials in charge when the work order was created (does not change if managers change later).' %></p>
+  <table class="tbl small kv-table"><tbody>
+    <% ['section_head','division_manager','department_manager','sector_head'].forEach(k => { const o = officials[k]; %>
+      <tr><th><%= t('step_' + k) %></th><td><%= o && o.employee_no ? nm(o) : '—' %> <% if (o && o.acting) { %><span class="pill warn"><%= t('acting_label') %></span><% } %></td></tr>
+    <% }) %>
+  </tbody></table>
+  <h3><%= t('participants') %> (<%= participants.length %>)</h3>
+  <ul class="people"><% participants.forEach(p => { %>
+    <li><span class="avatar"><%= initials(p) %></span><span style="flex:1;min-width:0"><a href="/employees/<%= p.id %>"><b><%= nm(p) %></b></a><span class="cell-sub"><span class="mono"><%= p.employee_no %></span> · <%= p.job_title_en || '' %></span></span><% if (p.p_role === 'leader') { %><span class="pill info"><%= t('team_leader') %></span><% } %></li>
+  <% }) %></ul>
+  <h3><%= t('crew_fleet') %></h3>
+  <div class="crew-panel">
+    <div class="crew-stat"><small><%= t('crew_people') %></small><b><%= crew.people %></b></div>
+    <div class="crew-stat"><small><%= t('vehicles') %></small><b><%= crew.vehicles.length %></b></div>
+    <div class="crew-stat"><small><%= t('seats') %></small><b class="<%= crew.vehicles.length && crew.seats < crew.people ? 'bad' : '' %>"><%= crew.seats %></b></div>
+    <div class="crew-stat"><small><%= t('devices') %></small><b><%= crew.devices.length %></b></div>
+    <% if (crew.vehicles.length && crew.seats < crew.people) { %><div class="crew-msg"><div class="flash flash-error" style="margin:0"><%- ic('alert') %><div><%= t('crew_short').replace('{n}', crew.people - crew.seats) %></div></div></div><% } %>
+  </div>
+  <% if (crew.vehicles.length) { %><table class="tbl small" style="margin-top:10px"><thead><tr><th><%= t('plate_number') %></th><th><%= t('vehicle_type') %></th><th class="num"><%= t('seats') %></th><th><%= t('fleet_no') %></th></tr></thead><tbody>
+    <% crew.vehicles.forEach(v => { %><tr><td><span class="plate" dir="ltr" style="font-size:12px;padding:1px 6px"><%= v.plate_number || '—' %></span></td><td><%= t('vt_' + (v.vehicle_type || 'other')) %><span class="cell-sub"><%= v.make_model || '' %></span></td><td class="num"><%= v.seats || '—' %></td><td class="mono"><a href="/fleet"><%= v.code %></a></td></tr><% }) %>
+  </tbody></table><% } %>
+  <% if (crew.devices.length) { %><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"><% crew.devices.forEach(q => { %><span class="pill"><%- ic('wrench') %><%= q.code %> · <%= q.name %></span><% }) %></div><% } %>
+</section>
+</div>
+
+<section class="card" id="schedule">
+  <div class="card-head"><h2><%- ic('clock') %><%= t('schedule_changes') %></h2>
+    <div class="btns"><% const approvedExt = extensions.filter(x => x.status === 'approved').length; if (approvedExt) { %><span class="pill info"><%- ic('calendar') %><%= t('extended') %> ×<%= approvedExt %></span><% } %>
+    <% const nextHo = handovers.find(h => h.status === 'scheduled'); if (nextHo) { %><span class="pill warn"><%- ic('transfer') %><%= t('handover_at') %> <%= fmt(nextHo.scheduled_at) %></span><% } %></div></div>
+  <div class="grid2" style="margin:0">
+    <div>
+      <h3 class="sub-h"><%- ic('calendar') %><%= t('extension') %></h3>
+      <p class="muted small"><%= t('extension_hint') %></p>
+      <% const pendingExt = extensions.find(x => x.status === 'pending'); %>
+      <% if (['awaiting_authorization','open','in_progress'].includes(wo.status) && !pendingExt && (isMember || isManager)) { %>
+      <form method="post" action="/wo/<%= wo.id %>/extensions" class="form-grid upload-panel">
+        <label><%= t('new_start') %><input type="datetime-local" name="new_start" value="<%= localInput(wo.planned_start) %>" <%= wo.status === 'in_progress' ? 'disabled' : '' %>><% if (wo.status === 'in_progress') { %><small class="muted"><%= t('start_locked') %></small><% } %></label>
+        <label><span><%= t('new_end') %> <span class="req">*</span></span><input type="datetime-local" name="new_end" required value="<%= localInput(wo.planned_end) %>"></label>
+        <label class="span2"><span><%= t('reason') %> <span class="req">*</span></span><textarea name="reason" rows="2" required placeholder="<%= lang === 'ar' ? 'مثال: تأخر وصول المواد، ظروف جوية، توسع نطاق العمل...' : 'e.g. materials delayed, weather, scope increased...' %>"></textarea></label>
+        <div class="form-actions"><button class="btn primary"><%- ic('calendar') %><%= isManager ? t('apply_extension') : t('request_extension') %></button></div>
+      </form>
+      <% } %>
+      <% if (pendingExt) { %>
+        <div class="decide" style="margin-top:0">
+          <div><span class="pill warn"><%- ic('hourglass') %><%= t('dec_pending') %></span> <b dir="ltr" class="mono"><%= fmt(pendingExt.old_end) %> → <%= fmt(pendingExt.new_end) %></b></div>
+          <div class="small"><%= pendingExt.reason %> — <%= lang === 'en' && pendingExt.req_en ? pendingExt.req_en : pendingExt.req_ar %></div>
+          <% if (isManager) { %><form method="post" action="/wo/<%= wo.id %>/extensions/<%= pendingExt.id %>/decide" style="display:flex;flex-direction:column;gap:8px">
+            <input name="comment" placeholder="<%= t('comment') %>" aria-label="<%= t('comment') %>">
+            <div class="btns"><button class="btn success" name="decision" value="approved"><%- ic('check') %><%= t('approve') %></button><button class="btn danger" name="decision" value="rejected"><%- ic('x') %><%= t('reject') %></button></div></form>
+          <% } else if (pendingExt.requested_by === user.id) { %><form method="post" action="/wo/<%= wo.id %>/extensions/<%= pendingExt.id %>/cancel"><button class="btn small ghost"><%= t('cancel') %></button></form><% } %>
+        </div>
+      <% } %>
+      <% const pastExt = extensions.filter(x => x.status !== 'pending'); if (pastExt.length) { %>
+      <ol class="timeline" style="margin-top:14px">
+        <% pastExt.forEach(x => { %><li class="dec-<%= x.status === 'approved' ? 'approved' : x.status === 'rejected' ? 'rejected' : 'superseded' %>"><span class="t-dot"><%- ic(x.status === 'approved' ? 'check' : 'x') %></span>
+          <div class="t-head"><b class="mono" dir="ltr"><%= fmt(x.old_end) %> → <%= fmt(x.new_end) %></b><span class="pill dec-<%= x.status === 'approved' ? 'approved' : x.status === 'rejected' ? 'rejected' : 'superseded' %>"><%= t('ps_' + (x.status === 'cancelled' ? 'reversed' : x.status)) %></span></div>
+          <div class="t-meta"><%= x.reason %> · <%= lang === 'en' && x.req_en ? x.req_en : x.req_ar %><% if (x.dec_ar) { %> → <%= lang === 'en' && x.dec_en ? x.dec_en : x.dec_ar %><% } %> · <%= fmt(x.decided_at) %></div>
+          <% if (x.decision_comment) { %><div class="comment"><%- ic('message') %><span><%= x.decision_comment %></span></div><% } %></li><% }) %>
+      </ol><% } %>
+    </div>
+    <div>
+      <h3 class="sub-h"><%- ic('transfer') %><%= t('handover') %></h3>
+      <p class="muted small"><%= t('handover_hint') %></p>
+      <% if (['open','in_progress'].includes(wo.status) && !nextHo && (wo.team_leader_id === user.id || isManager)) { %>
+      <form method="post" action="/wo/<%= wo.id %>/handovers" class="form-grid upload-panel">
+        <label class="span2"><span><%= t('handover_to') %> <span class="req">*</span></span><select name="to_employee_id" required><option value=""></option>
+          <% handoverCandidates.filter(e => e.id !== wo.team_leader_id).forEach(e => { %><option value="<%= e.id %>"><%= e.employee_no %> · <%= nm(e) %> (<%= e.section_code || '' %>)<%= participants.some(p => p.id === e.id) ? ' ★' : '' %></option><% }) %></select></label>
+        <label><span><%= t('handover_at') %> <span class="req">*</span></span><input type="datetime-local" name="scheduled_at" required></label>
+        <label class="inline" style="align-self:end"><input type="checkbox" name="remove_outgoing" value="1"><%= t('remove_outgoing') %></label>
+        <label class="span2"><span><%= t('reason') %> <span class="req">*</span></span><input name="reason" required placeholder="<%= lang === 'ar' ? 'مثال: انتهاء مناوبة، إجازة، نقل تكليف' : 'e.g. end of shift, leave, reassignment' %>"></label>
+        <label class="span2"><%= t('work_status_at_handover') %><textarea name="work_status" rows="2" placeholder="<%= lang === 'ar' ? 'المنجز، المتبقي، المخاطر، التصاريح، المواد...' : 'Done, remaining, risks, permits, materials...' %>"></textarea></label>
+        <div class="form-actions"><button class="btn primary"><%- ic('clock') %><%= t('schedule_handover') %></button></div>
+      </form>
+      <% } %>
+      <% if (!handovers.length) { %><div class="empty-inline"><%- ic('transfer') %><%= t('none') %></div><% } %>
+      <ol class="timeline" style="margin-top:14px">
+        <% handovers.forEach(h => { %><li class="dec-<%= h.status === 'completed' ? 'approved' : h.status === 'scheduled' ? 'pending' : 'superseded' %>"><span class="t-dot"><%- ic(h.status === 'completed' ? 'check' : h.status === 'scheduled' ? 'clock' : 'x') %></span>
+          <div class="t-head"><b><%= lang === 'en' && h.from_en && !/sample/.test(h.from_en) ? h.from_en : h.from_ar %></b><%- ic('arrow', 'ic-dir') %><b><%= lang === 'en' && h.to_en && !/sample/.test(h.to_en) ? h.to_en : h.to_ar %></b><span class="pill <%= h.status === 'completed' ? 'ok' : h.status === 'scheduled' ? 'warn' : '' %>"><%= t('ho_' + h.status) %></span></div>
+          <div class="t-meta"><%- ic('clock') %> <%= fmt(h.scheduled_at) %><% if (h.executed_at && h.status === 'completed') { %> · ✓ <%= fmt(h.executed_at) %><% } %> · <%= h.reason %></div>
+          <% if (h.work_status) { %><div class="comment"><%- ic('file') %><span class="pre"><%= h.work_status %></span></div><% } %>
+          <% if (h.status === 'scheduled' && (wo.team_leader_id === user.id || isManager)) { %><form method="post" action="/wo/<%= wo.id %>/handovers/<%= h.id %>/cancel" style="margin-top:6px"><button class="btn small ghost"><%- ic('x') %><%= t('cancel') %></button></form><% } %>
+        </li><% }) %>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="card" id="execution">
+  <h2><%- ic('wrench') %><%= lang === 'ar' ? 'التنفيذ والنتيجة' : 'Execution & result' %></h2>
+  <% if (can.work) { %>
+  <form method="post" action="/wo/<%= wo.id %>/execution" class="form-grid">
+    <label><%= t('result') %><select name="result"><option value=""></option><% RESULTS.forEach(r => { %><option value="<%= r %>" <%= wo.result === r ? 'selected' : '' %>><%= t('rs_' + r) %></option><% }) %></select></label>
+    <label><%= t('completion_pct') %><input type="number" name="completion_pct" min="0" max="100" value="<%= wo.completion_pct ?? '' %>"></label>
+    <label class="span2"><span><%= t('action_description') %> <span class="req">*</span></span><textarea name="action_description" rows="3"><%= wo.action_description || '' %></textarea></label>
+    <label class="span2"><%= t('non_completion_reason') %><textarea name="non_completion_reason" rows="2"><%= wo.non_completion_reason || '' %></textarea></label>
+    <label><span><%= t('arrival_at') %><% if (isCritical) { %> <span class="req">*</span><% } %></span><input type="datetime-local" name="arrival_at" value="<%= localInput(wo.arrival_at) %>"></label>
+    <label><span><%= t('restored_at') %><% if (isCritical) { %> <span class="req">*</span><% } %></span><input type="datetime-local" name="restored_at" value="<%= localInput(wo.restored_at) %>"></label>
+    <label><%= t('travel_hours') %><input type="number" step="0.5" min="0" name="travel_hours" value="<%= wo.travel_hours ?? '' %>"></label>
+    <label class="inline" style="align-self:end"><input type="checkbox" name="overnight" value="1" <%= wo.overnight ? 'checked' : '' %>><%= t('overnight') %></label>
+    <div class="span2">
+      <p style="margin-bottom:8px"><b><%= t('materials_used') %></b> <span class="req">*</span></p>
+      <div class="segmented" role="radiogroup">
+        <label><input type="radio" name="materials_used" value="yes" <%= wo.materials_used === 'yes' ? 'checked' : '' %>><%= t('yes') %></label>
+        <label><input type="radio" name="materials_used" value="no" <%= wo.materials_used === 'no' ? 'checked' : '' %>><%= t('no') %></label>
+      </div>
+    </div>
+    <% if (wo.materials_withdrawn !== 'yes') { %>
+      <label class="span2"><%= t('alt_material_source') %><select name="alt_material_source"><option value=""></option><% ['site_stock','emergency_stock','contractor'].forEach(s => { %><option <%= wo.alt_material_source === s ? 'selected' : '' %>><%= s %></option><% }) %></select></label>
+    <% } %>
+    <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button></div>
+  </form>
+  <% } else { %>
+  <dl class="kv">
+    <dt><%= t('result') %></dt><dd><%= wo.result ? t('rs_' + wo.result) : '—' %></dd>
+    <dt><%= t('completion_pct') %></dt><dd><%= wo.completion_pct ?? '—' %></dd>
+    <dt><%= t('action_description') %></dt><dd class="pre"><%= wo.action_description || '—' %></dd>
+    <% if (wo.non_completion_reason) { %><dt><%= t('non_completion_reason') %></dt><dd><%= wo.non_completion_reason %></dd><% } %>
+    <dt><%= t('arrival_at') %></dt><dd><%= fmt(wo.arrival_at) %></dd>
+    <dt><%= t('restored_at') %></dt><dd><%= fmt(wo.restored_at) %></dd>
+    <dt><%= t('materials_used') %></dt><dd><%= wo.materials_used ? t(wo.materials_used) : '—' %></dd>
+  </dl>
+  <% } %>
+</section>
+
+<section class="card" id="photos">
+  <div class="card-head"><h2><%- ic('camera') %><%= t('photos') %></h2>
+    <div class="btns"><% ['before','during','after'].forEach(s => { const n = photos.filter(p => p.stage === s).length; %><span class="pill <%= n ? 'ok' : (s === 'during' ? '' : 'bad') %>"><span class="stage-dot stage-<%= s %>"></span><%= t(s) %> · <%= n %></span><% }) %></div></div>
+  <% const befores = photos.filter(p => p.stage === 'before'); %>
+  <% if (['open','in_progress'].includes(wo.status) && (can.work || (wo.status === 'open' && (can.manage || isMember)))) { %>
+  <form method="post" action="/wo/<%= wo.id %>/photos" enctype="multipart/form-data" class="form-grid upload-form upload-panel">
+    <label><span><%= t('stage') %> <span class="req">*</span></span><select name="stage" id="stage" required>
+      <option value="before"><%= t('before') %></option>
+      <% if (wo.status === 'in_progress') { %><option value="during"><%= t('during') %></option><option value="after"><%= t('after') %></option><% } %>
+    </select></label>
+    <label id="pair-wrap" class="hidden"><%= t('pair_with') %><select name="pair_photo_id"><option value=""></option><% befores.forEach((p, i) => { %><option value="<%= p.id %>">#<%= i + 1 %> <%= p.caption || p.original_name %></option><% }) %></select></label>
+    <label><%= t('caption') %><input name="caption"></label>
+    <label><%= t('defect_location') %><input name="defect_location" list="defects"><datalist id="defects"><% ['insulator','conductor','crossarm','tower body','foundation','bolts','clamps','communication wire','shield wire'].forEach(d => { %><option><%= d %></option><% }) %></datalist></label>
+    <label class="span2 file-drop" style="position:relative"><input type="file" name="photos" accept="image/*" capture="environment" multiple required><%- ic('upload') %><span class="fd-text"><b><%= t('upload_photos') %></b><br><small>JPG · PNG · WEBP · HEIC — ≤ 15MB</small></span></label>
+    <input type="hidden" name="lat"><input type="hidden" name="lng">
+    <div class="form-actions" style="align-items:center"><button class="btn primary"><%- ic('upload') %><%= t('upload_photos') %></button> <small class="muted geo-status"></small></div>
+  </form>
+  <% } %>
+
+  <% const pairs = photos.filter(p => p.stage === 'after').map(a => ({ after: a, before: photos.find(b => b.id === a.pair_photo_id) || befores[0] })).filter(x => x.before); %>
+  <% if (pairs.length) { %>
+    <div class="stage-head"><h3><%= t('compare') %></h3></div>
+    <div class="compares">
+    <% pairs.forEach(x => { %>
+      <figure class="compare" data-compare>
+        <img src="/wo/<%= wo.id %>/photos/<%= x.after.id %>" alt="<%= t('after') %>" loading="lazy">
+        <div class="compare-before"><img src="/wo/<%= wo.id %>/photos/<%= x.before.id %>" alt="<%= t('before') %>" loading="lazy"></div>
+        <span class="handle" style="left:50%"><%- ic('transfer') %></span>
+        <span class="tag tag-before"><%= t('before') %></span><span class="tag tag-after"><%= t('after') %></span>
+        <input type="range" min="0" max="100" value="50" aria-label="<%= t('compare') %>">
+        <figcaption><%= x.before.caption || '' %> → <%= x.after.caption || '' %></figcaption>
+      </figure>
+    <% }) %>
+    </div>
+  <% } %>
+
+  <% ['before','during','after'].forEach(stage => { const list = photos.filter(p => p.stage === stage); %>
+    <div class="stage-head"><span class="stage-dot stage-<%= stage %>"></span><h3><%= t(stage) %></h3><span class="pill"><%= list.length %></span></div>
+    <% if (!list.length) { %><div class="empty-inline"><%- ic('image') %><%= t('none') %></div><% } %>
+    <div class="gallery">
+    <% list.forEach(p => { %>
+      <figure>
+        <a href="/wo/<%= wo.id %>/photos/<%= p.id %>" target="_blank" rel="noopener"><img src="/wo/<%= wo.id %>/photos/<%= p.id %>" loading="lazy" alt="<%= p.caption || t(stage) %>"></a>
+        <figcaption><span class="cell-main"><%= p.caption || '—' %></span><% if (p.defect_location) { %><span class="pill warn" style="align-self:flex-start"><%= p.defect_location %></span><% } %><small class="muted"><%= nm(p) %> · <%= fmt(p.uploaded_at) %></small><% if (p.lat) { %><small><a href="https://maps.google.com/?q=<%= p.lat %>,<%= p.lng %>" target="_blank" rel="noopener"><%- ic('pin') %> <%= p.lat.toFixed(4) %>, <%= p.lng.toFixed(4) %></a></small><% } %><small class="muted mono" title="SHA-256">#<%= p.sha256.slice(0, 12) %></small></figcaption>
+      </figure>
+    <% }) %>
+    </div>
+  <% }) %>
+</section>
+
+<section class="card" id="materials">
+  <div class="card-head"><h2><%- ic('package') %><%= t('materials') %></h2>
+    <span class="pill <%= rec.status === 'fully_reconciled' ? 'ok' : rec.status === 'none' ? '' : 'bad' %>"><%- ic(rec.status === 'fully_reconciled' ? 'check' : rec.status === 'none' ? 'package' : 'alert') %><%= t('reconciliation') %>: <%= rec.status %></span></div>
+  <dl class="kv">
+    <dt><%= t('materials_withdrawn') %></dt><dd><%= wo.materials_withdrawn ? t(wo.materials_withdrawn) : '—' %></dd>
+    <dt><%= t('materials_used') %></dt><dd><%= wo.materials_used ? t(wo.materials_used) : '—' %></dd>
+  </dl>
+  <h3><%= t('reservations') %></h3>
+  <div class="table-wrap"><table class="tbl small">
+    <thead><tr><th><%= t('reservation_number') %></th><th><%= t('warehouse') %></th><th><%= t('status') %></th><th><%= t('verified') %></th><th></th></tr></thead>
+    <tbody>
+    <% if (!reservations.length) { %><tr><td colspan="5" class="muted"><%= t('none') %></td></tr><% } %>
+    <% reservations.forEach(r => { %>
+      <tr><td><span class="mono"><b><%= r.reservation_number %></b></span> <% if (r.is_primary) { %><span class="pill info"><%- ic('star') %></span><% } %></td><td><%= r.warehouse || '—' %> <%= r.storage_location || '' %></td><td><%= r.status %></td>
+        <td><% if (r.verified) { %><span class="pill ok"><%- ic('check') %><%= fmt(r.issued_at) %></span><% } else { %><span class="pill warn"><%- ic('hourglass') %><%= t('not_verified') %></span><% } %></td>
+        <td><% if (can.warehouse && !r.verified && ['open','in_progress'].includes(wo.status)) { %>
+          <form method="post" action="/wo/<%= wo.id %>/reservations/<%= r.id %>/verify" class="inline-form">
+            <input name="warehouse" placeholder="<%= t('warehouse') %>" value="<%= r.warehouse || '' %>" size="10" aria-label="<%= t('warehouse') %>">
+            <input name="storage_location" placeholder="bin" size="6" aria-label="bin">
+            <select name="status" aria-label="<%= t('status') %>"><option value="fully_issued">Fully issued</option><option value="partially_issued">Partially issued</option></select>
+            <button class="btn small primary"><%- ic('check') %><%= t('verify') %></button>
+          </form><% } %></td></tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% if (can.materials) { %>
+  <form method="post" action="/wo/<%= wo.id %>/reservations" class="inline-form">
+    <input name="reservation_number" placeholder="<%= t('reservation_number') %>" required dir="ltr" aria-label="<%= t('reservation_number') %>">
+    <input name="warehouse" placeholder="<%= t('warehouse') %>" aria-label="<%= t('warehouse') %>">
+    <button class="btn small"><%- ic('plus') %><%= t('add') %></button>
+  </form>
+  <% } %>
+
+  <h3><%= lang === 'ar' ? 'المواد' : 'Material lines' %></h3>
+  <div class="table-wrap">
+  <table class="tbl small">
+    <thead><tr><th><%= t('material_number') %></th><th><%= t('description') %></th><th><%= t('source') %></th><th><%= t('reservation_number') %></th><th><%= t('uom') %></th><th class="num"><%= t('reserved') %></th><th class="num"><%= t('issued') %></th><th class="num"><%= t('used') %></th><th class="num"><%= t('returned') %></th><th class="num"><%= t('damaged') %></th><th class="num"><%= t('transferred') %></th><th class="num"><%= t('remaining') %></th><th><%= t('variance') %></th><th></th></tr></thead>
+    <tbody>
+    <% if (!rec.lines.length) { %><tr><td colspan="14" class="muted"><%= t('none') %></td></tr><% } %>
+    <% rec.lines.forEach(l => { const errs = lineErrors(l); const res = reservations.find(r => r.id === l.reservation_id); %>
+      <tr class="<%= errs.length ? 'row-bad' : '' %>">
+        <td><b class="mono"><%= l.material_number %></b><%= l.line_no ? ' / ' + l.line_no : '' %></td><td><%= l.description || '' %><% if (l.install_location) { %><span class="cell-sub"><%- ic('pin') %> <%= l.install_location %></span><% } %></td>
+        <td><%= l.source %></td><td class="mono"><%= res ? res.reservation_number : '—' %></td><td><%= l.uom || '' %></td>
+        <td class="num"><%= l.reserved_qty %></td><td class="num"><%= l.issued_qty %></td><td class="num"><b><%= l.used_qty %></b></td><td class="num"><%= l.returned_qty %></td><td class="num"><%= l.damaged_qty %></td><td class="num"><%= l.transferred_qty %><%= l.transfer_wo_number ? ' → ' + l.transfer_wo_number : '' %></td><td class="num"><%= l.remaining_authorized_qty %></td>
+        <td><% if (errs.length) { %><span class="pill bad"><%- ic('alert') %><%= errs.join(', ') %></span><% } else { %><span class="pill ok"><%- ic('check') %></span><% } %></td>
+        <td><% if (can.materials) { %><details><summary class="btn small ghost"><%- ic('pen') %><%= t('edit') %></summary>
+          <form method="post" action="/wo/<%= wo.id %>/materials/<%= l.id %>" class="mini-grid">
+            <% ['issued_qty','used_qty','returned_qty','damaged_qty','transferred_qty','remaining_authorized_qty'].forEach(k => { %><label><%= k.replace('_qty','') %><input type="number" step="any" min="0" name="<%= k %>" value="<%= l[k] %>"></label><% }) %>
+            <label>transfer WO<input name="transfer_wo_number" value="<%= l.transfer_wo_number || '' %>"></label>
+            <label><%= t('damaged') %>: reason<input name="damage_reason" value="<%= l.damage_reason || '' %>"></label>
+            <label>install location<input name="install_location" value="<%= l.install_location || '' %>"></label>
+            <label><span><%= lang === 'ar' ? 'سبب التعديل' : 'Edit reason' %> <span class="req">*</span></span><input name="reason" required></label>
+            <button class="btn small primary"><%- ic('save') %><%= t('save') %></button>
+          </form></details><% } %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table>
+  </div>
+  <div class="recon-rule"><%- ic('transfer') %><%= lang === 'ar' ? 'قاعدة المطابقة: المصروف = المستخدم + المرتجع + التالف + المحول + المتبقي المعتمد' : 'Rule: issued = used + returned + damaged + transferred + authorized remaining' %></div>
+  <% if (can.materials) { %>
+  <details class="add-line"><summary class="btn small"><%- ic('plus') %><%= lang === 'ar' ? 'إضافة مادة' : 'Add material line' %></summary>
+    <form method="post" action="/wo/<%= wo.id %>/materials" class="form-grid upload-panel">
+      <label><span><%= t('material_number') %> <span class="req">*</span></span><input name="material_number" required dir="ltr"></label>
+      <label><%= t('description') %><input name="description"></label>
+      <label><%= t('source') %><select name="source"><% MAT_SOURCES.forEach(s => { %><option><%= s %></option><% }) %></select></label>
+      <label><%= t('reservation_number') %><select name="reservation_id"><option value=""></option><% reservations.forEach(r => { %><option value="<%= r.id %>"><%= r.reservation_number %></option><% }) %></select></label>
+      <label>line no.<input name="line_no"></label>
+      <label><%= t('uom') %><input name="uom" list="uoms"><datalist id="uoms"><option>piece</option><option>meter</option><option>kg</option><option>liter</option><option>set</option></datalist></label>
+      <% ['reserved_qty','issued_qty','used_qty','returned_qty','damaged_qty','transferred_qty','remaining_authorized_qty'].forEach(k => { %><label><%= t(k.replace('_qty','').replace('remaining_authorized','remaining')) %><input type="number" step="any" min="0" name="<%= k %>" value="0"></label><% }) %>
+      <label>transfer WO<input name="transfer_wo_number" placeholder="WO000000" dir="ltr"></label>
+      <label>batch<input name="batch"></label><label>serial<input name="serial"></label>
+      <label>install location<input name="install_location" placeholder="Tower 090 / phase B"></label>
+      <label>damage reason<input name="damage_reason"></label>
+      <div class="form-actions"><button class="btn primary"><%- ic('plus') %><%= t('add') %></button></div>
+    </form>
+  </details>
+  <% } %>
+</section>
+
+<div class="grid2">
+<section class="card" id="closure">
+  <div class="card-head"><h2><%- ic('check-circle') %><%= t('closure_checklist') %></h2><span class="pill <%= okCount === checklist.length ? 'ok' : 'warn' %>"><%= okCount %>/<%= checklist.length %></span></div>
+  <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="<%= checklist.length %>" aria-valuenow="<%= okCount %>"><span style="width:<%= Math.round(okCount / checklist.length * 100) %>%"></span></div>
+  <ul class="checklist"><% checklist.forEach(i => { %><li class="<%= i.ok ? 'ok' : 'bad' %>"><%- ic(i.ok ? 'check-circle' : 'x-circle') %><span><%= i.label %></span></li><% }) %></ul>
+  <% if (can.work) { %>
+    <form method="post" action="/wo/<%= wo.id %>/submit"><button class="btn primary" style="width:100%" <%= checklist.every(i => i.ok) ? '' : 'disabled' %>><%- ic('send', 'ic-dir') %><%= t('submit_closure') %></button></form>
+  <% } %>
+  <% if (can.manage && ['awaiting_authorization','open','in_progress','pending_closure'].includes(wo.status)) { %>
+    <details class="danger-zone"><summary><%- ic('x-circle') %><%= t('cancel_wo') %></summary>
+      <form method="post" action="/wo/<%= wo.id %>/cancel"><label><span><%= t('cancel_reason') %> <span class="req">*</span></span><input name="reason" required></label><button class="btn danger"><%= t('cancel_wo') %></button>
+      <p class="muted small"><%= lang === 'ar' ? 'لا يُحذف أمر العمل ولا يُعاد استخدام رقمه.' : 'The work order is never deleted and its number is never reused.' %></p></form>
+    </details>
+  <% } %>
+</section>
+<section class="card" id="approvals">
+  <h2><%- ic('pen') %><%= t('approvals') %></h2>
+  <% if (!approvals.length) { %><div class="empty-inline"><%- ic('hourglass') %><%= t('none') %></div><% } %>
+  <ol class="timeline">
+  <% approvals.forEach(a => { %>
+    <li class="dec-<%= a.decision %>">
+      <span class="t-dot"><%- ic(a.decision === 'approved' ? 'check' : a.decision === 'rejected' ? 'x' : a.decision === 'pending' ? 'hourglass' : 'skip') %></span>
+      <div class="t-head"><b><%= t('step_' + a.step) %></b><span class="pill dec-<%= a.decision %>"><%= t('dec_' + a.decision) %></span><small class="muted"><%= t('phase_' + a.phase) %></small></div>
+      <% if (a.decided_by) { %><div class="t-meta"><%= nm(a) %> <% if (a.acting) { %><span class="pill warn"><%= t('acting_label') %></span><% } %> · <%= fmt(a.decided_at) %><% if (a.verification_code) { %> · <span class="mono"><%- ic('shield') %> <%= a.verification_code %></span><% } %></div><% } else if (a.decision === 'pending') { %><div class="t-meta"><%= a.exp_ar ? (lang === 'en' && a.exp_en ? a.exp_en : a.exp_ar) : '' %></div><% } %>
+      <% if (a.comment) { %><div class="comment"><%- ic('message') %><span class="pre"><%= a.comment %></span></div><% } %>
+    </li>
+  <% }) %>
+  </ol>
+  <% if (can.decide) { %>
+  <form method="post" action="/wo/<%= wo.id %>/decide" class="decide">
+    <b><%= t('step_' + pending.step) %></b>
+    <label><%= t('comment') %><textarea name="comment" rows="2"></textarea></label>
+    <div class="btns">
+      <button class="btn success" name="decision" value="approved"><%- ic('check') %><%= t('approve') %></button>
+      <button class="btn danger" name="decision" value="rejected"><%- ic('x') %><%= t('reject') %></button>
+    </div>
+  </form>
+  <% } %>
+</section>
+</div>
+
+<section class="card" id="away">
+  <div class="card-head"><h2><%- ic('calendar') %><%= t('away_during_wo') %></h2><span class="pill <%= away.people.length ? 'warn' : 'ok' %>"><%= away.people.length %></span></div>
+  <p class="muted small"><%= t('away_hint') %> <span class="mono" dir="ltr"><%= away.from %> → <%= away.to %></span></p>
+  <% if (away.holidays.length) { %><div class="flash flash-info"><%- ic('star') %><div><b><%= t('holidays_during') %>:</b> <%= away.holidays.map(h => (lang === 'en' ? h.name_en : h.name_ar) + ' (' + h.start_date + (h.end_date !== h.start_date ? ' → ' + h.end_date : '') + ')').join(' · ') %></div></div><% } %>
+  <% if (!away.people.length) { %><div class="empty-inline"><%- ic('check-circle') %><%= t('nobody_away') %></div><% } else { %>
+  <div class="away-grid">
+    <% away.people.forEach(a => { %>
+      <div class="away-card ev-<%= a.type %>">
+        <span class="avatar" style="width:34px;height:34px;font-size:12px"><%= initials(a) %></span>
+        <span class="grow"><a class="cell-main" href="/employees/<%= a.employee_id %>"><%= nm(a) %></a>
+          <span class="cell-sub mono"><%= a.employee_no %></span><span class="dates"><%= a.start_date %> → <%= a.end_date %></span>
+          <% if (a.location || a.notes) { %><span class="cell-sub"><%= [a.location, a.notes].filter(Boolean).join(' · ') %></span><% } %></span>
+        <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+          <span class="ev-tag ev-<%= a.type %>"><%= t('lt_' + a.type) %></span>
+          <% if (a.mode) { %><span class="pill <%= a.mode === 'remote' ? 'info' : '' %>"><%- ic(a.mode === 'remote' ? 'globe' : 'pin') %><%= t('mode_' + a.mode) %></span><% } %>
+          <% if (a.is_participant) { %><span class="pill bad" title="<%= t('participants') %>"><%- ic('alert') %><%= t('participants') %></span><% } %>
+        </span>
+      </div>
+    <% }) %>
+  </div>
+  <% } %>
+</section>
+
+<% if (canHistory) { %><section class="card" id="history">
+  <details class="collapsible"><summary><h2 class="inline-h"><%- ic('clock') %><%= t('history') %> <span class="pill"><%= history.length %></span></h2></summary>
+  <ul class="activity"><% history.forEach(a => { %><%- include('partials/activity_item', { a, showWo: false }) %><% }) %></ul></details>
+</section><% } %>
+<%- include('partials/footer') %>

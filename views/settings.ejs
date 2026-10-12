@@ -1,0 +1,28 @@
+<%- include('partials/header', { pageTitle: t('settings') }) %>
+<h1 class="title-ic"><%- ic('settings') %><%= t('settings') %></h1>
+<div class="grid2">
+<form method="post" action="/settings" class="card form-grid">
+  <h2 class="span2"><%= lang === 'ar' ? 'إعدادات قابلة للتهيئة (افتراضية حتى اعتماد السياسات)' : 'Configurable defaults (pending policy approval)' %></h2>
+  <% const labels = { sla_hours_C1: 'C1 SLA (h)', sla_hours_C2: 'C2 SLA (h)', sla_hours_C3: 'C3 SLA (h)', sla_hours_C4: 'C4 SLA (h)', distance_threshold: lang === 'ar' ? 'حد المهام لكل فئة مسافة' : 'Assignments per distance category before Sector Head', expiry_alert_days: lang === 'ar' ? 'أيام التنبيه قبل انتهاء المعدات' : 'Equipment expiry alert (days)', acting_alert_days: lang === 'ar' ? 'أيام التنبيه قبل انتهاء التكليف' : 'Acting assignment alert (days)', approval_reminder_hours: lang === 'ar' ? 'تذكير الاعتماد كل (ساعة)' : 'Approval reminder every (h)', missing_photo_hours: lang === 'ar' ? 'تنبيه عدم وجود صورة قبل بعد (ساعة)' : 'Missing before-photo alert after (h)', wo_sequence_warn_at: lang === 'ar' ? 'تنبيه تسلسل أوامر العمل عند' : 'WO sequence warning at' }; %>
+  <% Object.entries(values).forEach(([k, v]) => { %><label><%= labels[k] || k %><input type="number" min="0" name="<%= k %>" value="<%= v %>"></label><% }) %>
+  <div class="span2"><button class="btn primary"><%- ic('save') %><%= t('save') %></button> <span class="muted">WO sequence: WO<%= String(seq).padStart(6, '0') %> / WO999999</span></div>
+</form>
+<div>
+<section class="card"><h2><%- ic('mail') %><%= t('smtp_status') %></h2>
+  <div class="flash <%= smtpOn ? 'flash-success' : 'flash-warning' %>"><%= smtpOn ? t('smtp_on') : t('smtp_off') %></div>
+  <p class="small muted">SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE, MAIL_FROM, APP_URL</p>
+  <p><% queue.forEach(q => { %><span class="pill"><%= q.status %>: <%= q.n %></span> <% }) %></p>
+  <form method="post" action="/settings/test-email" class="inline-form"><input type="email" name="to" required placeholder="name@company.com" value="<%= user.email || '' %>"><button class="btn"><%= t('send_test') %></button></form>
+</section>
+<section class="card"><h2><%- ic('bell') %><%= t('notifications') %></h2>
+  <form method="post" action="/settings/run-alerts"><button class="btn"><%= t('run_alerts_now') %></button> <small class="muted"><%= lang === 'ar' ? 'يعمل تلقائيًا كل دقيقة' : 'Runs automatically every minute' %></small></form>
+  <h3><%= lang === 'ar' ? 'تعميم' : 'Broadcast' %></h3>
+  <form method="post" action="/settings/broadcast" class="form-grid">
+    <label class="span2"><%= t('title') %><input name="title" required></label>
+    <label class="span2"><%= t('description') %><textarea name="body" rows="2"></textarea></label>
+    <label><%= t('role') %><select name="audience"><option value="all"><%= t('all') %></option><% ['employee','team_leader','section_head','division_manager','department_manager','sector_head','hr','safety','warehouse'].forEach(r => { %><option value="<%= r %>"><%= t('role_' + r) %></option><% }) %></select></label>
+    <div><button class="btn primary"><%- ic('megaphone') %><%= lang === 'ar' ? 'إرسال' : 'Send' %></button></div>
+  </form>
+</section>
+</div></div>
+<%- include('partials/footer') %>

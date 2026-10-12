@@ -1,0 +1,26 @@
+<%- include('partials/header', { pageTitle: t('import_preview') }) %>
+<div class="page-head"><h1 class="title-ic"><%- ic('upload') %><%= t('import_preview') %>: <span class="mono"><%= b.entity %></span></h1><a class="btn ghost" href="/data"><%- ic('arrow', 'ic-back') %><%= t('back') %></a></div>
+<div class="kpis">
+  <div class="kpi"><span class="kpi-icon"><%- ic('sheet') %></span><span class="kpi-body"><b><%= b.total %></b><span class="kpi-label">Σ</span></span></div>
+  <div class="kpi ok"><span class="kpi-icon"><%- ic('check-circle') %></span><span class="kpi-body"><b><%= b.valid %></b><span class="kpi-label"><%= t('valid_rows') %></span></span></div>
+  <div class="kpi crit <%= b.invalid ? '' : 'zero' %>"><span class="kpi-icon"><%- ic('x-circle') %></span><span class="kpi-body"><b><%= b.invalid %></b><span class="kpi-label"><%= t('invalid_rows') %></span></span></div>
+  <% if (b.status === 'committed') { %><div class="kpi ok"><span class="kpi-icon"><%- ic('plus') %></span><span class="kpi-body"><b><%= b.inserted %></b><span class="kpi-label"><%= t('inserted') %></span></span></div><div class="kpi"><span class="kpi-icon"><%- ic('pen') %></span><span class="kpi-body"><b><%= b.updated %></b><span class="kpi-label"><%= t('updated') %></span></span></div><% } %>
+</div>
+<p><b><%= t('file') %>:</b> <%= b.file_name %> · <%= fmt(b.created_at) %><% if (b.committed_at) { %> · <%- ic('check') %> <%= fmt(b.committed_at) %><% } %></p>
+<% if (unknown.length) { %><div class="flash flash-warning"><%= lang === 'ar' ? 'أعمدة غير معروفة سيتم تجاهلها' : 'Unknown columns will be ignored' %>: <%= unknown.join(', ') %></div><% } %>
+<% if (b.status === 'preview') { %>
+  <form method="post" action="/data/import/batch/<%= b.id %>/commit" class="card">
+    <p><%= t('only_valid_note') %></p>
+    <button class="btn primary" <%= b.valid ? '' : 'disabled' %>><%- ic('check') %><%= t('commit_import') %> (<%= b.valid %>)</button>
+  </form>
+<% } %>
+<div class="card table-card"><div class="table-wrap"><table class="tbl small">
+  <tr><th><%= t('row') %></th><th></th><% columns.forEach(c => { %><th class="mono"><%= c %></th><% }) %><th><%= t('errors') %></th></tr>
+  <% results.forEach(r => { const bad = r.errors.length; %>
+    <tr class="<%= bad ? 'row-bad' : '' %>"><td><%= r.row %></td>
+      <td class="nowrap"><% const oc = r.outcome || (bad ? 'error' : r.mode); %><span class="pill <%= ['inserted','updated'].includes(r.outcome) ? 'ok' : (oc === 'failed' || oc === 'error') ? 'bad' : oc === 'skipped' ? '' : 'info' %>"><%- ic(oc === 'inserted' || oc === 'insert' ? 'plus' : oc === 'updated' || oc === 'update' ? 'pen' : oc === 'skipped' ? 'skip' : 'x') %><%= oc %></span> <span class="mono"><%= r.ref || '' %></span></td>
+      <% columns.forEach(c => { %><td><%= r.raw[c] == null ? '' : String(r.raw[c]).slice(0, 60) %></td><% }) %>
+      <td class="err"><%= r.errors.join(' · ') %></td></tr>
+  <% }) %>
+</table></div></div>
+<%- include('partials/footer') %>

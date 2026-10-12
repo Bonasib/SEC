@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="<%= lang %>" dir="<%= dir %>" data-theme="light">
+<head><%- include('partials/head') %><title><%= wo.wo_number %></title></head>
+<body class="print">
+<%- include('partials/icons') %>
+<div class="no-print"><button class="btn primary" onclick="window.print()"><%- ic('printer') %><%= t('print') %> / PDF</button></div>
+<header class="print-head">
+  <div class="brand" style="padding:0;color:inherit"><span class="brand-mark"><%- ic('zap') %></span><span class="brand-text"><b><%= t('app_name') %></b><small class="muted"><%= section ? nm(section) : '' %></small></span></div>
+  <div class="wo-num"><%= wo.wo_number %></div>
+</header>
+<h1><%= wo.title %></h1>
+<table class="tbl">
+  <tr><th><%= t('status') %></th><td><%= t('st_' + wo.status) %></td><th><%= t('priority') %></th><td><%= t('pr_' + wo.priority) %></td></tr>
+  <tr><th><%= t('type') %></th><td><%= t('wt_' + wo.type) %></td><th><%= t('asset') %></th><td><%= asset ? asset.code : '—' %></td></tr>
+  <tr><th><%= t('voltage') %></th><td><%= wo.voltage_kv || '—' %></td><th><%= t('location') %></th><td><%= wo.location || '—' %></td></tr>
+  <tr><th><%= t('planned_start') %></th><td><%= fmt(wo.planned_start) %></td><th><%= t('planned_end') %></th><td><%= fmt(wo.planned_end) %></td></tr>
+  <tr><th><%= t('actual_start') %></th><td><%= fmt(wo.actual_start) %></td><th><%= t('actual_end') %></th><td><%= fmt(wo.actual_end) %></td></tr>
+  <tr><th><%= t('involves_travel_q') %></th><td><%= wo.involves_travel === 'yes' ? t('yes') + ' · ' + t(wo.distance_category === 'C' ? 'band_over_200' : 'band_over_100') + ' · ' + wo.distance_km + ' km' : t('no') %></td><th><%= t('result') %></th><td><%= wo.result ? t('rs_' + wo.result) : '—' %> <%= wo.completion_pct != null ? '(' + wo.completion_pct + '%)' : '' %></td></tr>
+  <% if (wo.arrival_at || wo.restored_at) { %><tr><th><%= t('arrival_at') %></th><td><%= fmt(wo.arrival_at) %></td><th><%= t('restored_at') %></th><td><%= fmt(wo.restored_at) %></td></tr><% } %>
+</table>
+<h2><%= t('action_description') %></h2><p class="pre"><%= wo.action_description || '—' %></p>
+<h2><%= t('officials') %></h2>
+<table class="tbl"><% ['section_head','division_manager','department_manager','sector_head'].forEach(k => { const o = officials[k]; %><tr><th><%= t('step_' + k) %></th><td><%= o && o.employee_no ? o.employee_no + ' - ' + nm(o) + (o.acting ? ' (' + t('acting_label') + ')' : '') : '—' %></td></tr><% }) %></table>
+<h2><%= t('crew_fleet') %></h2>
+<p><%= t('crew_people') %>: <b><%= crew.people %></b> · <%= t('vehicles') %>: <b><%= crew.vehicles.length %></b> · <%= t('seats') %>: <b><%= crew.seats %></b></p>
+<% if (crew.vehicles.length) { %><table class="tbl small"><thead><tr><th><%= t('plate_number') %></th><th><%= t('vehicle_type') %></th><th><%= t('seats') %></th><th><%= t('fleet_no') %></th></tr></thead><tbody>
+<% crew.vehicles.forEach(v => { %><tr><td class="mono"><%= v.plate_number %></td><td><%= t('vt_' + (v.vehicle_type || 'other')) %></td><td><%= v.seats %></td><td class="mono"><%= v.code %></td></tr><% }) %></tbody></table><% } %>
+<% if (extensions.some(x => x.status === 'approved') || handovers.some(h => h.status === 'completed')) { %>
+<h2><%= t('schedule_changes') %></h2>
+<table class="tbl small"><tbody>
+<% extensions.filter(x => x.status === 'approved').forEach(x => { %><tr><th><%= t('extension') %></th><td class="mono"><%= fmt(x.old_end) %> → <%= fmt(x.new_end) %></td><td><%= x.reason %></td></tr><% }) %>
+<% handovers.filter(h => h.status === 'completed').forEach(h => { %><tr><th><%= t('handover') %></th><td><%= h.from_no %> → <%= h.to_no %> · <%= fmt(h.executed_at) %></td><td><%= h.reason %></td></tr><% }) %>
+</tbody></table><% } %>
+<h2><%= t('participants') %></h2>
+<table class="tbl"><% participants.forEach(p => { %><tr><td><%= p.employee_no %></td><td><%= nm(p) %></td><td><%= p.job_title_en || '' %></td><td><%= p.p_role === 'leader' ? t('team_leader') : '' %></td></tr><% }) %></table>
+<% if (rec.lines.length) { %>
+<h2><%= t('materials') %> - <%= t('reconciliation') %>: <%= rec.status %></h2>
+<table class="tbl small"><tr><th><%= t('material_number') %></th><th><%= t('issued') %></th><th><%= t('used') %></th><th><%= t('returned') %></th><th><%= t('damaged') %></th><th><%= t('transferred') %></th><th><%= t('remaining') %></th><th><%= t('variance') %></th></tr>
+<% rec.lines.forEach(l => { %><tr><td><%= l.material_number %></td><td><%= l.issued_qty %></td><td><%= l.used_qty %></td><td><%= l.returned_qty %></td><td><%= l.damaged_qty %></td><td><%= l.transferred_qty %></td><td><%= l.remaining_authorized_qty %></td><td><%= l.source === 'warehouse' ? lineVariance(l) : '—' %></td></tr><% }) %></table>
+<% } %>
+<h2><%= t('photos') %></h2>
+<div class="print-photos"><% photos.forEach(p => { %><figure><img src="/wo/<%= wo.id %>/photos/<%= p.id %>"><figcaption><b><%= t(p.stage) %></b> <%= p.caption || '' %> · <span class="mono">#<%= p.sha256.slice(0, 12) %></span></figcaption></figure><% }) %></div>
+<h2><%= t('approvals') %></h2>
+<table class="tbl"><tr><th><%= t('role') %></th><th><%= t('name') %></th><th><%= t('date') %></th><th><%= t('status') %></th><th>Code</th></tr>
+<% approvals.forEach(a => { %><tr><td><%= t('step_' + a.step) %></td><td><%= a.employee_no %> - <%= nm(a) %><%= a.acting ? ' (' + t('acting_label') + ')' : '' %></td><td><%= fmt(a.decided_at) %></td><td><%= t('dec_' + a.decision) %></td><td class="mono"><%= a.verification_code %></td></tr><% }) %></table>
+<h2><%= t('away_during_wo') %></h2>
+<% if (away.holidays.length) { %><p><b><%= t('holidays_during') %>:</b> <%= away.holidays.map(h => lang === 'en' ? h.name_en : h.name_ar).join(' · ') %></p><% } %>
+<% if (!away.people.length) { %><p class="muted"><%= t('nobody_away') %></p><% } else { %>
+<table class="tbl small"><thead><tr><th><%= t('employee_no') %></th><th><%= t('name') %></th><th><%= t('type') %></th><th><%= t('mode') %></th><th><%= t('location') %></th><th><%= t('from') %></th><th><%= t('to') %></th></tr></thead><tbody>
+<% away.people.forEach(a => { %><tr><td class="mono"><%= a.employee_no %></td><td><%= nm(a) %></td><td><%= t('lt_' + a.type) %></td><td><%= a.mode ? t('mode_' + a.mode) : '—' %></td><td><%= a.location || '—' %></td><td class="mono"><%= a.start_date %></td><td class="mono"><%= a.end_date %></td></tr><% }) %>
+</tbody></table><% } %>
+<footer class="print-foot"><%= wo.wo_number %> · <%= fmt(new Date().toISOString()) %></footer>
+</body></html>

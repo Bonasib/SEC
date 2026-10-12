@@ -1,0 +1,37 @@
+<%- include('partials/header', { pageTitle: mode === 'new' ? t('add_employee') : t('edit_employee') }) %>
+<div class="page-head">
+  <div><div class="eyebrow"><a href="/employees"><%- ic('arrow', 'ic-back') %> <%= t('employees') %></a></div>
+    <h1 class="title-ic"><%- ic(mode === 'new' ? 'plus' : 'pen') %><%= mode === 'new' ? t('add_employee') : t('edit_employee') + ' · ' + (e.employee_no || '') %></h1>
+    <p class="page-sub"><%= t('employee_form_hint') %></p></div>
+</div>
+<% if (errors.length) { %><div class="flash flash-error" role="alert"><%- ic('x-circle') %><div><b><%= t('errors') %>:</b><br><%= errors.join('\n') %></div></div><% } %>
+<form method="post" action="<%= mode === 'new' ? '/employees' : '/employees/' + e.id %>" class="card form-grid" novalidate>
+  <% if (mode === 'edit') { %><input type="hidden" name="full_edit" value="1"><% } %>
+  <div class="form-section" style="border:0;padding-top:0;margin-top:0"><h3><%- ic('user') %><%= t('identity') %></h3></div>
+  <label><span><%= t('employee_no') %> <span class="req">*</span></span><input name="employee_no" required value="<%= e.employee_no || '' %>" dir="ltr" placeholder="F071" autocomplete="off"></label>
+  <label><%= t('national_id') %><input name="national_id" value="<%= e.national_id || '' %>" dir="ltr" autocomplete="off"></label>
+  <label><span><%= t('name_ar') %> <span class="req">*</span></span><input name="name_ar" required value="<%= e.name_ar || '' %>" dir="rtl"></label>
+  <label><%= t('name_en') %><input name="name_en" value="<%= e.name_en || '' %>" dir="ltr"></label>
+  <label><%= t('nationality') %><input name="nationality" list="nats" value="<%= e.nationality || '' %>"><datalist id="nats"><% ['Saudi','Egyptian','Pakistani','Indian','Sudanese','Bangladeshi','Jordanian','Filipino'].forEach(n => { %><option><%= n %></option><% }) %></datalist></label>
+
+  <div class="form-section"><h3><%- ic('mail') %><%= t('contact') %></h3><p class="muted small"><%= t('email_used_for') %></p></div>
+  <label><span><%= t('email') %> <span class="req">*</span></span><input type="email" name="email" required value="<%= e.email || '' %>" dir="ltr" placeholder="name@se.com.sa" autocomplete="off"></label>
+  <label><%= t('phone') %><input type="tel" name="phone" value="<%= e.phone || '' %>" dir="ltr" placeholder="+966 5x xxx xxxx"></label>
+  <label class="inline span2"><input type="checkbox" name="email_notifications" value="1" <%= String(e.email_notifications) !== '0' ? 'checked' : '' %>><%= t('email_notifications') %></label>
+
+  <div class="form-section"><h3><%- ic('network') %><%= t('job_info') %></h3></div>
+  <label><span><%= t('section') %> <span class="req">*</span></span><select name="section_id"><option value=""></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(e.section_id) === String(s.id) ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select></label>
+  <label><%= t('role') %><select name="role"><% ROLES.forEach(r => { %><option value="<%= r %>" <%= e.role === r ? 'selected' : '' %>><%= t('role_' + r) %></option><% }) %></select></label>
+  <label><%= t('job_title') %> (AR)<input name="job_title_ar" value="<%= e.job_title_ar || '' %>"></label>
+  <label><%= t('job_title') %> (EN)<input name="job_title_en" value="<%= e.job_title_en || '' %>"></label>
+  <label><%= t('grade') %><input name="grade" value="<%= e.grade || '' %>"></label>
+  <label><%= t('hire_date') %><input type="date" name="hire_date" value="<%= e.hire_date || '' %>"></label>
+  <label><%= t('employment_type') %><select name="employment_type"><option value=""></option><% EMPLOYMENT_TYPES.forEach(x => { %><option value="<%= x %>" <%= e.employment_type === x ? 'selected' : '' %>><%= t('et_' + x) %></option><% }) %></select></label>
+  <label><%= t('shift') %><select name="shift"><option value=""></option><% SHIFTS.forEach(x => { %><option value="<%= x %>" <%= e.shift === x ? 'selected' : '' %>><%= t('sh_' + x) %></option><% }) %></select></label>
+  <label><%= t('status') %><select name="status"><option value="active" <%= e.status !== 'inactive' ? 'selected' : '' %>><%= t('active') %></option><option value="inactive" <%= e.status === 'inactive' ? 'selected' : '' %>><%= t('inactive') %></option></select></label>
+  <% if (mode === 'new') { %><label><%= t('initial_password') %><input type="password" name="password" minlength="8" autocomplete="new-password"><small class="muted"><%= t('password_hint') %></small></label><% } %>
+  <label class="span2"><%= t('notes') %><textarea name="notes" rows="2"><%= e.notes || '' %></textarea></label>
+  <div class="form-actions form-section"><button class="btn primary"><%- ic('save') %><%= t('save') %></button><a class="btn ghost" href="<%= mode === 'new' ? '/employees' : '/employees/' + e.id %>"><%= t('cancel') %></a>
+    <% if (mode === 'new') { %><a class="btn ghost" href="/data#employees" style="margin-inline-start:auto"><%- ic('upload') %><%= t('import_many') %></a><% } %></div>
+</form>
+<%- include('partials/footer') %>

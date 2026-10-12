@@ -1,0 +1,74 @@
+<%- include('partials/header', { pageTitle: t('fleet') }) %>
+<div class="page-head">
+  <div><div class="eyebrow"><%- ic('truck') %><%= t('grp_assets') %></div><h1 class="title-ic"><%= t('fleet') %> <span class="result-count">(<%= stats.total %>)</span></h1></div>
+  <div class="btns"><a class="btn" href="/data/export/equipment"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#equipment"><%- ic('upload') %><%= t('import') %></a><a class="btn" href="/equipment"><%- ic('wrench') %><%= t('devices') %></a></div>
+</div>
+<div class="kpis">
+  <div class="kpi"><span class="kpi-icon"><%- ic('truck') %></span><span class="kpi-body"><b><%= stats.total %></b><span class="kpi-label"><%= t('vehicles') %></span></span></div>
+  <div class="kpi ok"><span class="kpi-icon"><%- ic('check-circle') %></span><span class="kpi-body"><b><%= stats.available %></b><span class="kpi-label"><%= t('available_now') %></span></span></div>
+  <div class="kpi violet"><span class="kpi-icon"><%- ic('route') %></span><span class="kpi-body"><b><%= stats.in_use %></b><span class="kpi-label"><%= t('in_use_now') %></span></span></div>
+  <div class="kpi warn <%= stats.maintenance ? '' : 'zero' %>"><span class="kpi-icon"><%- ic('wrench') %></span><span class="kpi-body"><b><%= stats.maintenance %></b><span class="kpi-label"><%= t('under_maintenance') %></span></span></div>
+  <div class="kpi crit <%= stats.expired ? '' : 'zero' %>"><span class="kpi-icon"><%- ic('alert') %></span><span class="kpi-body"><b><%= stats.expired %></b><span class="kpi-label"><%= t('registration_expired') %></span></span></div>
+  <div class="kpi"><span class="kpi-icon"><%- ic('users') %></span><span class="kpi-body"><b><%= stats.seats %></b><span class="kpi-label"><%= t('seats_available') %></span></span></div>
+</div>
+<form class="filters card" method="get">
+  <select name="section" aria-label="<%= t('section') %>"><option value=""><%= t('section') %>: <%= t('all') %></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(query.section) === String(s.id) ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select>
+  <select name="vtype" aria-label="<%= t('vehicle_type') %>"><option value=""><%= t('vehicle_type') %>: <%= t('all') %></option><% VEHICLE_TYPES.forEach(v => { %><option value="<%= v %>" <%= query.vtype === v ? 'selected' : '' %>><%= t('vt_' + v) %></option><% }) %></select>
+  <select name="status" aria-label="<%= t('status') %>"><option value=""><%= t('status') %>: <%= t('all') %></option><% EQUIP_STATUS.forEach(v => { %><option value="<%= v %>" <%= query.status === v ? 'selected' : '' %>><%= t('es_' + v) %></option><% }) %></select>
+  <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button><a class="btn ghost" href="/fleet"><%= t('clear') %></a>
+</form>
+<div class="fleet-grid">
+  <% if (!rows.length) { %><div class="card empty"><%- ic('truck') %><%= t('no_records') %></div><% } %>
+  <% rows.forEach(q => { %>
+  <article class="card vehicle-card <%= q.flag === 'expired' || q.status !== 'available' ? 'is-off' : '' %>">
+    <header>
+      <span class="plate" dir="ltr"><%= q.plate_number || '—' %></span>
+      <% if (q.current) { %><span class="pill violet-pill"><%- ic('route') %><%= t('in_use_now') %></span><% } else if (q.flag === 'expired') { %><span class="pill bad"><%- ic('alert') %><%= t('registration_expired') %></span><% } else if (q.status !== 'available') { %><span class="pill warn"><%= t('es_' + q.status) %></span><% } else { %><span class="pill ok"><%- ic('check') %><%= t('available_now') %></span><% } %>
+    </header>
+    <div class="v-main"><span class="v-icon"><%- ic('truck') %></span><div><b><%= t('vt_' + (q.vehicle_type || 'other')) %></b><div class="muted small"><%= q.make_model || q.name %><%= q.model_year ? ' · ' + q.model_year : '' %></div></div></div>
+    <dl class="kv small">
+      <dt><%= t('fleet_no') %></dt><dd class="mono"><%= q.code %></dd>
+      <dt><%= t('seats') %></dt><dd><%= q.seats || '—' %></dd>
+      <dt><%= t('section') %></dt><dd><%= q.section_code || '—' %></dd>
+      <dt><%= t('registration_expiry') %></dt><dd class="<%= q.flag === 'expired' ? 'bad' : q.flag === 'soon' ? 'warn-text' : '' %>"><%= q.expiry_date || '—' %></dd>
+      <dt><%= t('completed_trips') %></dt><dd><%= q.trips %></dd>
+    </dl>
+    <% if (q.current) { %><div class="v-booking"><%- ic('clipboard') %><a class="wo-link" href="/wo/<%= q.current.id %>"><%= q.current.wo_number %></a> <span class="muted small"><%= t('to') %> <%= fmt(q.current.planned_end) %></span></div><% } %>
+    <% if (q.next.length) { %><div class="v-next"><span class="muted small"><%= t('next_bookings') %>:</span><% q.next.forEach(n => { %><a class="pill" href="/wo/<%= n.id %>"><span class="mono"><%= n.wo_number %></span> · <%= fmt(n.planned_start, false) %></a><% }) %></div><% } %>
+    <% if (canEdit) { %>
+    <details><summary class="btn small ghost"><%- ic('pen') %><%= t('edit') %></summary>
+      <form method="post" action="/fleet/<%= q.id %>" class="mini-grid">
+        <label><%= t('plate_number') %><input name="plate_number" value="<%= q.plate_number || '' %>" required dir="ltr"></label>
+        <label><%= t('vehicle_type') %><select name="vehicle_type"><% VEHICLE_TYPES.forEach(v => { %><option value="<%= v %>" <%= q.vehicle_type === v ? 'selected' : '' %>><%= t('vt_' + v) %></option><% }) %></select></label>
+        <label><%= t('make_model') %><input name="make_model" value="<%= q.make_model || '' %>"></label>
+        <label><%= t('model_year') %><input type="number" name="model_year" value="<%= q.model_year || '' %>"></label>
+        <label><%= t('seats') %><input type="number" min="1" name="seats" value="<%= q.seats || '' %>" required></label>
+        <label><%= t('section') %><select name="section_id"><option value=""></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= q.section_id === s.id ? 'selected' : '' %>><%= s.code %></option><% }) %></select></label>
+        <label><%= t('status') %><select name="status"><% EQUIP_STATUS.forEach(v => { %><option value="<%= v %>" <%= q.status === v ? 'selected' : '' %>><%= t('es_' + v) %></option><% }) %></select></label>
+        <label><%= t('registration_expiry') %><input type="date" name="expiry_date" value="<%= q.expiry_date || '' %>"></label>
+        <label><%= t('location') %><input name="location" value="<%= q.location || '' %>"></label>
+        <button class="btn small primary"><%- ic('save') %><%= t('save') %></button>
+      </form></details>
+    <% } %>
+  </article>
+  <% }) %>
+</div>
+<% if (canEdit) { %>
+<section class="card">
+  <details class="collapsible"><summary><h2 class="inline-h"><%- ic('plus') %><%= t('add_vehicle') %></h2></summary>
+  <form method="post" action="/fleet" class="form-grid">
+    <label><span><%= t('fleet_no') %> <span class="req">*</span></span><input name="code" required placeholder="VH-201" dir="ltr"></label>
+    <label><span><%= t('plate_number') %> <span class="req">*</span></span><input name="plate_number" required placeholder="ABC 1234" dir="ltr"></label>
+    <label><%= t('vehicle_type') %><select name="vehicle_type"><% VEHICLE_TYPES.forEach(v => { %><option value="<%= v %>"><%= t('vt_' + v) %></option><% }) %></select></label>
+    <label><span><%= t('seats') %> <span class="req">*</span></span><input type="number" min="1" name="seats" required value="5"></label>
+    <label><%= t('make_model') %><input name="make_model" placeholder="Toyota Hilux"></label>
+    <label><%= t('model_year') %><input type="number" name="model_year" min="1990" max="2100"></label>
+    <label><%= t('section') %><select name="section_id"><option value=""></option><% sections.forEach(s => { %><option value="<%= s.id %>"><%= s.code %> · <%= nm(s) %></option><% }) %></select></label>
+    <label><%= t('registration_expiry') %><input type="date" name="expiry_date"></label>
+    <label><%= t('status') %><select name="status"><% EQUIP_STATUS.forEach(v => { %><option value="<%= v %>"><%= t('es_' + v) %></option><% }) %></select></label>
+    <label><%= t('location') %><input name="location"></label>
+    <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button></div>
+  </form></details>
+</section>
+<% } %>
+<%- include('partials/footer') %>

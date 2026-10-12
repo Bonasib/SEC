@@ -1,0 +1,10 @@
+<%- include('partials/header', { pageTitle: t('outbox') }) %>
+<h1 class="title-ic"><%- ic('mail') %><%= t('outbox') %></h1>
+<div class="flash <%= smtpOn ? 'flash-success' : 'flash-warning' %>"><%= t('smtp_status') %>: <%= smtpOn ? t('smtp_on') : t('smtp_off') %></div>
+<div class="card table-card"><div class="table-wrap"><table class="tbl small">
+  <tr><th>#</th><th><%= t('to_email') %></th><th><%= t('subject') %></th><th><%= t('status') %></th><th><%= t('created_at') %></th><th><%= t('sent_at') %></th></tr>
+  <% rows.forEach(m => { %><tr><td><%= m.id %></td><td><%= m.to_name || '' %> &lt;<%= m.to_email %>&gt;</td><td><a href="/outbox/<%= m.id %>" target="_blank"><%= m.subject %></a></td>
+    <td><span class="pill <%= m.status === 'sent' ? 'ok' : m.status === 'failed' ? 'bad' : '' %>"><%= m.status %></span><% if (m.error) { %><br><small class="err"><%= m.error %></small><% } %></td><td><%= fmt(m.created_at) %></td><td><%= fmt(m.sent_at) %></td></tr><% }) %>
+  <% if (!rows.length) { %><tr><td colspan="6" class="muted"><%= t('no_records') %></td></tr><% } %>
+</table></div></div>
+<%- include('partials/footer') %>

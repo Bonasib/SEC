@@ -1,0 +1,16 @@
+<%- include('partials/header', { pageTitle: t('activity') }) %>
+<div class="page-head">
+  <div><div class="eyebrow"><%- ic('clipboard') %><%= t('grp_operations') %><% if (scoped) { %> · <%= t('scoped_access') %><% } %></div><h1 class="title-ic"><%= t('activity') %></h1>
+    <p class="page-sub"><%= t('activity_hint') %></p></div>
+</div>
+<form class="filters card" method="get" role="search">
+  <div class="search-field"><%- ic('search') %><input name="q" value="<%= query.q || '' %>" placeholder="WO000001" aria-label="<%= t('wo_number') %>" dir="ltr"></div>
+  <select name="section" aria-label="<%= t('section') %>"><option value=""><%= t('section') %>: <%= t('all') %></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(query.section) === String(s.id) ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select>
+  <select name="kind" aria-label="<%= t('type') %>"><option value=""><%= t('type') %>: <%= t('all') %></option><% kinds.forEach(k => { %><option value="<%= k %>" <%= query.kind === k ? 'selected' : '' %>><%= t('act_' + k) === 'act_' + k ? k : t('act_' + k) %></option><% }) %></select>
+  <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button><a class="btn ghost" href="/activity"><%= t('clear') %></a>
+</form>
+<section class="card">
+  <% if (!rows.length) { %><div class="empty-inline"><%- ic('inbox') %><%= t('no_records') %></div><% } %>
+  <ul class="activity"><% rows.forEach(a => { %><%- include('partials/activity_item', { a, showWo: true }) %><% }) %></ul>
+</section>
+<%- include('partials/footer') %>

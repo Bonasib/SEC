@@ -1,0 +1,33 @@
+<%- include('partials/header', { pageTitle: t('acting') }) %>
+<div class="page-head"><h1 class="title-ic"><%- ic('user-check') %><%= t('acting') %></h1><div class="btns"><a class="btn" href="/data/export/acting_assignments"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#acting_assignments"><%- ic('upload') %><%= t('import') %></a></div></div>
+<section class="card">
+  <h2><%- ic('search') %><%= lang === 'ar' ? 'من كان المسؤول في تاريخ معين؟' : 'Who was in charge on a given date?' %></h2>
+  <form method="get" class="inline-form">
+    <select name="section" required><option value=""><%= t('section') %></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(query.section) === String(s.id) ? 'selected' : '' %>><%= s.code %> <%= nm(s) %></option><% }) %></select>
+    <input type="datetime-local" name="at" required value="<%= query.at || '' %>">
+    <button class="btn"><%= t('search') %></button>
+  </form>
+  <% if (lookup) { %><table class="tbl"><% ['section_head','division_manager','department_manager','sector_head'].forEach(k => { const o = lookup[k]; %>
+    <tr><th><%= t('step_' + k) %></th><td><%= o && o.employee_no ? o.employee_no + ' - ' + nm(o) : '—' %> <% if (o && o.acting) { %><span class="pill warn"><%= t('acting_label') %></span> <%= o.decision_no || '' %><% } %></td></tr><% }) %></table><% } %>
+</section>
+<% if (canEdit) { %>
+<form method="post" action="/acting" class="card form-grid">
+  <h2 class="span2"><%- ic('plus') %><%= t('add') %></h2>
+  <label><%= t('unit') %> *<select name="unit_id" required><option value=""></option><% units.forEach(u => { %><option value="<%= u.id %>"><%= u.code %> - <%= nm(u) %> (<%= u.level %>)</option><% }) %></select></label>
+  <label><%= t('acting_employee') %> *<select name="acting_employee_id" required><option value=""></option><% employees.forEach(e => { %><option value="<%= e.id %>"><%= e.employee_no %> - <%= nm(e) %></option><% }) %></select></label>
+  <label><%= t('type') %><select name="assignment_type"><% ['temporary','leave','training','business_travel','delegation'].forEach(x => { %><option><%= x %></option><% }) %></select></label>
+  <label><%= t('decision_no') %><input name="decision_no"></label>
+  <label><%= t('start_at') %> *<input type="datetime-local" name="start_at" required></label>
+  <label><%= t('end_at') %> *<input type="datetime-local" name="end_at" required></label>
+  <label class="span2"><%= t('approving_authority') %><input name="approving_authority"></label>
+  <div class="span2"><button class="btn primary"><%- ic('save') %><%= t('save') %></button> <small class="muted"><%= lang === 'ar' ? 'لا يختار النظام المكلف تلقائيًا؛ يجب إدخال التكليف الرسمي.' : 'The system never selects an acting manager automatically; enter the formal assignment.' %></small></div>
+</form>
+<% } %>
+<div class="card table-card"><div class="table-wrap"><table class="tbl">
+  <tr><th><%= t('unit') %></th><th><%= t('acting_employee') %></th><th><%= t('type') %></th><th><%= t('start_at') %></th><th><%= t('end_at') %></th><th><%= t('decision_no') %></th><th><%= t('status') %></th><th></th></tr>
+  <% rows.forEach(a => { %><tr><td><%= a.code %> - <%= lang === 'en' ? a.u_en : a.u_ar %></td><td><%= a.employee_no %> - <%= nm(a) %></td><td><%= a.assignment_type %></td><td><%= fmt(a.start_at) %></td><td><%= fmt(a.end_at) %></td><td><%= a.decision_no || '' %></td>
+    <td><span class="pill <%= a.state === 'active' ? 'ok' : a.state === 'scheduled' ? 'warn' : '' %>"><%= a.state %></span></td>
+    <td><% if (canEdit && ['active','scheduled'].includes(a.state)) { %><form method="post" action="/acting/<%= a.id %>/cancel"><button class="btn small ghost"><%= t('cancel') %></button></form><% } %></td></tr><% }) %>
+  <% if (!rows.length) { %><tr><td colspan="8" class="muted"><%= t('no_records') %></td></tr><% } %>
+</table></div></div>
+<%- include('partials/footer') %>

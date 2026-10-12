@@ -1,0 +1,18 @@
+# docker compose up -d   (fill .env first: cp .env.example .env)
+services:
+  wms:
+    build: .
+    image: sec-transmission-wms:latest
+    container_name: sec-wms
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+      PORT: 3000
+    ports:
+      - "127.0.0.1:3000:3000"   # Nginx on the host terminates HTTPS and proxies here
+    volumes:
+      - wms-data:/data
+
+volumes:
+  wms-data:

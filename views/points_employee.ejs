@@ -1,0 +1,21 @@
+<%- include('partials/header', { pageTitle: t('statement') }) %>
+<% const fmtN = (n) => Number(n).toLocaleString(lang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US'); %>
+<div class="page-head">
+  <div><div class="eyebrow"><a href="/points?year=<%= year %>"><%- ic('arrow', 'ic-back') %> <%= t('points') %></a></div>
+    <h1 class="title-ic"><%- ic('file') %><%= t('statement') %> · <%= nm(e) %> <span class="result-count"><%= year %></span></h1></div>
+</div>
+<section class="card">
+  <div class="my-standing">
+    <span class="avatar" style="width:52px;height:52px;font-size:18px"><%= initials(e) %></span>
+    <div><div class="muted small"><span class="mono"><%= e.employee_no %></span> · <%= e.section_code || '' %></div><b><%= nm(e) %></b></div>
+    <div><div class="muted small"><%= t('opening_balance') %></div><b style="font-size:20px"><%= fmtN(opening) %></b></div>
+    <div><div class="muted small"><%= t('change') %></div><b class="pts-delta <%= st && st.delta > 0 ? 'up' : st && st.delta < 0 ? 'down' : '' %>" style="font-size:20px"><%= st ? (st.delta > 0 ? '+' : '') + fmtN(st.delta) : '—' %></b></div>
+    <div><div class="muted small"><%= t('balance') %></div><div class="big"><%= st ? fmtN(st.balance) : fmtN(opening) %></div></div>
+    <div><div class="muted small"><%= t('rank') %> / <%= t('rating') %></div><% if (st && st.rating) { %><b>#<%= st.rank %></b> <span class="rt rt-<%= st.rating %>"><%- ic('star') %><%= t('rt_' + st.rating) %></span><% } else if (st && st.below) { %><span class="pill bad"><%= t('below_baseline') %></span><% } else { %><span class="pill"><%= t('not_eligible') %></span><% } %></div>
+  </div>
+</section>
+<section class="card table-card">
+  <div class="card-head"><h2><%- ic('clock') %><%= t('history') %></h2><span class="pill"><%= rows.length %></span></div>
+  <%- include('partials/points_rows', { rows, self, canReverse }) %>
+</section>
+<%- include('partials/footer') %>

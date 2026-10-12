@@ -1,0 +1,49 @@
+<%- include('partials/header', { pageTitle: e.employee_no }) %>
+<div class="page-head wo-head"><div style="display:flex;gap:16px;align-items:center"><span class="avatar" style="width:56px;height:56px;font-size:20px"><%= initials(e) %></span><div><span class="wo-num"><%- ic('user') %><%= e.employee_no %></span><h1 style="margin:8px 0 6px"><%= e.name_ar %><% if (e.name_en) { %> <small class="muted">/ <%= e.name_en %></small><% } %></h1>
+  <span class="pill"><%= t('role_' + e.role) %></span> <span class="pill <%= e.status === 'active' ? 'ok' : 'bad' %>"><%= e.status %></span></div></div></div>
+  <div class="btns"><% if (canEdit) { %><a class="btn primary" href="/employees/<%= e.id %>/edit"><%- ic('pen') %><%= t('edit') %></a><% } %><a class="btn" href="/points/employee/<%= e.id %>"><%- ic('star') %><%= t('statement') %></a><a class="btn" href="/calendar?employee=<%= e.id %>&section=<%= e.section_id || 'all' %>"><%- ic('calendar') %><%= t('calendar') %></a></div>
+<div class="grid2">
+<section class="card"><h2><%- ic('user') %><%= t('profile') %></h2>
+  <dl class="kv">
+    <dt><%= t('job_title') %></dt><dd><%= e.job_title_ar || '' %> <%= e.job_title_en || '' %></dd>
+    <dt><%= t('section') %></dt><dd><%= path_.map(u => nm(u)).join(' › ') || '—' %></dd>
+    <dt><%= t('nationality') %></dt><dd><%= e.nationality || '—' %></dd>
+    <dt><%= t('email') %></dt><dd dir="ltr" style="text-align:start"><%= e.email || '—' %></dd>
+    <dt><%= t('phone') %></dt><dd><%= (canEdit || self) ? (e.phone || '—') : '****' %></dd>
+    <% ['section_head','division_manager','department_manager','sector_head'].forEach(k => { const o = officials[k]; if (o) { %>
+      <dt><%= t('step_' + k) %></dt><dd><%= o.employee_no ? nm(o) : '—' %> <% if (o.acting) { %><span class="pill warn"><%= t('acting_label') %></span><% } %></dd>
+    <% } }) %>
+  </dl>
+</section>
+<section class="card"><div class="card-head"><h2><%- ic('route') %><%= t('distance_counts') %> <%= year %></h2><a class="btn ghost btn-sm" href="/travel?year=<%= year %>&employee=<%= e.id %>#trips"><%= t('travel_assignments') %><%- ic('chevron', 'ic-dir') %></a></div>
+  <table class="tbl"><% ['A','B','C'].forEach(c => { %><tr><th><%= t('dc_' + c) %></th><td><b><%= dist[c] %></b><% if (c !== 'A' && dist[c] >= 20) { %> <span class="pill warn">≥ 20</span><% } %></td></tr><% }) %></table>
+  <dl class="kv">
+    <dt>WO</dt><dd><%= stats.total || 0 %> (<%= t('st_closed') %>: <%= stats.closed || 0 %>, C1-C4: <%= stats.critical || 0 %>)</dd>
+    <dt>km</dt><dd><%= stats.km || 0 %></dd>
+    <dt><%= t('travel_hours') %></dt><dd><%= stats.travel || 0 %></dd>
+    <dt><%= t('overnight') %></dt><dd><%= stats.overnight || 0 %></dd>
+    <dt><%- ic('camera') %><%= t('before') %>/<%= t('after') %></dt><dd><%= photoRate.n ? Math.round((photoRate.ok || 0) / photoRate.n * 100) + '%' : '—' %></dd>
+    <dt><%= t('points') %></dt><dd><% if (pts) { %><a href="/points/employee/<%= e.id %>"><b><%= Number(pts.balance).toLocaleString('en-US') %></b></a> <% if (pts.rating) { %>· #<%= pts.rank %> <span class="rt rt-<%= pts.rating %>"><%= t('rt_' + pts.rating) %></span><% } %><% } else { %>—<% } %></dd>
+  </dl>
+</section>
+</div>
+<div class="grid2">
+<section class="card"><h2><%- ic('clipboard') %><%= t('work_orders') %></h2>
+  <table class="tbl small"><% wos.forEach(w => { %><tr><td><a class="wo-link" href="/wo/<%= w.id %>"><%= w.wo_number %></a></td><td><%= w.title %></td><td><span class="st st-<%= w.status %>"><%= t('st_' + w.status) %></span></td><td><%= fmt(w.planned_start, false) %></td></tr><% }) %>
+  <% if (!wos.length) { %><tr><td class="muted"><%= t('no_records') %></td></tr><% } %></table>
+</section>
+<section class="card"><h2><%- ic('calendar') %><%= t('leaves') %></h2>
+  <table class="tbl small"><% leaves.forEach(l => { %><tr><td><%= l.type %></td><td><%= l.start_date %> → <%= l.end_date %></td><td><%= l.status %></td></tr><% }) %>
+  <% if (!leaves.length) { %><tr><td class="muted"><%= t('no_records') %></td></tr><% } %></table>
+</section>
+</div>
+<% if (self) { %>
+<section class="card"><h2><%- ic('settings') %><%= t('settings') %></h2>
+  <form method="post" action="/employees/<%= e.id %>" class="inline-form"><input type="hidden" name="prefs" value="1">
+    <label class="inline"><input type="checkbox" name="email_notifications" value="1" <%= e.email_notifications ? 'checked' : '' %>> <%= t('email_notifications') %></label>
+    <button class="btn small"><%= t('save') %></button></form>
+  <form method="post" action="/employees/<%= e.id %>" class="inline-form"><label><%= t('new_password') %> <input type="password" name="new_password" minlength="8" required autocomplete="new-password"></label><button class="btn small"><%= t('change_password') %></button></form>
+</section>
+<% } %>
+
+<%- include('partials/footer') %>

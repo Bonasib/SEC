@@ -1,0 +1,31 @@
+<%- include('partials/header', { pageTitle: t('data') }) %>
+<h1 class="title-ic"><%- ic('transfer') %><%= t('data') %></h1>
+<p class="muted"><%= lang === 'ar'
+  ? 'نزّل القالب، املأه في Excel، ثم ارفعه. يعرض النظام معاينة لكل صف مع الأخطاء قبل التأكيد، وبعد التأكيد تنعكس البيانات مباشرة في النظام (أوامر العمل المستوردة تُرسل بريدًا للفريق تلقائيًا). كل عملية تُسجل في سجل التدقيق.'
+  : 'Download the template, fill it in Excel, then upload it. Every row is validated and previewed before you confirm; confirmed data is reflected in the system immediately (imported work orders email their teams automatically). Every operation is recorded in the audit log.' %></p>
+<% if (['admin','auditor'].includes(user.role)) { %><p><a class="btn primary" href="/data/export-all"><%- ic('download') %><%= t('full_backup') %></a></p><% } %>
+<div class="data-grid">
+<% list.forEach(d => { %>
+  <section class="card" id="<%= d.key %>">
+    <h2><%- ic({org_units:'network',employees:'users',leaves:'calendar',acting_assignments:'user-check',assets:'tower',equipment:'truck',work_orders:'clipboard',material_lines:'package',holidays:'star',point_requests:'star',courses:'file',course_attendees:'users',improvement_plans:'route'}[d.key] || 'file') %><%= t(d.label) %> <small class="muted mono" style="font-weight:400"><%= d.key %></small></h2>
+    <div class="btns">
+      <a class="btn small" href="/data/template/<%= d.key %>"><%- ic('file') %><%= t('download_template') %></a>
+      <% if (d.canExport) { %><a class="btn small" href="/data/export/<%= d.key %>"><%- ic('sheet') %>Excel</a><a class="btn small" href="/data/export/<%= d.key %>?format=csv"><%- ic('download') %>CSV</a><% } %>
+    </div>
+    <% if (d.canImport) { %>
+    <form method="post" action="/data/import/<%= d.key %>" enctype="multipart/form-data" class="inline-form">
+      <input type="file" name="file" accept=".xlsx,.csv" required aria-label="<%= t('file') %>" style="flex:1;min-width:0">
+      <button class="btn small primary"><%- ic('upload') %><%= t('upload_preview') %></button>
+    </form>
+    <% } %>
+    <details><summary class="small muted"><%= lang === 'ar' ? 'الأعمدة' : 'Columns' %> (<%= d.columns.length %>)</summary>
+      <table class="tbl small"><% d.columns.forEach(([k, ar, en, req]) => { %><tr><td class="mono"><%= k %><%= req ? ' *' : '' %></td><td><%= lang === 'ar' ? ar : en %></td></tr><% }) %></table>
+    </details>
+  </section>
+<% }) %>
+</div>
+<section class="card"><h2><%- ic('clock') %><%= t('import_history') %></h2>
+<table class="tbl small"><tr><th>#</th><th><%= t('entity') %></th><th><%= t('file') %></th><th><%= t('status') %></th><th>Σ</th><th><%= t('valid_rows') %></th><th><%= t('invalid_rows') %></th><th><%= t('inserted') %></th><th><%= t('updated') %></th><th><%= t('employee') %></th><th><%= t('date') %></th></tr>
+<% batches.forEach(b => { %><tr><td><a class="wo-link" href="/data/import/batch/<%= b.id %>">#<%= b.id %></a></td><td><%= b.entity %></td><td><%= b.file_name %></td><td><span class="pill <%= b.status === 'committed' ? 'ok' : 'warn' %>"><%= b.status %></span></td><td><%= b.total %></td><td><%= b.valid %></td><td><%= b.invalid %></td><td><%= b.inserted %></td><td><%= b.updated %></td><td><%= nm(b) %></td><td><%= fmt(b.created_at) %></td></tr><% }) %>
+<% if (!batches.length) { %><tr><td colspan="11" class="muted"><%= t('no_records') %></td></tr><% } %></table></section>
+<%- include('partials/footer') %>

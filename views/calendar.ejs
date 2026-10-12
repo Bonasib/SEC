@@ -1,0 +1,144 @@
+<%- include('partials/header', { pageTitle: t('calendar') }) %>
+<%
+  const loc = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB';
+  const monthName = (m) => new Date(Date.UTC(year, m - 1, 1)).toLocaleString(loc, { month: 'long', timeZone: 'UTC' });
+  const WD = lang === 'ar' ? ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const typeLabel = (ty) => ty === 'holiday' ? t('holiday') : ty === 'work' ? t('ev_work') : ty === 'acting' ? t('ev_acting') : t('lt_' + ty);
+  const typeIcon = { holiday: 'star', work: 'wrench', annual: 'calendar', sick: 'alert', emergency: 'siren', training: 'user-check', workshop: 'users', factory_test: 'package', permission: 'clock', business_travel: 'route', other: 'file', acting: 'pen' };
+  const who = (ev) => lang === 'en' && ev.name_en && !/sample/.test(ev.name_en) ? ev.name_en : ev.name_ar;
+  const label = (ev) => ev.kind === 'holiday' ? (lang === 'en' ? ev.name_en : ev.name_ar)
+    : ev.kind === 'work' ? ev.wo_number + ' · ' + ev.title
+    : ev.kind === 'acting' ? who(ev) + ' ← ' + (lang === 'en' ? ev.unit_en : ev.unit_ar)
+    : who(ev) + ' · ' + t('lt_' + ev.type) + (ev.mode ? ' (' + t('mode_' + ev.mode) + ')' : '');
+  const link = (ev) => ev.kind === 'work' ? '/wo/' + ev.id : ev.kind === 'absence' ? '/employees/' + ev.employee_id : null;
+  const qs = (o) => { const p = new URLSearchParams(keep); Object.entries(o).forEach(([k, v]) => p.set(k, v)); return '?' + p.toString(); };
+  const isWeekend = (d) => { const w = new Date(d + 'T00:00:00Z').getUTCDay(); return w === 5 || w === 6; };
+  const dayTitle = (b) => [...b.holidays.map(label), ...b.work.map(label), ...b.absences.map(label), ...b.acting.map(label)].join('\n');
+%>
+<div class="page-head">
+  <div><div class="eyebrow"><%- ic('calendar') %><%= sectionId ? (sections.find(s => s.id === sectionId) || {}).code + ' · ' + nm(sections.find(s => s.id === sectionId)) : t('all') %> · <%= teamSize %> <%= t('employees_count') %></div>
+    <h1 class="title-ic"><%= t('calendar') %> <span class="result-count"><%= year %></span></h1></div>
+  <div class="btns">
+    <div class="segmented" role="group" aria-label="<%= t('view') %>">
+      <a class="seg <%= view === 'year' ? 'on' : '' %>" href="<%= qs({ view: 'year', year }) %>"><%= t('year_view') %></a>
+      <a class="seg <%= view === 'month' ? 'on' : '' %>" href="<%= qs({ view: 'month', year, month }) %>"><%= t('month_view') %></a>
+    </div>
+    <% if (view === 'year') { %>
+      <a class="icon-btn" href="<%= qs({ view, year: year - 1 }) %>" aria-label="<%= year - 1 %>"><%- ic('chevron', 'ic-back') %></a>
+      <a class="btn btn-sm" href="<%= qs({ view, year: today.slice(0, 4) }) %>"><%= t('today') %></a>
+      <a class="icon-btn" href="<%= qs({ view, year: year + 1 }) %>" aria-label="<%= year + 1 %>"><%- ic('chevron', 'ic-dir') %></a>
+    <% } else { const pm = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 }, nx = month === 12 ? { y: year + 1, m: 1 } : { y: year, m: month + 1 }; %>
+      <a class="icon-btn" href="<%= qs({ view, year: pm.y, month: pm.m }) %>" aria-label="prev"><%- ic('chevron', 'ic-back') %></a>
+      <a class="btn btn-sm" href="<%= qs({ view, year: today.slice(0, 4), month: Number(today.slice(5, 7)) }) %>"><%= t('today') %></a>
+      <a class="icon-btn" href="<%= qs({ view, year: nx.y, month: nx.m }) %>" aria-label="next"><%- ic('chevron', 'ic-dir') %></a>
+    <% } %>
+    <a class="btn" href="/calendar/export<%= qs({ year }) %>"><%- ic('sheet') %>Excel</a>
+    <a class="btn" href="/calendar/export<%= qs({ year, format: 'ics' }) %>" title="<%= t('export_outlook') %>"><%- ic('calendar') %>Outlook</a>
+  </div>
+</div>
+
+<form class="card filters cal-filters" method="get">
+  <input type="hidden" name="view" value="<%= view %>"><input type="hidden" name="year" value="<%= year %>"><input type="hidden" name="month" value="<%= month %>">
+  <select name="section" aria-label="<%= t('section') %>" onchange="this.form.employee.value='';this.form.submit()">
+    <option value="all"><%= t('section') %>: <%= t('all') %></option>
+    <% sections.forEach(s => { %><option value="<%= s.id %>" <%= sectionId === s.id ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select>
+  <select name="employee" aria-label="<%= t('employee') %>"><option value=""><%= t('employee') %>: <%= t('all') %></option>
+    <% employees.forEach(e => { %><option value="<%= e.id %>" <%= employeeId === e.id ? 'selected' : '' %>><%= e.employee_no %> · <%= nm(e) %></option><% }) %></select>
+  <fieldset class="legend-chips"><legend class="sr-only"><%= t('event_types') %></legend>
+    <% EVENT_TYPES.forEach(ty => { %><label class="chip ev-<%= ty %>"><input type="checkbox" name="t" value="<%= ty %>" <%= !typeList.length || typeList.includes(ty) ? 'checked' : '' %>><span class="sw"></span><%= typeLabel(ty) %></label><% }) %>
+  </fieldset>
+  <button class="btn primary btn-sm"><%- ic('filter') %><%= t('filter') %></button>
+</form>
+
+<% if (view === 'year') { %>
+<div class="year-grid">
+  <% for (let m = 1; m <= 12; m++) { const mm = String(m).padStart(2, '0'); const first = `${year}-${mm}-01`; const offset = new Date(first + 'T00:00:00Z').getUTCDay(); const dim = new Date(Date.UTC(year, m, 0)).getUTCDate(); %>
+  <section class="card mini-month">
+    <a class="mm-head" href="<%= qs({ view: 'month', year, month: m }) %>"><b><%= monthName(m) %></b><%- ic('chevron', 'ic-dir') %></a>
+    <div class="mm-grid">
+      <% WD.forEach((w, i) => { %><span class="mm-wd <%= i >= 5 ? 'we' : '' %>"><%= w.slice(0, lang === 'ar' ? 2 : 1) %></span><% }) %>
+      <% for (let i = 0; i < offset; i++) { %><span></span><% } %>
+      <% for (let d = 1; d <= dim; d++) { const ds = `${year}-${mm}-${String(d).padStart(2, '0')}`; const b = days[ds]; const n = b.absences.length; const top = b.absences[0];
+           const cls = ['mm-day', isWeekend(ds) ? 'we' : '', b.holidays.length ? 'hol' : '', ds === today ? 'today' : '', b.work.length ? 'has-work' : '', n ? 'has-away' : ''].join(' '); %>
+        <a class="<%= cls %>" href="<%= qs({ view: 'month', year, month: m }) %>#d-<%= ds %>" title="<%= ds %><%= dayTitle(b) ? '\n' + dayTitle(b) : '' %>" aria-label="<%= ds %>: <%= b.holidays.length ? t('holiday') + ', ' : '' %><%= b.work.length %> <%= t('ev_work') %>, <%= n %> <%= t('leaves') %>">
+          <span class="dn"><%= d %></span>
+          <span class="marks"><% if (b.work.length) { %><i class="mk ev-work"></i><% } %><% if (n) { %><i class="mk ev-<%= top.type %>"></i><% } %><% if (b.acting.length) { %><i class="mk ev-acting"></i><% } %></span>
+          <% if (n > 1) { %><span class="cnt"><%= n %></span><% } %>
+        </a>
+      <% } %>
+    </div>
+  </section>
+  <% } %>
+</div>
+<% } else { const offset = new Date(mFrom + 'T00:00:00Z').getUTCDay(); const dim = Number(mTo.slice(8)); %>
+<section class="card month-card">
+  <h2><%- ic('calendar') %><%= monthName(month) %> <%= year %></h2>
+  <div class="month-grid" role="grid">
+    <% WD.forEach((w, i) => { %><div class="mg-wd <%= i >= 5 ? 'we' : '' %>" role="columnheader"><%= w %></div><% }) %>
+    <% for (let i = 0; i < offset; i++) { %><div class="mg-day empty" aria-hidden="true"></div><% } %>
+    <% for (let d = 1; d <= dim; d++) { const ds = mFrom.slice(0, 8) + String(d).padStart(2, '0'); const b = days[ds]; const all_ = [...b.holidays, ...b.work, ...b.absences, ...b.acting]; %>
+      <div class="mg-day <%= isWeekend(ds) ? 'we' : '' %> <%= b.holidays.length ? 'hol' : '' %> <%= ds === today ? 'today' : '' %>" id="d-<%= ds %>" role="gridcell">
+        <div class="mg-top"><span class="dn"><%= d %></span><span class="mg-wdm"><%= WD[new Date(ds + 'T00:00:00Z').getUTCDay()] %> · <%= monthName(month) %></span><% if (all_.length) { %><span class="mg-count"><%= all_.length %></span><% } %></div>
+        <% all_.slice(0, 4).forEach(ev => { const href = link(ev); %>
+          <<%- href ? 'a href="' + href + '"' : 'span' %> class="ev ev-<%= ev.type %> <%= ev.pending ? 'pending' : '' %>" title="<%= label(ev) %>"><%- ic(typeIcon[ev.type]) %><span><%= label(ev) %></span></<%- href ? 'a' : 'span' %>>
+        <% }) %>
+        <% if (all_.length > 4) { %><details class="ev-more"><summary>+<%= all_.length - 4 %> <%= t('more') %></summary>
+          <% all_.slice(4).forEach(ev => { const href = link(ev); %><<%- href ? 'a href="' + href + '"' : 'span' %> class="ev ev-<%= ev.type %>"><%- ic(typeIcon[ev.type]) %><span><%= label(ev) %></span></<%- href ? 'a' : 'span' %>><% }) %>
+        </details><% } %>
+      </div>
+    <% } %>
+  </div>
+</section>
+<section class="card table-card">
+  <div class="card-head"><h2><%- ic('file') %><%= t('agenda') %> · <%= monthName(month) %></h2><span class="pill"><%= monthEvents.length %></span></div>
+  <div class="table-wrap"><table class="tbl small">
+    <thead><tr><th><%= t('from') %></th><th><%= t('to') %></th><th><%= t('type') %></th><th><%= t('description') %></th><th><%= t('mode') %> / <%= t('location') %></th><th><%= t('section') %></th></tr></thead>
+    <tbody>
+    <% if (!monthEvents.length) { %><tr><td colspan="6" class="empty"><%- ic('calendar') %><%= t('no_records') %></td></tr><% } %>
+    <% monthEvents.forEach(ev => { const href = link(ev); %>
+      <tr><td class="nowrap mono"><%= ev.start %></td><td class="nowrap mono"><%= ev.end %></td>
+        <td><span class="ev-tag ev-<%= ev.type %>"><%- ic(typeIcon[ev.type]) %><%= typeLabel(ev.type) %></span><% if (ev.pending) { %> <span class="pill warn"><%= t('ps_pending') %></span><% } %><% if (ev.approximate) { %> <span class="pill warn" title="<%= t('approximate') %>">~</span><% } %></td>
+        <td><% if (href) { %><a href="<%= href %>"><%= label(ev) %></a><% } else { %><%= label(ev) %><% } %></td>
+        <td><%= ev.mode ? t('mode_' + ev.mode) : '' %><%= ev.location ? (ev.mode ? ' · ' : '') + ev.location : '' %></td>
+        <td class="mono"><%= ev.section_code || ev.unit_code || '' %></td></tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</section>
+<% } %>
+
+<div class="grid2">
+  <section class="card">
+    <h2><%- ic('dashboard') %><%= t('year_summary') %> <%= year %></h2>
+    <div class="sum-grid">
+      <% EVENT_TYPES.forEach(ty => { const s = summary[ty] || { events: 0, days: 0 }; %>
+        <div class="sum-item <%= s.events ? '' : 'zero' %>"><span class="ev-tag ev-<%= ty %>"><%- ic(typeIcon[ty]) %><%= typeLabel(ty) %></span><b><%= s.events %></b><small><%= s.days %> <%= t('days') %></small></div>
+      <% }) %>
+    </div>
+  </section>
+  <section class="card" id="holidays">
+    <h2><%- ic('star') %><%= t('holidays') %> <%= year %></h2>
+    <ul class="list">
+      <% if (!holidays.length) { %><li class="muted"><%= t('none') %></li><% } %>
+      <% holidays.forEach(h => { %>
+        <li><span class="ev-tag ev-holiday"><%- ic('star') %><span class="mono"><%= h.start_date.slice(5) %><%= h.end_date !== h.start_date ? ' → ' + h.end_date.slice(5) : '' %></span></span>
+          <span class="grow"><span class="cell-main"><%= lang === 'en' ? h.name_en : h.name_ar %></span><% if (h.approximate) { %><span class="cell-sub"><%- ic('alert') %> <%= t('approximate') %></span><% } %></span>
+          <% if (canEditHolidays) { %><form method="post" action="/holidays/<%= h.id %>/delete" onsubmit="return confirm('<%= t('cancel') %>?')"><button class="icon-btn" aria-label="delete"><%- ic('x') %></button></form><% } %></li>
+      <% }) %>
+    </ul>
+    <% if (canEditHolidays) { %>
+    <details class="add-line"><summary class="btn small"><%- ic('plus') %><%= t('add') %> <%= t('holiday') %></summary>
+      <form method="post" action="/holidays" class="form-grid upload-panel">
+        <label><span><%= t('from') %> <span class="req">*</span></span><input type="date" name="start_date" required></label>
+        <label><%= t('to') %><input type="date" name="end_date"></label>
+        <label><span><%= t('name_ar') %> <span class="req">*</span></span><input name="name_ar" required></label>
+        <label><span><%= t('name_en') %> <span class="req">*</span></span><input name="name_en" required></label>
+        <label><%= t('type') %><select name="kind"><option value="public">public</option><option value="company">company</option></select></label>
+        <label class="inline"><input type="checkbox" name="approximate" value="1"><%= t('approximate') %></label>
+        <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button><a class="btn ghost" href="/data#holidays"><%- ic('upload') %><%= t('import') %></a></div>
+      </form>
+    </details>
+    <% } %>
+  </section>
+</div>
+<%- include('partials/footer') %>

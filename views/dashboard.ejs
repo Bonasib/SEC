@@ -1,0 +1,117 @@
+<%- include('partials/header', { pageTitle: t('dashboard') }) %>
+<section class="hero">
+  <div>
+    <h1><%= t('welcome') %><%= lang === 'ar' ? '،' : ',' %> <%= nm(user) %></h1>
+    <p><%= t('overview_hint') %> · <%= fmt(now, false) %></p>
+  </div>
+  <div class="btns">
+    <a class="btn" href="/wo?mine=1"><%- ic('clipboard') %><%= t('my_work_orders') %></a>
+    <% if (['team_leader','section_head','division_manager','department_manager','sector_head','admin'].includes(user.role)) { %><a class="btn primary" href="/wo/new"><%- ic('plus') %><%= t('new_wo') %></a><% } %>
+  </div>
+</section>
+
+<div class="kpis">
+  <% const K = (key, val, href, tone, icon) => `<a class="kpi ${tone || ''} ${val ? '' : 'zero'}" href="${href}"><span class="kpi-icon">${ic(icon)}</span><span class="kpi-body"><b>${val}</b><span class="kpi-label">${t(key)}</span></span></a>`; %>
+  <%- K('kpi_critical_open', kpi.critical_open, '/wo?priority=critical', 'crit', 'siren') %>
+  <%- K('kpi_critical_overdue', kpi.critical_overdue, '/wo?priority=critical', 'crit', 'clock') %>
+  <%- K('kpi_open', kpi.open, '/wo?status=open', '', 'clipboard') %>
+  <%- K('kpi_in_progress', kpi.in_progress, '/wo?status=in_progress', 'violet', 'wrench') %>
+  <%- K('kpi_pending_closure', kpi.pending_closure, '/wo?status=pending_closure', 'warn', 'pen') %>
+  <%- K('kpi_awaiting_auth', kpi.awaiting_auth, '/wo?status=awaiting_authorization', 'warn', 'route') %>
+  <%- K('kpi_missing_photos', kpi.missing_photos, '/wo?missing_photos=1', 'warn', 'camera') %>
+  <%- K('kpi_temporary', kpi.temporary, '/wo?status=closed', 'warn', 'alert') %>
+  <%- K('kpi_unverified_res', kpi.unverified_res, '/wo?status=open', 'warn', 'package') %>
+  <%- K('kpi_unreconciled', kpi.unreconciled, '/wo?status=in_progress', 'crit', 'transfer') %>
+  <%- K('kpi_on_leave', kpi.on_leave, '/leaves?current=1', '', 'calendar') %>
+  <%- K('kpi_available', Math.max(0, kpi.available), '/employees', 'ok', 'users') %>
+  <%- K('kpi_expiring_eq', kpi.expiring_eq, '/equipment', 'warn', 'truck') %>
+  <%- K('kpi_closed_month', kpi.closed_month, '/wo?status=closed', 'ok', 'check-circle') %>
+</div>
+
+<div class="grid2">
+  <section class="card">
+    <div class="card-head"><h2><%- ic('pen') %><%= t('awaiting_my_approval') %></h2><span class="pill <%= myApprovals.length + myExtensions.length ? 'warn' : '' %>"><%= myApprovals.length + myExtensions.length %></span></div>
+    <% if (myExtensions.length || myHandovers.length) { %><ul class="list"><% myExtensions.forEach(x => { %>
+      <li><a class="wo-link" href="/wo/<%= x.wid %>#schedule"><%= x.wo_number %></a><span class="grow"><span class="cell-main"><%= t('act_request_extension') %>: <%= x.title %></span><span class="cell-sub"><%= fmt(x.old_end) %> → <%= fmt(x.new_end) %></span></span><a class="btn btn-sm" href="/wo/<%= x.wid %>#schedule"><%= t('approve') %></a></li>
+    <% }) %><% myHandovers.forEach(h => { %>
+      <li><a class="wo-link" href="/wo/<%= h.wid %>#schedule"><%= h.wo_number %></a><span class="grow"><span class="cell-main"><%- ic('transfer') %> <%= t('handover') %>: <%= h.title %></span><span class="cell-sub"><%= t('handover_at') %> <%= fmt(h.scheduled_at) %></span></span><span class="pill warn"><%= t('ho_scheduled') %></span></li>
+    <% }) %></ul><% } %>
+    <% if (!myApprovals.length && !myExtensions.length && !myHandovers.length) { %><div class="empty-inline"><%- ic('check-circle') %><%= t('no_records') %></div><% } else { %>
+    <ul class="list"><% myApprovals.forEach(a => { %>
+      <li><a class="wo-link" href="/wo/<%= a.wo_id %>"><%= a.wo_number %></a>
+        <span class="grow"><span class="cell-main"><%= a.title %></span><span class="cell-sub"><%= t('step_' + a.step) %></span></span>
+        <% if (a.priority !== 'normal') { %><span class="pill pr-<%= a.priority %>"><%= a.priority %></span><% } %>
+        <a class="btn btn-sm" href="/wo/<%= a.wo_id %>#approvals"><%= t('approve') %></a></li>
+    <% }) %></ul><% } %>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2><%- ic('wrench') %><%= t('my_work_orders') %></h2><a class="btn ghost btn-sm" href="/wo?mine=1"><%= t('view') %><%- ic('chevron', 'ic-dir') %></a></div>
+    <% if (!myWork.length) { %><div class="empty-inline"><%- ic('inbox') %><%= t('no_records') %></div><% } else { %>
+    <ul class="list"><% myWork.forEach(w => { %>
+      <li><a class="wo-link" href="/wo/<%= w.id %>"><%= w.wo_number %></a>
+        <span class="grow"><span class="cell-main"><%= w.title %></span><span class="cell-sub"><%- ic('clock') %> <%= fmt(w.planned_start) %></span></span>
+        <span class="st st-<%= w.status %>"><%= t('st_' + w.status) %></span></li>
+    <% }) %></ul><% } %>
+  </section>
+</div>
+
+<div class="grid3">
+  <section class="card">
+    <div class="card-head"><h2><%- ic('siren') %><%= t('kpi_critical_open') %></h2><a class="btn ghost btn-sm" href="/wo?priority=critical"><%= t('view') %><%- ic('chevron', 'ic-dir') %></a></div>
+    <% if (!critical.length) { %><div class="empty-inline"><%- ic('check-circle') %><%= t('no_records') %></div><% } else { %>
+    <ul class="list"><% critical.forEach(w => { const late = w.due_at && w.due_at < now && !w.arrival_at; %>
+      <li><span class="pill pr-<%= w.priority %>"><%= w.priority %></span>
+        <span class="grow"><a class="cell-main" href="/wo/<%= w.id %>"><%= w.title %></a><span class="cell-sub"><span class="wo-link"><%= w.wo_number %></span> · <%= t('due_at') %>: <%= fmt(w.due_at) %></span></span>
+        <% if (late) { %><span class="pill bad"><%- ic('clock') %><%= lang === 'ar' ? 'متأخر' : 'Overdue' %></span><% } else { %><span class="st st-<%= w.status %>"><%= t('st_' + w.status) %></span><% } %></li>
+    <% }) %></ul><% } %>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2><%- ic('route') %><%= t('distance_this_year') %></h2><a class="btn ghost btn-sm" href="/travel"><%= t('travel_assignments') %><%- ic('chevron', 'ic-dir') %></a></div>
+    <div class="dist-cards">
+      <% ['A','B','C'].forEach(c => { const d = byDistance.find(x => x.c === c) || { n: 0, km: 0 }; %>
+        <div class="dist-card"><small><%= t('dc_' + c) %></small><b><%= d.n %></b><small><%= d.km || 0 %> km</small></div>
+      <% }) %>
+    </div>
+    <h3><%= t('kpi_acting_now') %></h3>
+    <% if (!acting.length) { %><p class="muted small"><%= t('none') %></p><% } %>
+    <ul class="people"><% acting.forEach(a => { %><li><span class="avatar"><%= initials(a) %></span><span><b><%= nm(a) %></b><span class="cell-sub"><%= lang === 'en' ? a.u_en : a.u_ar %> · <%= t('to') %> <%= fmt(a.end_at, false) %></span></span></li><% }) %></ul>
+  </section>
+</div>
+
+<div class="grid2">
+  <section class="card">
+    <div class="card-head"><h2><%- ic('star') %><%= top.length ? t('top_performers') : t('my_points') %></h2><a class="btn ghost btn-sm" href="/points"><%= t('points') %><%- ic('chevron', 'ic-dir') %></a></div>
+    <% if (me) { %><p class="muted small"><%= t('my_points') %>: <b style="color:var(--text)"><%= Number(me.balance).toLocaleString('en-US') %></b> <% if (me.rating) { %>· #<%= me.rank %> <span class="rt rt-<%= me.rating %>"><%= t('rt_' + me.rating) %></span><% } %></p><% } %>
+    <% if (top.length) { %><ul class="list"><% top.forEach(r => { %>
+      <li><b style="width:28px">#<%= r.rank %></b><span class="avatar" style="width:30px;height:30px;font-size:12px"><%= initials(r) %></span><span class="grow"><span class="cell-main"><%= nm(r) %></span><span class="cell-sub mono"><%= r.employee_no %> · <%= r.section_code || '' %></span></span><b class="mono"><%= Number(r.balance).toLocaleString('en-US') %></b><span class="rt rt-<%= r.rating %>"><%= t('rt_' + r.rating) %></span></li>
+    <% }) %></ul><% } %>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2><%- ic('calendar') %><%= lang === 'ar' ? 'الأسبوعان القادمان في فريقي' : 'Next two weeks in my team' %></h2><a class="btn ghost btn-sm" href="/calendar?view=month"><%= t('calendar') %><%- ic('chevron', 'ic-dir') %></a></div>
+    <% if (!upcoming.length) { %><div class="empty-inline"><%- ic('calendar') %><%= t('no_records') %></div><% } else { %>
+    <ul class="list"><% upcoming.forEach(ev => { %>
+      <li><span class="ev-tag ev-<%= ev.type %>"><%= ev.kind === 'holiday' ? t('holiday') : ev.kind === 'acting' ? t('ev_acting') : t('lt_' + ev.type) %></span>
+        <span class="grow"><span class="cell-main"><%= ev.kind === 'holiday' ? (lang === 'en' ? ev.name_en : ev.name_ar) : nm(ev) %><%= ev.mode ? ' · ' + t('mode_' + ev.mode) : '' %></span><span class="cell-sub mono" dir="ltr"><%= ev.start %><%= ev.end !== ev.start ? ' → ' + ev.end : '' %></span></span></li>
+    <% }) %></ul><% } %>
+  </section>
+</div>
+
+<div class="grid2">
+  <section class="card">
+    <h2><%- ic('dashboard') %><%= t('wo_by_status') %></h2>
+    <% const maxS = Math.max(1, ...byStatus.map(s => s.n)); %>
+    <% if (!byStatus.length) { %><div class="empty-inline"><%- ic('inbox') %><%= t('no_records') %></div><% } %>
+    <div class="bars" role="list"><% byStatus.forEach(s => { %>
+      <a class="bar" role="listitem" href="/wo?status=<%= s.status %>"><span class="lbl"><%= t('st_' + s.status) %></span><span class="track"><span class="fill st-<%= s.status %>" style="width:<%= Math.max(3, Math.round(s.n / maxS * 100)) %>%"></span></span><b><%= s.n %></b></a>
+    <% }) %></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2><%- ic('bell') %><%= t('recent_alerts') %></h2><a class="btn ghost btn-sm" href="/notifications"><%= t('view') %><%- ic('chevron', 'ic-dir') %></a></div>
+    <% if (!alerts.length) { %><div class="empty-inline"><%- ic('bell') %><%= t('no_records') %></div><% } else { %>
+    <ul class="alerts"><% alerts.slice(0, 6).forEach(n => { %>
+      <li class="sev-<%= n.severity %> <%= n.read_at ? '' : 'unread' %>"><span class="sev"><%- ic(n.severity === 'critical' ? 'siren' : n.severity === 'warning' ? 'alert' : 'bell') %></span>
+        <span class="a-body"><a href="/notifications/<%= n.id %>"><%= n.title %></a><small><%= fmt(n.created_at) %></small></span></li>
+    <% }) %></ul><% } %>
+  </section>
+</div>
+<%- include('partials/footer') %>

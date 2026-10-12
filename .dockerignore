@@ -1,0 +1,11 @@
+node_modules
+data
+uploads
+logs
+backups
+docs
+test
+.git
+.github
+.env
+*.zip

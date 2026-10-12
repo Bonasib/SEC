@@ -1,0 +1,74 @@
+<%- include('partials/header', { pageTitle: lang === 'en' ? c.title_en : c.title_ar }) %>
+<section class="page-head wo-head">
+  <div style="flex:1;min-width:260px">
+    <a class="small" href="/training?year=<%= c.start_date.slice(0, 4) %>"><%- ic('arrow', 'ic-back') %> <%= t('training') %></a>
+    <h1 style="margin-top:8px"><%= lang === 'en' ? c.title_en : c.title_ar %></h1>
+    <div class="tags">
+      <span class="wo-num"><%= c.code %></span>
+      <span class="pill <%= c.scope === 'international' ? 'info' : '' %>"><%- ic(c.scope === 'international' ? 'globe' : 'pin') %><%= t('scope_' + c.scope) %></span>
+      <span class="pill"><%- ic(c.mode === 'remote' ? 'globe' : 'users') %><%= t('mode_' + c.mode) %></span>
+      <span class="pill"><%= t('cat_' + c.category) %></span>
+      <span class="pill <%= c.status === 'completed' ? 'ok' : c.status === 'cancelled' ? 'bad' : 'warn' %>"><%= t('cs_' + c.status) %></span>
+    </div>
+  </div>
+  <dl class="kv" style="min-width:260px">
+    <dt><%= t('place') %></dt><dd><%= c.mode === 'remote' ? t('mode_remote') : place || '—' %></dd>
+    <dt><%= t('date') %></dt><dd class="mono" dir="ltr" style="text-align:start"><%= c.start_date %> → <%= c.end_date %> (<%= days %>)</dd>
+    <dt><%= t('provider') %></dt><dd><%= c.provider || '—' %></dd>
+    <dt><%= t('hours') %> / <%= t('capacity') %></dt><dd><%= c.hours || '—' %> / <%= c.capacity || '∞' %></dd>
+  </dl>
+</section>
+
+<section class="card table-card" id="attendees">
+  <div class="card-head"><h2><%- ic('users') %><%= t('attendees') %></h2><span class="pill"><%= attendees.filter(a => a.attendance !== 'cancelled').length %></span></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th><%= t('employee') %></th><th><%= t('section') %></th><th><%= t('role') %></th><th><%= t('attendance') %></th><th><%= t('result') %></th><th><%= t('certificate') %></th><% if (canManage) { %><th></th><% } %></tr></thead>
+    <tbody>
+    <% if (!attendees.length) { %><tr><td colspan="7" class="empty"><%- ic('users') %><%= t('no_records') %></td></tr><% } %>
+    <% attendees.forEach(a => { %>
+      <tr class="<%= a.attendance === 'cancelled' ? 'muted' : '' %>">
+        <td><a href="/employees/<%= a.employee_id %>" style="display:flex;align-items:center;gap:10px;color:inherit"><span class="avatar" style="width:30px;height:30px;font-size:12px"><%= initials(a) %></span><span><span class="cell-main"><%= nm(a) %></span><span class="cell-sub mono"><%= a.employee_no %> · <%= a.job_title_en || '' %></span></span></a></td>
+        <td class="mono"><%= a.section_code %></td>
+        <td><%= t('ar_' + a.role) %></td>
+        <td><span class="pill <%= a.attendance === 'attended' ? 'ok' : a.attendance === 'absent' ? 'bad' : a.attendance === 'cancelled' ? '' : 'info' %>"><%= t('att_' + a.attendance) %></span></td>
+        <td><%= a.result ? t('res_' + a.result) : '—' %><%= a.score != null ? ' · ' + a.score : '' %></td>
+        <td class="mono"><%= a.certificate_no || '—' %></td>
+        <% if (canManage) { %><td><details><summary class="btn small ghost"><%- ic('pen') %><%= t('edit') %></summary>
+          <form method="post" action="/training/attendees/<%= a.id %>" class="mini-grid">
+            <label><%= t('attendance') %><select name="attendance"><% ATTENDANCE.forEach(x => { %><option value="<%= x %>" <%= a.attendance === x ? 'selected' : '' %>><%= t('att_' + x) %></option><% }) %></select></label>
+            <label><%= t('result') %><select name="result"><option value=""></option><% ['pass','fail'].forEach(x => { %><option value="<%= x %>" <%= a.result === x ? 'selected' : '' %>><%= t('res_' + x) %></option><% }) %></select></label>
+            <label><%= t('score') %><input type="number" step="any" name="score" value="<%= a.score ?? '' %>"></label>
+            <label><%= t('certificate') %><input name="certificate_no" value="<%= a.certificate_no || '' %>"></label>
+            <button class="btn small primary"><%- ic('save') %><%= t('save') %></button>
+          </form></details></td><% } %>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% if (canManage && c.status !== 'cancelled') { %>
+  <details class="collapsible" style="padding:16px 20px;border-top:1px solid var(--border)"><summary><b><%- ic('plus') %> <%= t('register_employees') %></b></summary>
+    <form method="post" action="/training/<%= c.id %>/register">
+      <p class="muted small"><%= t('register_hint') %></p>
+      <div class="search-field" style="position:relative"><%- ic('search') %><input class="picker-filter" style="padding-inline-start:38px" placeholder="<%= t('search') %>…" data-target="att-picker" aria-label="<%= t('search') %>"></div>
+      <div class="picker" id="att-picker"><% employees.forEach(e => { %><label data-text="<%= e.employee_no %> <%= e.name_ar %> <%= e.name_en || '' %> <%= e.section_code || '' %>"><input type="checkbox" name="employee_ids" value="<%= e.id %>"><span class="picker-meta"><span><b class="mono"><%= e.employee_no %></b> <%= nm(e) %></span><small><%= e.section_code || '' %></small></span></label><% }) %></div>
+      <div class="btns"><select name="role" aria-label="<%= t('role') %>" style="width:auto"><% ['trainee','trainer','presenter','assessor'].forEach(r => { %><option value="<%= r %>"><%= t('ar_' + r) %></option><% }) %></select><button class="btn primary"><%- ic('plus') %><%= t('register') %></button></div>
+    </form>
+  </details>
+  <% } %>
+</section>
+
+<% if (suggested.length) { %>
+<section class="card">
+  <h2><%- ic('route') %><%= t('suggested_for_course') %></h2>
+  <div class="away-grid">
+    <% suggested.forEach(s => { %><div class="away-card ev-training"><span class="avatar" style="width:34px;height:34px;font-size:12px"><%= initials(s) %></span>
+      <span class="grow"><a class="cell-main" href="/employees/<%= s.id %>"><%= nm(s) %></a><span class="cell-sub mono"><%= s.employee_no %> · <%= s.section_code %></span><span class="cell-sub"><%= s.reasons.map(r => t('why_' + r)).join(' · ') %></span></span>
+      <% if (canManage) { %><form method="post" action="/training/<%= c.id %>/register" style="margin:0"><input type="hidden" name="employee_ids" value="<%= s.id %>"><button class="btn small"><%- ic('plus') %><%= t('register') %></button></form><% } %></div><% }) %>
+  </div>
+</section>
+<% } %>
+
+<% if (canManage) { %>
+<section class="card"><details class="collapsible"><summary><h2 class="inline-h"><%- ic('pen') %><%= t('edit') %></h2></summary><%- include('partials/course_form', { c }) %></details></section>
+<% } %>
+<%- include('partials/footer') %>

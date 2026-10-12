@@ -1,0 +1,42 @@
+<%- include('partials/header', { pageTitle: t('plans') }) %>
+<div class="page-head">
+  <div><div class="eyebrow"><%- ic('route') %><%= t('grp_people') %></div><h1 class="title-ic"><%= t('plans') %> <span class="result-count">(<%= rows.length %>)</span></h1>
+    <p class="page-sub"><%= t('plans_hint').replace('{n}', PLAN_YEARS) %></p></div>
+  <% if (canRun) { %>
+  <form method="post" action="/plans/run" class="btns" onsubmit="return confirm('<%= t('run_review_confirm') %>')">
+    <select name="year" aria-label="year"><% [year, year - 1].forEach(y => { %><option value="<%= y %>"><%= y %></option><% }) %></select>
+    <button class="btn primary"><%- ic('check-circle') %><%= t('run_annual_review') %></button>
+  </form>
+  <% } %>
+</div>
+<div class="plan-flow card">
+  <div class="pf-step"><span class="pf-n">1</span><b><%= t('pf_1') %></b><small><%= t('pf_1d') %></small></div><%- ic('chevron', 'ic-dir') %>
+  <div class="pf-step"><span class="pf-n">2</span><b><%= t('pf_2') %></b><small><%= t('pf_2d') %></small></div><%- ic('chevron', 'ic-dir') %>
+  <div class="pf-step ok"><span class="pf-n"><%- ic('check') %></span><b><%= t('pf_3') %></b><small><%= t('pf_3d') %></small></div>
+  <div class="pf-step bad"><span class="pf-n">3</span><b><%= t('pf_4') %></b><small><%= t('pf_4d').replace('{n}', PLAN_YEARS) %></small></div>
+</div>
+<div class="kpis">
+  <% [['active','route',''],['transfer_recommended','alert','crit'],['improved','check-circle','ok'],['transferred','transfer','violet'],['closed','x-circle','']].forEach(([k, icn, tone]) => { %>
+    <a class="kpi <%= tone %> <%= counts[k] ? '' : 'zero' %>" href="?status=<%= k %>"><span class="kpi-icon"><%- ic(icn) %></span><span class="kpi-body"><b><%= counts[k] || 0 %></b><span class="kpi-label"><%= t('pl_' + k) %></span></span></a>
+  <% }) %>
+</div>
+<div class="card table-card">
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th><%= t('employee') %></th><th><%= t('section') %></th><th><%= t('plan_started') %></th><th><%= t('progress') %></th><th><%= t('last_rating') %></th><th><%= t('coach') %></th><th><%= t('status') %></th></tr></thead>
+    <tbody>
+    <% if (!rows.length) { %><tr><td colspan="7" class="empty"><%- ic('route') %><%= t('no_records') %></td></tr><% } %>
+    <% rows.forEach(p => { const yrs = Math.min(PLAN_YEARS, p.reviews); %>
+      <tr class="<%= p.status === 'transfer_recommended' ? 'row-bad' : '' %>">
+        <td><a href="/plans/<%= p.id %>" style="display:flex;align-items:center;gap:10px;color:inherit"><span class="avatar" style="width:30px;height:30px;font-size:12px"><%= initials(p) %></span><span><span class="cell-main"><%= nm(p) %></span><span class="cell-sub mono"><%= p.employee_no %></span></span></a></td>
+        <td class="mono"><%= p.section_code %></td>
+        <td class="mono"><%= p.start_year %></td>
+        <td><div class="year-dots"><% for (let i = 0; i < PLAN_YEARS; i++) { %><span class="yd <%= i < yrs ? (p.status === 'improved' && i === yrs - 1 ? 'ok' : 'on') : '' %>" title="<%= p.start_year + i %>"><%= p.start_year + i %></span><% } %></div></td>
+        <td><% if (p.last_rating) { %><span class="<%= ['excellent','very_good','good','satisfactory','acceptable'].includes(p.last_rating) ? 'rt rt-' + p.last_rating : 'pill bad' %>"><%= t('rk_' + p.last_rating) %></span><% } %></td>
+        <td><%= lang === 'en' && p.coach_en ? p.coach_en : (p.coach_ar || '—') %></td>
+        <td><span class="pill <%= { active: 'warn', transfer_recommended: 'bad', improved: 'ok', transferred: 'info', closed: '' }[p.status] %>"><%= t('pl_' + p.status) %></span></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</div>
+<%- include('partials/footer') %>

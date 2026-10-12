@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="<%= lang %>" dir="<%= dir %>" data-theme="<%= theme %>">
+<head><%- include('partials/head') %><title><%= t('login') %> · <%= t('app_short') %></title></head>
+<body>
+<%- include('partials/icons') %>
+<div class="login-page">
+  <aside class="login-aside">
+    <div class="brand"><span class="brand-mark"><%- ic('zap') %></span><span class="brand-text"><b><%= t('app_short') %></b><small>SEC · Transmission WMS</small></span></div>
+    <div>
+      <h2><%= t('app_name') %></h2>
+      <p><%= t('login_tagline') %></p>
+      <ul class="login-feats">
+        <li><span class="ic-wrap"><%- ic('clipboard') %></span><%= t('login_f1') %></li>
+        <li><span class="ic-wrap"><%- ic('camera') %></span><%= t('login_f2') %></li>
+        <li><span class="ic-wrap"><%- ic('bell') %></span><%= t('login_f3') %></li>
+      </ul>
+    </div>
+    <% if (isDemo) { %><span class="env-pill"><span class="dot"></span><%= t('sample_banner') %></span><% } %>
+  </aside>
+  <main class="login-main">
+    <form class="login" method="post" action="/login">
+      <a class="btn ghost btn-sm lang-switch" href="/lang/<%= lang === 'ar' ? 'en' : 'ar' %>"><%- ic('globe') %><%= t('language') %></a>
+      <div><h1><%= t('login') %></h1><p class="muted"><%= t('app_short') %> · SEC</p></div>
+      <% if (error) { %><div class="flash flash-error" role="alert"><%- ic('x-circle') %><div><%= error %></div></div><% } %>
+      <label><%= t('employee_no') %><input name="employee_no" id="employee_no" required autofocus autocomplete="username" dir="ltr"></label>
+      <label><%= t('password') %><input name="password" id="password" type="password" required autocomplete="current-password" dir="ltr"></label>
+      <button class="btn primary" style="min-height:46px"><%= t('login') %><%- ic('arrow', 'ic-dir') %></button>
+      <% if (isDemo) { %><details class="demo-accounts" open><summary><%- ic('users') %> Demo accounts / حسابات تجريبية</summary>
+        <table class="tbl small">
+          <% [['admin','role_admin'],['DEMO-H1','role_section_head'],['DEMO-DV1','role_division_manager'],['DEMO-DM','role_department_manager'],['DEMO-SH','role_sector_head'],['F010','role_team_leader'],['F001','role_employee'],['DEMO-WH','role_warehouse'],['DEMO-HR','role_hr']].forEach(([u, r]) => { %>
+            <tr><td><button type="button" class="link" data-demo="<%= u %>"><%= u %></button></td><td><%= t(r) %></td></tr>
+          <% }) %>
+        </table>
+        <p class="muted small" style="margin:6px 0 0">Password / كلمة المرور: <span class="mono">Demo@12345</span></p>
+      </details><% } %>
+    </form>
+  </main>
+</div>
+<script src="/static/app.js"></script>
+</body></html>

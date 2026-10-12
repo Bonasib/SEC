@@ -1,0 +1,162 @@
+<%- include('partials/header', { pageTitle: t('points') }) %>
+<%
+  const fmtN = (n) => Number(n).toLocaleString(lang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US');
+  const sgn = (n) => (n > 0 ? '+' : '') + fmtN(n);
+  const ratingBadge = (r) => r.rating ? `<span class="rt rt-${r.rating}">${ic('star')}${t('rt_' + r.rating)}</span>` : (r.below ? `<span class="pill bad" title="${t('below_baseline')}">${ic('alert')}${lang === 'ar' ? 'أقل من الافتتاحي' : 'Below opening'}</span>` : `<span class="pill">${lang === 'ar' ? 'غير مستحق' : 'Not eligible'}</span>`);
+  const ranked = board.rows.filter(r => r.awarded);
+  const maxBal = Math.max(board.opening + 1, ...board.rows.map(r => r.balance));
+  const tierNames = ['excellent', 'very_good', 'good', 'satisfactory'];
+  let cum = 0;
+%>
+<div class="page-head">
+  <div><div class="eyebrow"><%- ic('star') %><%= t('opening_balance') %>: <%= fmtN(board.opening) %></div><h1 class="title-ic"><%= t('points') %> <span class="result-count"><%= year %></span></h1></div>
+  <form class="btns" method="get">
+    <select name="year" onchange="this.form.submit()" aria-label="year"><% [...new Set([year, ...years])].sort((a, b) => b - a).forEach(y => { %><option <%= y === year ? 'selected' : '' %>><%= y %></option><% }) %></select>
+    <% if (canViewAll) { %>
+      <select name="section" onchange="this.form.submit()" aria-label="<%= t('section') %>"><option value=""><%= t('section') %>: <%= t('all') %></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(query.section) === String(s.id) ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select>
+      <a class="btn" href="/points/export?year=<%= year %>"><%- ic('sheet') %>Excel</a>
+    <% } %>
+  </form>
+</div>
+
+<% if (me) { %>
+<section class="card">
+  <div class="my-standing">
+    <span class="avatar" style="width:52px;height:52px;font-size:18px"><%= initials(user) %></span>
+    <div><div class="muted small"><%= t('my_points') %></div><div class="big"><%= fmtN(me.balance) %></div></div>
+    <div><div class="muted small"><%= t('change') %></div><b class="pts-delta <%= me.delta > 0 ? 'up' : me.delta < 0 ? 'down' : '' %>" style="font-size:20px"><%= sgn(me.delta) %></b></div>
+    <div><div class="muted small"><%= t('rank') %></div><b style="font-size:20px"><%= me.rank ? '#' + me.rank : '—' %></b></div>
+    <div><div class="muted small"><%= t('rating') %></div><%- ratingBadge(me) %></div>
+    <a class="btn ghost" style="margin-inline-start:auto" href="/points/employee/<%= user.id %>?year=<%= year %>"><%- ic('file') %><%= t('statement') %></a>
+  </div>
+</section>
+<% } %>
+
+<% if (canViewAll) { %>
+<% if (ranked.length) { %>
+<div class="podium">
+  <% ranked.slice(0, 3).forEach((r, i) => { %>
+    <a class="card p<%= i + 1 %>" href="/points/employee/<%= r.id %>?year=<%= year %>" style="color:inherit;text-decoration:none">
+      <span class="medal"><%= r.rank %></span>
+      <span class="avatar"><%= initials(r) %></span>
+      <b><%= nm(r) %></b><div class="muted small"><span class="mono"><%= r.employee_no %></span> · <%= r.section_code || '' %></div>
+      <span class="pts"><%= fmtN(r.balance) %></span>
+      <%- ratingBadge(r) %>
+    </a>
+  <% }) %>
+</div>
+<% } %>
+
+<div class="grid3">
+<section class="card table-card">
+  <div class="card-head"><h2><%- ic('dashboard') %><%= t('leaderboard') %></h2><span class="pill ok"><%= ranked.length %> <%= t('awarded') %></span></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th><%= t('rank') %></th><th><%= t('employee') %></th><th><%= t('section') %></th><th class="num"><%= t('balance') %></th><th class="num"><%= t('change') %></th><th><%= t('rating') %></th><th><%= t('award') %></th></tr></thead>
+    <tbody>
+    <% const flat = board.rows.filter(r => !r.awarded && !r.below); board.rows.filter(r => r.awarded || r.below).forEach(r => { %>
+      <tr class="<%= r.below ? 'row-warn' : '' %>">
+        <td><b><%= r.rank ? '#' + r.rank : '—' %></b></td>
+        <td><a href="/points/employee/<%= r.id %>?year=<%= year %>" style="display:flex;align-items:center;gap:10px;color:inherit"><span class="avatar" style="width:30px;height:30px;font-size:12px"><%= initials(r) %></span><span><span class="cell-main"><%= nm(r) %></span><span class="cell-sub mono"><%= r.employee_no %></span></span></a></td>
+        <td class="mono"><%= r.section_code || '' %></td>
+        <td class="num"><b><%= fmtN(r.balance) %></b><div class="balance-bar"><span style="width:<%= Math.round(r.balance / maxBal * 100) %>%"></span></div></td>
+        <td class="num"><span class="pts-delta <%= r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : '' %>"><%= sgn(r.delta) %></span><% if (r.pending) { %> <span class="pill warn" title="<%= t('ps_pending') %>"><%- ic('hourglass') %><%= r.pending %></span><% } %></td>
+        <td><%- ratingBadge(r) %></td>
+        <td><% if (r.awarded) { %><span class="pill ok"><%- ic('check') %><%= t('awarded') %></span><% } %></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% if (flat.length) { %>
+  <details class="collapsible" style="padding:14px 20px;border-top:1px solid var(--border)"><summary><b><%= flat.length %></b>&nbsp;<%= lang === 'ar' ? 'موظفًا عند الرصيد الافتتاحي (غير مستحقين)' : 'employees at the opening balance (not eligible)' %></summary>
+    <div style="display:flex;flex-wrap:wrap;gap:6px"><% flat.forEach(r => { %><a class="pill" href="/points/employee/<%= r.id %>?year=<%= year %>"><span class="mono"><%= r.employee_no %></span> <%= nm(r) %><% if (r.pending) { %> · <%- ic('hourglass') %><%= r.pending %><% } %></a><% }) %></div>
+  </details>
+  <% } %>
+</section>
+<section class="card">
+  <h2><%- ic('star') %><%= t('rating_tiers') %></h2>
+  <p class="muted small"><%= lang === 'ar' ? `يبدأ كل موظف السنة بـ ${fmtN(board.opening)} نقطة. من يتجاوز هذا الرصيد يُرتَّب ويُكافأ، ويحصل الأعلى ترتيبًا على تقدير أعلى.` : `Everyone starts the year with ${fmtN(board.opening)} points. Those who exceed it are ranked and awarded; higher ranks receive higher ratings.` %></p>
+  <table class="tbl small kv-table"><tbody>
+    <% board.sizes.forEach((n, i) => { const from = cum + 1; cum += n; %>
+      <tr><th><span class="rt rt-<%= tierNames[i] %>"><%= t('rt_' + tierNames[i]) %></span></th><td><%= n ? (from === cum ? '#' + from : '#' + from + ' – #' + cum) : '—' %></td></tr>
+    <% }) %>
+    <tr><th><span class="rt rt-acceptable"><%= t('rt_acceptable') %></span></th><td>#<%= cum + 1 %>+</td></tr>
+    <tr><th><%= lang === 'ar' ? 'لم يتجاوز الرصيد الافتتاحي' : 'Did not exceed opening' %></th><td><%= t('not_eligible') %></td></tr>
+  </tbody></table>
+  <p class="muted small" style="margin-top:12px"><%= lang === 'ar' ? 'النقاط المتساوية تأخذ نفس الترتيب ونفس التقدير.' : 'Equal balances share the same rank and rating.' %></p>
+</section>
+</div>
+<% } %>
+
+<% if (pending.length || canDecide) { %>
+<section class="card table-card" id="pending">
+  <div class="card-head"><h2><%- ic('hourglass') %><%= t('pending_points') %></h2><span class="pill <%= pending.length ? 'warn' : '' %>"><%= pending.length %></span></div>
+  <div class="table-wrap"><table class="tbl small">
+    <thead><tr><th><%= t('employee') %></th><th><%= t('point_rules') %></th><th class="num"><%= lang === 'ar' ? 'النقاط' : 'Points' %></th><th><%= t('reference') %></th><th><%= t('reason') %></th><th><%= lang === 'ar' ? 'مقدم الطلب' : 'Requested by' %></th><th></th></tr></thead>
+    <tbody>
+    <% if (!pending.length) { %><tr><td colspan="7" class="empty"><%- ic('check-circle') %><%= t('no_records') %></td></tr><% } %>
+    <% pending.forEach(p => { %>
+      <tr><td><span class="mono"><%= p.employee_no %></span> <%= nm(p) %></td><td><%= lang === 'en' ? p.rule_en : p.rule_ar %></td>
+        <td class="num"><b class="pts-delta <%= p.points > 0 ? 'up' : 'down' %>"><%= sgn(p.points) %></b></td><td class="mono"><%= p.reference || '' %></td><td><%= p.reason %></td>
+        <td><%= lang === 'en' && p.req_en ? p.req_en : p.req_ar %><span class="cell-sub"><%= fmt(p.requested_at) %></span></td>
+        <td><% if (canDecide && p.requested_by !== user.id && p.employee_id !== user.id) { %>
+          <form method="post" action="/points/<%= p.id %>/decide" class="inline-form" style="margin:0">
+            <input name="comment" placeholder="<%= t('comment') %>" aria-label="<%= t('comment') %>" size="12">
+            <button class="btn small success" name="decision" value="approved"><%- ic('check') %><%= t('approve') %></button>
+            <button class="btn small danger" name="decision" value="rejected"><%- ic('x') %><%= t('reject') %></button>
+          </form><% } else { %><span class="pill warn"><%= t('ps_pending') %></span><% } %></td></tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</section>
+<% } %>
+
+<% if (canRequest) { %>
+<section class="card">
+  <details class="collapsible"><summary><h2 class="inline-h"><%- ic('plus') %><%= t('request_points') %></h2></summary>
+  <form method="post" action="/points" class="form-grid">
+    <label><span><%= t('point_rules') %> <span class="req">*</span></span><select name="rule_code" required><option value=""></option>
+      <% rules.filter(r => r.active && !r.auto).forEach(r => { %><option value="<%= r.code %>"><%= r.points > 0 ? '+' : '' %><%= r.points %> · <%= lang === 'en' ? r.name_en : r.name_ar %></option><% }) %></select></label>
+    <label><%= t('reference') %><input name="reference" placeholder="SM-2026-014 / PRJ-..." dir="ltr"></label>
+    <label class="span2"><span><%= t('reason') %> <span class="req">*</span></span><textarea name="reason" rows="2" required></textarea></label>
+    <div class="span2">
+      <div class="search-field" style="position:relative"><%- ic('search') %><input class="picker-filter" style="padding-inline-start:38px" placeholder="<%= t('search') %>…" data-target="pts-picker" aria-label="<%= t('search') %>"></div>
+      <div class="picker" id="pts-picker">
+        <% employees.filter(e => e.id !== user.id).forEach(e => { %><label data-text="<%= e.employee_no %> <%= e.name_ar %> <%= e.name_en || '' %>"><input type="checkbox" name="employee_ids" value="<%= e.id %>"><span class="picker-meta"><span><b class="mono"><%= e.employee_no %></b> <%= nm(e) %></span></span></label><% }) %>
+      </div>
+    </div>
+    <div class="form-actions"><button class="btn primary"><%- ic('send', 'ic-dir') %><%= lang === 'ar' ? 'إرسال للاعتماد' : 'Send for approval' %></button>
+      <small class="muted" style="align-self:center"><%= lang === 'ar' ? 'لا تُحتسب النقاط إلا بعد اعتماد مدير الدائرة أو الموارد البشرية. لا يُسمح بتعديل الرصيد مباشرة.' : 'Points only count after Division Manager or HR approval. Balances are never edited directly.' %></small></div>
+  </form></details>
+</section>
+<% } %>
+
+<% if (!canViewAll) { %>
+<section class="card table-card">
+  <div class="card-head"><h2><%- ic('file') %><%= t('statement') %></h2></div>
+  <%- include('partials/points_rows', { rows: myStatement, self: true, canReverse: false }) %>
+</section>
+<% } %>
+
+<section class="card" id="rules">
+  <details class="collapsible"><summary><h2 class="inline-h"><%- ic('settings') %><%= t('point_rules') %></h2></summary>
+  <form method="post" action="/points/rules">
+    <div class="table-wrap"><table class="tbl small">
+      <thead><tr><th><%= t('code') %></th><th><%= t('name') %></th><th class="num"><%= lang === 'ar' ? 'النقاط' : 'Points' %></th><th><%= lang === 'ar' ? 'تلقائي' : 'Automatic' %></th><th><%= lang === 'ar' ? 'مفعل' : 'Active' %></th></tr></thead>
+      <tbody><% rules.filter(r => r.code !== 'reversal').forEach(r => { %>
+        <tr><td class="mono"><%= r.code %></td><td><%= lang === 'en' ? r.name_en : r.name_ar %><% if (r.category === 'safety_attendance') { %><span class="cell-sub"><%= lang === 'ar' ? 'حد سنوي 600 نقطة' : 'Annual cap 600 points' %></span><% } %></td>
+          <td class="num"><% if (canConfigure) { %><input type="number" name="points_<%= r.code %>" value="<%= r.points %>" style="width:110px" step="1" aria-label="<%= r.code %>"><% } else { %><b class="pts-delta <%= r.points > 0 ? 'up' : 'down' %>"><%= sgn(r.points) %></b><% } %></td>
+          <td><%= r.auto ? (lang === 'ar' ? 'عند إغلاق أمر العمل' : 'On work order closure') : '' %></td>
+          <td><% if (canConfigure) { %><input type="checkbox" name="active_<%= r.code %>" value="1" <%= r.active ? 'checked' : '' %> aria-label="active"><% } else { %><%= r.active ? t('yes') : t('no') %><% } %></td></tr>
+      <% }) %></tbody>
+    </table></div>
+    <% if (canConfigure) { %>
+    <div class="form-grid" style="margin-top:16px">
+      <label><%= t('opening_balance') %><input type="number" name="opening" value="<%= board.opening %>" min="0" step="1"></label>
+      <div><b><%= t('rating_tiers') %></b><p class="muted small"><%= t('rating_tiers_hint') %></p>
+        <div class="tier-inputs"><% board.sizes.forEach((n, i) => { %><label><span class="rt rt-<%= tierNames[i] %>"><%= t('rt_' + tierNames[i]) %></span><input type="number" min="0" name="tier_<%= i %>" value="<%= n %>"></label><% }) %><label><span class="rt rt-acceptable"><%= t('rt_acceptable') %></span><input value="∞" disabled></label></div></div>
+      <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button><small class="muted" style="align-self:center"><%= lang === 'ar' ? 'القيم إعدادات افتراضية حتى اعتماد سياسة الشركة.' : 'Values are defaults until approved by company policy.' %></small></div>
+    </div>
+    <% } %>
+  </form></details>
+</section>
+<%- include('partials/footer') %>

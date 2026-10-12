@@ -1,0 +1,7 @@
+<%- include('partials/header') %>
+<div class="card" style="max-width:560px;margin:40px auto;text-align:center;padding:40px">
+  <div class="kpi-icon" style="margin:0 auto 16px;width:56px;height:56px;background:var(--crit-soft);color:var(--crit)"><%- ic(status === 404 ? 'search' : 'alert') %></div>
+  <h1><%= status %></h1><p class="pre muted"><%= message %></p>
+  <a class="btn primary" href="javascript:history.back()"><%- ic('arrow', 'ic-back') %><%= t('back') %></a> <a class="btn" href="/"><%- ic('dashboard') %><%= t('dashboard') %></a>
+</div>
+<%- include('partials/footer') %>

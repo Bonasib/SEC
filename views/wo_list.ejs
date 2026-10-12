@@ -1,0 +1,51 @@
+<%- include('partials/header', { pageTitle: t('work_orders') }) %>
+<div class="page-head">
+  <div><div class="eyebrow"><%- ic('clipboard') %><%= t('grp_operations') %></div><h1><%= t('work_orders') %> <span class="result-count">(<%= total %>)</span></h1></div>
+  <div class="btns">
+    <a class="btn" href="/data/export/work_orders?<%= qs %>"><%- ic('sheet') %>Excel</a>
+    <a class="btn" href="/data/export/work_orders?format=csv&<%= qs %>"><%- ic('download') %>CSV</a>
+    <% if (['team_leader','section_head','division_manager','department_manager','sector_head','admin'].includes(user.role)) { %><a class="btn primary" href="/wo/new"><%- ic('plus') %><%= t('new_wo') %></a><% } %>
+  </div>
+</div>
+<form class="filters card" method="get" role="search">
+  <div class="search-field"><%- ic('search') %><input name="q" value="<%= query.q || '' %>" placeholder="WO / <%= t('title') %> / <%= t('location') %>" aria-label="<%= t('search') %>"></div>
+  <select name="status" aria-label="<%= t('status') %>"><option value=""><%= t('status') %>: <%= t('all') %></option>
+    <% ['awaiting_authorization','open','in_progress','pending_closure','closed','cancelled'].forEach(s => { %><option value="<%= s %>" <%= query.status === s ? 'selected' : '' %>><%= t('st_' + s) %></option><% }) %></select>
+  <select name="priority" aria-label="<%= t('priority') %>"><option value=""><%= t('priority') %>: <%= t('all') %></option><option value="critical" <%= query.priority === 'critical' ? 'selected' : '' %>>C1–C4</option>
+    <% PRIORITIES.forEach(p => { %><option value="<%= p %>" <%= query.priority === p ? 'selected' : '' %>><%= t('pr_' + p) %></option><% }) %></select>
+  <select name="type" aria-label="<%= t('type') %>"><option value=""><%= t('type') %>: <%= t('all') %></option>
+    <% WO_TYPES.forEach(p => { %><option value="<%= p %>" <%= query.type === p ? 'selected' : '' %>><%= t('wt_' + p) %></option><% }) %></select>
+  <select name="section" aria-label="<%= t('section') %>"><option value=""><%= t('section') %>: <%= t('all') %></option>
+    <% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(query.section) === String(s.id) ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select>
+  <input type="date" name="from" value="<%= query.from || '' %>" aria-label="<%= t('from') %>" title="<%= t('from') %>">
+  <input type="date" name="to" value="<%= query.to || '' %>" aria-label="<%= t('to') %>" title="<%= t('to') %>">
+  <label class="inline"><input type="checkbox" name="missing_photos" value="1" <%= query.missing_photos ? 'checked' : '' %>><%= t('kpi_missing_photos') %></label>
+  <% if (query.mine) { %><input type="hidden" name="mine" value="1"><% } %>
+  <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button><a class="btn ghost" href="/wo"><%= t('clear') %></a>
+</form>
+<div class="card table-card">
+<div class="table-wrap">
+<table class="tbl">
+  <thead><tr><th><%= t('wo_number') %></th><th><%= t('title') %></th><th><%= t('priority') %></th><th><%= t('section') %></th><th><%= t('team_leader') %></th><th><%= t('planned_start') %></th><th><%= t('photos') %></th><th><%= t('status') %></th></tr></thead>
+  <tbody>
+  <% if (!rows.length) { %><tr><td colspan="8" class="empty"><%- ic('inbox') %><%= t('no_records') %></td></tr><% } %>
+  <% rows.forEach(w => { %>
+    <tr>
+      <td><a class="wo-link" href="/wo/<%= w.id %>"><%= w.wo_number %></a></td>
+      <td><span class="cell-main"><%= w.title %></span><span class="cell-sub"><%= t('wt_' + w.type) %><% if (w.needs_sector_approval) { %> · <span class="pill warn" title="<%= t('step_sector_head') %>">21+</span><% } %></span></td>
+      <td><span class="pill pr-<%= w.priority %>"><%= w.priority === 'normal' ? t('pr_normal') : w.priority %></span></td>
+      <td><span class="mono"><%= w.section_code %></span></td>
+      <td><%= lang === 'en' && w.leader_en ? w.leader_en : w.leader_ar %></td>
+      <td class="nowrap"><%= fmt(w.planned_start) %></td>
+      <td class="nowrap"><span class="pill <%= w.before_n ? 'ok' : 'bad' %>" title="<%= t('before') %>"><%- ic(w.before_n ? 'check' : 'x') %><%= t('before') %></span> <span class="pill <%= w.after_n ? 'ok' : 'bad' %>" title="<%= t('after') %>"><%- ic(w.after_n ? 'check' : 'x') %><%= t('after') %></span></td>
+      <td><span class="st st-<%= w.status %>"><%= t('st_' + w.status) %></span></td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>
+</div>
+<% if (total > 50) { const pages = Math.ceil(total / 50); %>
+<nav class="pager" aria-label="pages"><% for (let p = 1; p <= pages; p++) { %><a class="<%= p === page ? 'active' : '' %>" <%= p === page ? 'aria-current=page' : '' %> href="?<%= qs %>&page=<%= p %>"><%= p %></a><% } %></nav>
+<% } %>
+</div>
+<%- include('partials/footer') %>

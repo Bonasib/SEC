@@ -1,0 +1,19 @@
+<%- include('partials/header', { pageTitle: t('employees') }) %>
+<div class="page-head"><h1 class="title-ic"><%- ic('users') %><%= t('employees') %> <span class="result-count">(<%= rows.length %>)</span></h1>
+  <div class="btns"><% if (canManage) { %><a class="btn primary" href="/employees/new"><%- ic('plus') %><%= t('add_employee') %></a><% } %><a class="btn" href="/data/export/employees"><%- ic('sheet') %>Excel</a><a class="btn" href="/data/export/employees?format=csv"><%- ic('download') %>CSV</a><a class="btn" href="/data#employees"><%- ic('upload') %><%= t('import') %></a></div></div>
+<form class="filters card" method="get" role="search">
+  <div class="search-field"><%- ic('search') %><input name="q" value="<%= query.q || '' %>" placeholder="<%= t('search') %>" aria-label="<%= t('search') %>"></div>
+  <select name="section"><option value=""><%= t('section') %>: <%= t('all') %></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(query.section) === String(s.id) ? 'selected' : '' %>><%= s.code %> <%= nm(s) %></option><% }) %></select>
+  <select name="role"><option value=""><%= t('role') %>: <%= t('all') %></option><% ROLES.forEach(r => { %><option value="<%= r %>" <%= query.role === r ? 'selected' : '' %>><%= t('role_' + r) %></option><% }) %></select>
+  <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button>
+</form>
+<div class="card table-card"><div class="table-wrap"><table class="tbl">
+  <tr><th><%= t('employee_no') %></th><th><%= t('name') %></th><th><%= t('job_title') %></th><th><%= t('section') %></th><th><%= t('nationality') %></th><th><%= t('role') %></th><th><%= t('email') %></th><th><%= t('points') %></th><th><%= t('status') %></th></tr>
+  <% rows.forEach(e => { %><tr>
+    <td><a class="wo-link" href="/employees/<%= e.id %>"><%= e.employee_no %></a></td><td><span style="display:flex;align-items:center;gap:10px"><span class="avatar" style="width:30px;height:30px;font-size:12px"><%= initials(e) %></span><span class="cell-main"><%= nm(e) %></span></span></td><td><%= lang === 'ar' && e.job_title_ar ? e.job_title_ar : e.job_title_en || '' %></td><td><%= e.section_code || '' %></td><td><%= e.nationality || '' %></td>
+    <td><%= t('role_' + e.role) %></td><td class="small" dir="ltr"><%= e.email || '—' %></td><td><% const p = pts[e.id]; if (p && p.rating) { %><span class="rt rt-<%= p.rating %>"><%= t('rt_' + p.rating) %></span><% } else if (p && p.below) { %><span class="pill bad">↓</span><% } else { %><span class="muted small">—</span><% } %></td>
+    <td><% if (e.status !== 'active') { %><span class="pill bad"><%= e.status %></span><% } else if (e.leave_today) { %><span class="pill warn"><%= e.leave_today %></span><% } else if (e.busy) { %><span class="pill"><%= t('st_in_progress') %></span><% } else { %><span class="pill ok"><%- ic('check') %><%= lang === 'ar' ? 'متاح' : 'Available' %></span><% } %></td>
+  </tr><% }) %>
+</table></div></div>
+
+<%- include('partials/footer') %>

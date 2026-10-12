@@ -1,0 +1,24 @@
+<%- include('partials/header', { pageTitle: t('equipment') }) %>
+<div class="page-head"><h1 class="title-ic"><%- ic('truck') %><%= t('equipment') %></h1><div class="btns"><a class="btn" href="/data/export/equipment"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#equipment"><%- ic('upload') %><%= t('import') %></a></div></div>
+<p class="muted"><%= lang === 'ar' ? 'لا يمكن إسناد معدة منتهية الصلاحية أو تحت الصيانة أو محجوزة لمهمة أخرى في نفس الفترة.' : 'Expired, under-maintenance or already-booked equipment cannot be assigned.' %></p>
+<% if (canEdit) { %>
+<details class="card collapsible"><summary><b class="inline-h" style="gap:8px;align-items:center"><%- ic('plus') %><%= t('add') %></b></summary><form method="post" action="/equipment" class="form-grid">
+  <label><%= t('code') %> *<input name="code" required></label>
+  <label><%= t('type') %><select name="type"><% EQUIP_TYPES.forEach(x => { %><option><%= x %></option><% }) %></select></label>
+  <label><%= t('name') %> *<input name="name" required></label>
+  <label><%= t('status') %><select name="status"><% EQUIP_STATUS.forEach(x => { %><option><%= x %></option><% }) %></select></label>
+  <label><%= t('expiry_date') %><input type="date" name="expiry_date"></label><label><%= t('calibration_due') %><input type="date" name="calibration_due"></label>
+  <label><%= t('location') %><input name="location"></label>
+  <div class="span2"><button class="btn primary"><%- ic('save') %><%= t('save') %></button></div></form></details>
+<% } %>
+<div class="card table-card"><div class="table-wrap"><table class="tbl">
+  <tr><th><%= t('code') %></th><th><%= t('name') %></th><th><%= t('type') %></th><th><%= t('status') %></th><th><%= t('expiry_date') %></th><th><%= t('calibration_due') %></th><th>WO</th><% if (canEdit) { %><th></th><% } %></tr>
+  <% rows.forEach(q => { %><tr class="<%= q.flag === 'expired' ? 'row-bad' : q.flag === 'soon' ? 'row-warn' : '' %>">
+    <td><b><%= q.code %></b></td><td><%= q.name %></td><td><%= q.type %></td><td><%= q.status %></td><td><%= q.expiry_date || '—' %></td><td><%= q.calibration_due || '—' %></td><td><%= q.booked_on || '' %></td>
+    <% if (canEdit) { %><td><details><summary><%= t('edit') %></summary><form method="post" action="/equipment/<%= q.id %>" class="mini-grid">
+      <select name="status"><% EQUIP_STATUS.forEach(x => { %><option <%= q.status === x ? 'selected' : '' %>><%= x %></option><% }) %></select>
+      <input type="date" name="expiry_date" value="<%= q.expiry_date || '' %>"><input type="date" name="calibration_due" value="<%= q.calibration_due || '' %>">
+      <input name="location" value="<%= q.location || '' %>"><button class="btn small primary"><%= t('save') %></button></form></details></td><% } %>
+  </tr><% }) %>
+</table></div></div>
+<%- include('partials/footer') %>

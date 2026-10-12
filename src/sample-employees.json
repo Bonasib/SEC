@@ -1,0 +1,492 @@
+[
+ {
+  "id": "F001",
+  "name_ar": "محمد سعد القحطاني",
+  "nationality": "Saudi",
+  "section": "H1",
+  "title_en": "Overhead Line Technician"
+ },
+ {
+  "id": "F002",
+  "name_ar": "فيصل ناصر الدوسري",
+  "nationality": "Saudi",
+  "section": "H1",
+  "title_en": "Tower Technician"
+ },
+ {
+  "id": "F003",
+  "name_ar": "سلطان عوض الشهري",
+  "nationality": "Saudi",
+  "section": "H1",
+  "title_en": "Maintenance Inspector"
+ },
+ {
+  "id": "F004",
+  "name_ar": "نواف عبدالله الحربي",
+  "nationality": "Saudi",
+  "section": "H1",
+  "title_en": "Insulator Technician"
+ },
+ {
+  "id": "F005",
+  "name_ar": "راشد فهد العجمي",
+  "nationality": "Saudi",
+  "section": "H1",
+  "title_en": "Conductor Technician"
+ },
+ {
+  "id": "F006",
+  "name_ar": "ماجد صالح الزهراني",
+  "nationality": "Saudi",
+  "section": "H1",
+  "title_en": "Line Maintenance Engineer"
+ },
+ {
+  "id": "F007",
+  "name_ar": "تركي أحمد المطيري",
+  "nationality": "Saudi",
+  "section": "H1",
+  "title_en": "Tower Inspection Technician"
+ },
+ {
+  "id": "F008",
+  "name_ar": "بدر محمد الغامدي",
+  "nationality": "Saudi",
+  "section": "H1",
+  "title_en": "Equipment Operator"
+ },
+ {
+  "id": "F009",
+  "name_ar": "سعيد علي اليامي",
+  "nationality": "Saudi",
+  "section": "H1",
+  "title_en": "Tower Communication Technician"
+ },
+ {
+  "id": "F010",
+  "name_ar": "وليد حسن الشمري",
+  "nationality": "Saudi",
+  "section": "H1",
+  "title_en": "Field Team Leader"
+ },
+ {
+  "id": "F011",
+  "name_ar": "صالح مبارك الهاجري",
+  "nationality": "Saudi",
+  "section": "H2",
+  "title_en": "Underground Line Technician"
+ },
+ {
+  "id": "F012",
+  "name_ar": "مشعل خالد العتيبي",
+  "nationality": "Saudi",
+  "section": "H2",
+  "title_en": "Cable Technician"
+ },
+ {
+  "id": "F013",
+  "name_ar": "زياد عبدالله السهلي",
+  "nationality": "Saudi",
+  "section": "H2",
+  "title_en": "Cable Jointing Technician"
+ },
+ {
+  "id": "F014",
+  "name_ar": "منصور فهد القرني",
+  "nationality": "Saudi",
+  "section": "H2",
+  "title_en": "Underground Line Engineer"
+ },
+ {
+  "id": "F015",
+  "name_ar": "جابر سعد المري",
+  "nationality": "Saudi",
+  "section": "H2",
+  "title_en": "Excavation Work Inspector"
+ },
+ {
+  "id": "F016",
+  "name_ar": "حمود ناصر الرشيدي",
+  "nationality": "Saudi",
+  "section": "H2",
+  "title_en": "Fault Location Technician"
+ },
+ {
+  "id": "F017",
+  "name_ar": "يوسف علي العمري",
+  "nationality": "Saudi",
+  "section": "H2",
+  "title_en": "Cable Testing Technician"
+ },
+ {
+  "id": "F018",
+  "name_ar": "عادل محمد السبيعي",
+  "nationality": "Saudi",
+  "section": "H2",
+  "title_en": "Excavation Permit Coordinator"
+ },
+ {
+  "id": "F019",
+  "name_ar": "خالد راشد الدوسري",
+  "nationality": "Saudi",
+  "section": "H3",
+  "title_en": "Encroachment Inspector"
+ },
+ {
+  "id": "F020",
+  "name_ar": "فواز سليمان العنزي",
+  "nationality": "Saudi",
+  "section": "H3",
+  "title_en": "Permit Coordinator"
+ },
+ {
+  "id": "F021",
+  "name_ar": "عبدالملك حسن الحازمي",
+  "nationality": "Saudi",
+  "section": "H3",
+  "title_en": "Site Inspector"
+ },
+ {
+  "id": "F022",
+  "name_ar": "طلال سعيد القحطاني",
+  "nationality": "Saudi",
+  "section": "H3",
+  "title_en": "Route Inspector"
+ },
+ {
+  "id": "F023",
+  "name_ar": "نايف مفرح الشهراني",
+  "nationality": "Saudi",
+  "section": "H3",
+  "title_en": "Permit Specialist"
+ },
+ {
+  "id": "F024",
+  "name_ar": "سامي عبدالله الغامدي",
+  "nationality": "Saudi",
+  "section": "H3",
+  "title_en": "Government Coordinator"
+ },
+ {
+  "id": "F025",
+  "name_ar": "عبدالإله فهد المطيري",
+  "nationality": "Saudi",
+  "section": "H4",
+  "title_en": "Facilities Technician"
+ },
+ {
+  "id": "F026",
+  "name_ar": "حسن محمد الزهراني",
+  "nationality": "Saudi",
+  "section": "H4",
+  "title_en": "Building Technician"
+ },
+ {
+  "id": "F027",
+  "name_ar": "ياسر ناصر العتيبي",
+  "nationality": "Saudi",
+  "section": "H4",
+  "title_en": "HVAC Technician"
+ },
+ {
+  "id": "F028",
+  "name_ar": "مشاري سعد القحطاني",
+  "nationality": "Saudi",
+  "section": "H4",
+  "title_en": "Facilities Electrical Technician"
+ },
+ {
+  "id": "F029",
+  "name_ar": "رامي عبدالله الدوسري",
+  "nationality": "Saudi",
+  "section": "H4",
+  "title_en": "Facilities Inspector"
+ },
+ {
+  "id": "F030",
+  "name_ar": "فهد صالح الحربي",
+  "nationality": "Saudi",
+  "section": "H5",
+  "title_en": "Field Operator"
+ },
+ {
+  "id": "F031",
+  "name_ar": "عبدالله ناصر الشمري",
+  "nationality": "Saudi",
+  "section": "H5",
+  "title_en": "Operations Coordinator"
+ },
+ {
+  "id": "F032",
+  "name_ar": "أحمد سعد اليامي",
+  "nationality": "Saudi",
+  "section": "H5",
+  "title_en": "Field Inspector"
+ },
+ {
+  "id": "F033",
+  "name_ar": "ناصر محمد الهاجري",
+  "nationality": "Saudi",
+  "section": "H5",
+  "title_en": "Shift Operator"
+ },
+ {
+  "id": "F034",
+  "name_ar": "متعب خالد المطيري",
+  "nationality": "Saudi",
+  "section": "H5",
+  "title_en": "Operations Technician"
+ },
+ {
+  "id": "F035",
+  "name_ar": "مازن عبدالله السبيعي",
+  "nationality": "Saudi",
+  "section": "H6",
+  "title_en": "Low Voltage Technician"
+ },
+ {
+  "id": "F036",
+  "name_ar": "وليد سعد الغامدي",
+  "nationality": "Saudi",
+  "section": "H6",
+  "title_en": "Panel Technician"
+ },
+ {
+  "id": "F037",
+  "name_ar": "إبراهيم صالح العجمي",
+  "nationality": "Saudi",
+  "section": "H6",
+  "title_en": "Battery Technician"
+ },
+ {
+  "id": "F038",
+  "name_ar": "عمار ناصر الشهري",
+  "nationality": "Saudi",
+  "section": "H6",
+  "title_en": "Charger Technician"
+ },
+ {
+  "id": "F039",
+  "name_ar": "حمد محمد القحطاني",
+  "nationality": "Saudi",
+  "section": "H7",
+  "title_en": "GCB Technician"
+ },
+ {
+  "id": "F040",
+  "name_ar": "بندر علي الدوسري",
+  "nationality": "Saudi",
+  "section": "H7",
+  "title_en": "SF6 Technician"
+ },
+ {
+  "id": "F041",
+  "name_ar": "سامر فهد الحربي",
+  "nationality": "Saudi",
+  "section": "H7",
+  "title_en": "Circuit Breaker Engineer"
+ },
+ {
+  "id": "F042",
+  "name_ar": "خالد سعد المطيري",
+  "nationality": "Saudi",
+  "section": "H8",
+  "title_en": "Protection Technician"
+ },
+ {
+  "id": "F043",
+  "name_ar": "عبدالله محمد العنزي",
+  "nationality": "Saudi",
+  "section": "H8",
+  "title_en": "Relay Technician"
+ },
+ {
+  "id": "F044",
+  "name_ar": "فهد ناصر القحطاني",
+  "nationality": "Saudi",
+  "section": "H8",
+  "title_en": "Protection Engineer"
+ },
+ {
+  "id": "F045",
+  "name_ar": "نواف صالح الغامدي",
+  "nationality": "Saudi",
+  "section": "H9",
+  "title_en": "Fire Systems Technician"
+ },
+ {
+  "id": "F046",
+  "name_ar": "عمران خان",
+  "nationality": "Pakistani",
+  "section": "H1",
+  "title_en": "Tower Technician"
+ },
+ {
+  "id": "F047",
+  "name_ar": "محمد عارف",
+  "nationality": "Pakistani",
+  "section": "H1",
+  "title_en": "Conductor Technician"
+ },
+ {
+  "id": "F048",
+  "name_ar": "وقاص أحمد",
+  "nationality": "Pakistani",
+  "section": "H2",
+  "title_en": "Cable Technician"
+ },
+ {
+  "id": "F049",
+  "name_ar": "بلال محمود",
+  "nationality": "Pakistani",
+  "section": "H4",
+  "title_en": "Facilities Technician"
+ },
+ {
+  "id": "F050",
+  "name_ar": "شاهد إقبال",
+  "nationality": "Pakistani",
+  "section": "H5",
+  "title_en": "Field Operator"
+ },
+ {
+  "id": "F051",
+  "name_ar": "فاروق حسن",
+  "nationality": "Pakistani",
+  "section": "H7",
+  "title_en": "Circuit Breaker Technician"
+ },
+ {
+  "id": "F052",
+  "name_ar": "عدنان رشيد",
+  "nationality": "Pakistani",
+  "section": "H9",
+  "title_en": "Fire Alarm Technician"
+ },
+ {
+  "id": "F053",
+  "name_ar": "راجيف كومار",
+  "nationality": "Indian",
+  "section": "H1",
+  "title_en": "Tower Maintenance Technician"
+ },
+ {
+  "id": "F054",
+  "name_ar": "أنيل شارما",
+  "nationality": "Indian",
+  "section": "H2",
+  "title_en": "Cable Technician"
+ },
+ {
+  "id": "F055",
+  "name_ar": "سانجاي باتيل",
+  "nationality": "Indian",
+  "section": "H4",
+  "title_en": "HVAC Technician"
+ },
+ {
+  "id": "F056",
+  "name_ar": "فيجاي سينغ",
+  "nationality": "Indian",
+  "section": "H5",
+  "title_en": "Equipment Operator"
+ },
+ {
+  "id": "F057",
+  "name_ar": "أرفيند راج",
+  "nationality": "Indian",
+  "section": "H6",
+  "title_en": "Low Voltage Technician"
+ },
+ {
+  "id": "F058",
+  "name_ar": "راهول ناير",
+  "nationality": "Indian",
+  "section": "H8",
+  "title_en": "Protection Technician"
+ },
+ {
+  "id": "F059",
+  "name_ar": "ديباك مينون",
+  "nationality": "Indian",
+  "section": "H9",
+  "title_en": "Fire Pump Technician"
+ },
+ {
+  "id": "F060",
+  "name_ar": "محمود أحمد منصور",
+  "nationality": "Egyptian",
+  "section": "H1",
+  "title_en": "Line Technician"
+ },
+ {
+  "id": "F061",
+  "name_ar": "أحمد جابر إبراهيم",
+  "nationality": "Egyptian",
+  "section": "H2",
+  "title_en": "Underground Line Technician"
+ },
+ {
+  "id": "F062",
+  "name_ar": "مصطفى السيد علي",
+  "nationality": "Egyptian",
+  "section": "H4",
+  "title_en": "Facilities Maintenance Technician"
+ },
+ {
+  "id": "F063",
+  "name_ar": "حسام عبدالفتاح",
+  "nationality": "Egyptian",
+  "section": "H7",
+  "title_en": "GCB Technician"
+ },
+ {
+  "id": "F064",
+  "name_ar": "وليد صبري محمد",
+  "nationality": "Egyptian",
+  "section": "H8",
+  "title_en": "Protection Device Technician"
+ },
+ {
+  "id": "F065",
+  "name_ar": "طارق عثمان محمد",
+  "nationality": "Sudanese",
+  "section": "H1",
+  "title_en": "Tower Technician"
+ },
+ {
+  "id": "F066",
+  "name_ar": "مأمون عبدالله حسن",
+  "nationality": "Sudanese",
+  "section": "H5",
+  "title_en": "Operations Inspector"
+ },
+ {
+  "id": "F067",
+  "name_ar": "معتصم أحمد الطيب",
+  "nationality": "Sudanese",
+  "section": "H9",
+  "title_en": "Fire Systems Technician"
+ },
+ {
+  "id": "F068",
+  "name_ar": "محمد رحمن",
+  "nationality": "Bangladeshi",
+  "section": "H2",
+  "title_en": "Assistant Cable Technician"
+ },
+ {
+  "id": "F069",
+  "name_ar": "عبدالكريم حسين",
+  "nationality": "Bangladeshi",
+  "section": "H4",
+  "title_en": "Assistant Facilities Technician"
+ },
+ {
+  "id": "F070",
+  "name_ar": "نور الإسلام",
+  "nationality": "Bangladeshi",
+  "section": "H5",
+  "title_en": "Assistant Field Operator"
+ }
+]

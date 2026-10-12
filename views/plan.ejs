@@ -1,0 +1,75 @@
+<%- include('partials/header', { pageTitle: t('plan') }) %>
+<section class="page-head wo-head">
+  <div style="display:flex;gap:16px;align-items:center;flex:1;min-width:260px">
+    <span class="avatar" style="width:56px;height:56px;font-size:20px"><%= initials(plan) %></span>
+    <div><a class="small" href="/plans"><%- ic('arrow', 'ic-back') %> <%= t('plans') %></a>
+      <h1 style="margin:6px 0"><%= t('plan') %> · <a href="/employees/<%= plan.employee_id %>" style="color:inherit"><%= nm(plan) %></a></h1>
+      <div class="tags"><span class="wo-num"><%= plan.employee_no %></span><span class="pill"><%= plan.section_code %></span>
+        <span class="pill <%= { active: 'warn', transfer_recommended: 'bad', improved: 'ok', transferred: 'info', closed: '' }[plan.status] %>"><%= t('pl_' + plan.status) %></span>
+        <span class="pill"><%= t('plan_started') %> <%= plan.start_year %></span></div></div>
+  </div>
+  <ol class="stepper" aria-label="<%= t('progress') %>">
+    <% for (let i = 0; i < PLAN_YEARS; i++) { const y = plan.start_year + i; const r = reviews.find(x => x.year === y); const st = r ? (r.improved ? 'done' : 'current') : ''; %>
+      <li class="<%= r ? (r.improved ? 'done' : (i === PLAN_YEARS - 1 ? 'failed' : 'warned')) : '' %>"><span class="node"><%- r ? (r.improved ? ic('check') : ic('x')) : y %></span><span class="s-label"><%= y %><% if (r) { %> · <%= t('rk_' + r.rating) %><% } %></span></li>
+    <% } %>
+  </ol>
+</section>
+
+<% if (plan.status === 'transfer_recommended') { %>
+<section class="card" style="border-color:var(--crit)">
+  <h2><%- ic('alert') %><%= t('transfer_decision') %></h2>
+  <p><%= t('transfer_decision_hint').replace('{n}', PLAN_YEARS) %></p>
+  <% if (canDecide) { %>
+  <div class="grid2" style="margin:0">
+    <form method="post" action="/plans/<%= plan.id %>/transfer" class="decide" style="margin:0">
+      <b><%- ic('transfer') %> <%= t('confirm_transfer') %></b>
+      <label><span><%= t('new_section') %> <span class="req">*</span></span><select name="section_id" required><option value=""></option><% sections.forEach(s => { %><option value="<%= s.id %>"><%= s.code %> · <%= nm(s) %></option><% }) %></select></label>
+      <label><span><%= t('decision_no') %> <span class="req">*</span></span><input name="decision_no" required></label>
+      <button class="btn danger"><%- ic('transfer') %><%= t('confirm_transfer') %></button>
+    </form>
+    <form method="post" action="/plans/<%= plan.id %>/extend" class="decide" style="margin:0;background:var(--surface-2)">
+      <b><%- ic('clock') %> <%= t('extend_plan') %></b>
+      <label><span><%= t('reason') %> <span class="req">*</span></span><textarea name="note" rows="3" required></textarea></label>
+      <button class="btn"><%- ic('clock') %><%= t('extend_plan') %></button>
+    </form>
+  </div>
+  <% } else { %><p class="muted"><%= t('awaiting_hr') %></p><% } %>
+</section>
+<% } %>
+<% if (plan.status === 'transferred') { %><div class="flash flash-info"><%- ic('transfer') %><div><%= t('pl_transferred') %>: <b><%= plan.to_code %> · <%= lang === 'en' ? plan.to_en : plan.to_ar %></b> · <%= t('decision_no') %> <%= plan.transfer_decision_no %></div></div><% } %>
+
+<div class="grid2">
+  <section class="card">
+    <h2><%- ic('star') %><%= t('annual_reviews') %></h2>
+    <ol class="timeline">
+      <% reviews.forEach(r => { %><li class="dec-<%= r.improved ? 'approved' : 'pending' %>"><span class="t-dot"><%- ic(r.improved ? 'check' : 'clock') %></span>
+        <div class="t-head"><b><%= r.year %></b><span class="<%= ['excellent','very_good','good','satisfactory','acceptable'].includes(r.rating) ? 'rt rt-' + r.rating : 'pill bad' %>"><%= t('rk_' + r.rating) %></span><span class="mono small"><%= Number(r.balance).toLocaleString('en-US') %></span></div>
+        <div class="t-meta"><%= r.improved ? t('pl_improved') : (r.notes === 'Plan opened' ? t('plan_opened') : t('no_improvement')) %> · <%= fmt(r.reviewed_at, false) %></div></li><% }) %>
+      <% for (let y = plan.start_year + reviews.length; y < plan.start_year + PLAN_YEARS && ['active'].includes(plan.status); y++) { %><li class="dec-superseded"><span class="t-dot"><%- ic('calendar') %></span><div class="t-head"><b><%= y %></b><span class="muted small"><%= t('upcoming_review') %></span></div></li><% } %>
+    </ol>
+  </section>
+  <section class="card">
+    <h2><%- ic('user-check') %><%= t('training') %></h2>
+    <h3><%= t('attended_since_plan') %></h3>
+    <% if (!courses.length) { %><div class="empty-inline"><%- ic('file') %><%= t('none') %></div><% } %>
+    <ul class="list"><% courses.forEach(c => { %><li><span class="pill <%= c.attendance === 'attended' ? 'ok' : 'info' %>"><%= t('att_' + c.attendance) %></span><span class="grow"><a class="cell-main" href="/training/<%= c.id %>"><%= lang === 'en' ? c.title_en : c.title_ar %></a><span class="cell-sub mono"><%= c.start_date %></span></span><% if (c.result) { %><span class="pill <%= c.result === 'pass' ? 'ok' : 'bad' %>"><%= t('res_' + c.result) %></span><% } %></li><% }) %></ul>
+    <% if (suggested.length) { %><h3><%= t('suggested_courses') %></h3>
+    <ul class="list"><% suggested.forEach(c => { %><li><span class="ev-tag ev-training"><%- ic('user-check') %><%= c.start_date %></span><span class="grow"><a class="cell-main" href="/training/<%= c.id %>"><%= lang === 'en' ? c.title_en : c.title_ar %></a></span><a class="btn small" href="/training/<%= c.id %>#attendees"><%= t('register') %></a></li><% }) %></ul><% } %>
+  </section>
+</div>
+
+<section class="card">
+  <h2><%- ic('file') %><%= t('plan_details') %></h2>
+  <% if (canEdit && ['active','transfer_recommended'].includes(plan.status)) { %>
+  <form method="post" action="/plans/<%= plan.id %>" class="form-grid">
+    <label class="span2"><%= t('goals') %><textarea name="goals" rows="4"><%= plan.goals || '' %></textarea></label>
+    <label class="span2"><%= t('plan_actions') %><textarea name="actions" rows="4"><%= plan.actions || '' %></textarea></label>
+    <label><%= t('coach') %><select name="coach_id"><% coaches.forEach(c => { %><option value="<%= c.id %>" <%= plan.coach_id === c.id ? 'selected' : '' %>><%= c.employee_no %> · <%= nm(c) %></option><% }) %></select></label>
+    <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button></div>
+  </form>
+  <% if (canDecide) { %><details class="danger-zone"><summary><%- ic('x-circle') %><%= t('close_plan') %></summary><form method="post" action="/plans/<%= plan.id %>/close"><label><span><%= t('reason') %> <span class="req">*</span></span><input name="note" required></label><button class="btn danger"><%= t('close_plan') %></button></form></details><% } %>
+  <% } else { %>
+  <dl class="kv"><dt><%= t('goals') %></dt><dd class="pre"><%= plan.goals || '—' %></dd><dt><%= t('plan_actions') %></dt><dd class="pre"><%= plan.actions || '—' %></dd><dt><%= t('coach') %></dt><dd><%= lang === 'en' && plan.coach_en ? plan.coach_en : (plan.coach_ar || '—') %></dd></dl>
+  <% } %>
+</section>
+<%- include('partials/footer') %>

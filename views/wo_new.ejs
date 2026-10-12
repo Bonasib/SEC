@@ -1,0 +1,98 @@
+<%- include('partials/header', { pageTitle: t('new_wo') }) %>
+<div class="page-head">
+  <div><div class="eyebrow"><%- ic('clipboard') %><%= t('work_orders') %></div><h1><%= t('new_wo') %></h1>
+  <p class="page-sub"><%= lang === 'ar' ? 'يُولَّد رقم أمر العمل تلقائيًا بصيغة WO + ستة أرقام عند الحفظ، ولا يمكن تعديله أو إعادة استخدامه.' : 'The work order number (WO + six digits) is generated automatically when saved and can never be edited or reused.' %></p></div>
+</div>
+<% if (typeof error !== 'undefined' && error) { %><div class="flash flash-error" role="alert"><%- ic('x-circle') %><div><%= error %></div></div><% } %>
+<form method="post" action="/wo" class="card form-grid" id="wo-form" data-msg-ok="<%= t('crew_ok') %>" data-msg-short="<%= t('crew_short') %>" data-msg-none="<%= t('crew_no_vehicle') %>">
+  <div class="form-section" style="border:0;padding-top:0;margin-top:0"><h3><%- ic('file') %><%= t('details') %></h3></div>
+  <label class="span2"><span><%= t('title') %> <span class="req">*</span></span><input name="title" required value="<%= form.title || '' %>"></label>
+  <label><span><%= t('type') %> <span class="req">*</span></span><select name="type" required><% WO_TYPES.forEach(x => { %><option value="<%= x %>" <%= form.type === x ? 'selected' : '' %>><%= t('wt_' + x) %></option><% }) %></select></label>
+  <label><span><%= t('priority') %> <span class="req">*</span></span><select name="priority" id="priority"><% PRIORITIES.forEach(x => { %><option value="<%= x %>" <%= form.priority === x ? 'selected' : '' %>><%= t('pr_' + x) %></option><% }) %></select></label>
+  <label class="span2"><%= t('description') %><textarea name="description" rows="3"><%= form.description || '' %></textarea></label>
+
+  <div class="form-section"><h3><%- ic('pin') %><%= t('asset') %> / <%= t('location') %></h3></div>
+  <label><span><%= t('section') %> <span class="req">*</span></span><select name="section_id" required><option value=""></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(form.section_id) === String(s.id) ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select></label>
+  <label><%= t('asset') %>
+    <input list="assets" id="asset-pick" placeholder="T-380-01-090" value="<%= form.asset_code || '' %>" autocomplete="off" dir="ltr">
+    <input type="hidden" name="asset_id" id="asset_id" value="<%= form.asset_id || '' %>">
+    <datalist id="assets"><% assets.forEach(a => { %><option value="<%= a.code %>" data-id="<%= a.id %>" data-kv="<%= a.voltage_kv || '' %>"><%= nm(a) %></option><% }) %></datalist>
+  </label>
+  <label><%= t('voltage') %><select name="voltage_kv" id="voltage"><option value=""></option><% [115, 230, 380].forEach(v => { %><option <%= String(form.voltage_kv) === String(v) ? 'selected' : '' %>><%= v %></option><% }) %></select></label>
+  <label><%= t('location') %><input name="location" value="<%= form.location || '' %>"></label>
+
+  <div class="form-section"><h3><%- ic('calendar') %><%= t('planned_start') %></h3></div>
+  <label><span><%= t('planned_start') %> <span class="req">*</span></span><input type="datetime-local" name="planned_start" required value="<%= form.planned_start || '' %>"></label>
+  <label><span><%= t('planned_end') %> <span class="req">*</span></span><input type="datetime-local" name="planned_end" required value="<%= form.planned_end || '' %>"></label>
+  <div class="form-section"><h3><%- ic('route') %><%= t('travel') %></h3></div>
+  <div class="span2">
+    <p style="margin-bottom:8px"><b><%= t('involves_travel_q') %></b> <span class="req">*</span></p>
+    <div class="segmented" role="radiogroup" aria-label="<%= t('involves_travel_q') %>">
+      <label><input type="radio" name="involves_travel" value="no" required <%= form.involves_travel === 'no' ? 'checked' : '' %>><%= t('no') %></label>
+      <label><input type="radio" name="involves_travel" value="yes" <%= form.involves_travel === 'yes' ? 'checked' : '' %>><%= t('yes') %></label>
+    </div>
+  </div>
+  <div id="travel-fields" class="form-grid span2 travel-box">
+    <div class="span2"><p style="margin-bottom:8px"><b><%= t('travel_distance_band') %></b> <span class="req">*</span></p>
+      <div class="segmented" role="radiogroup">
+        <label><input type="radio" name="travel_band" value="over_100" <%= form.travel_band === 'over_100' ? 'checked' : '' %>><%= t('band_over_100') %></label>
+        <label><input type="radio" name="travel_band" value="over_200" <%= form.travel_band === 'over_200' ? 'checked' : '' %>><%= t('band_over_200') %></label>
+      </div></div>
+    <label><span><%= t('distance_km') %> <span class="req">*</span></span><input type="number" min="0" step="0.1" name="distance_km" id="distance" value="<%= form.distance_km || '' %>"><span id="dist-cat" class="pill info" style="align-self:flex-start"></span></label>
+    <label><%= t('travel_hours') %><input type="number" min="0" step="0.5" name="travel_hours" value="<%= form.travel_hours || '' %>"></label>
+    <label class="inline span2"><input type="checkbox" name="overnight" value="1" <%= form.overnight ? 'checked' : '' %>><%= t('overnight') %></label>
+    <p class="muted small span2" style="margin:0"><%- ic('alert') %> <%= t('travel_limit_hint') %></p>
+  </div>
+  <label class="span2"><%= t('selection_reason') %><textarea name="selection_reason" rows="2" placeholder="<%= lang === 'ar' ? 'إلزامي عند تجاوز 20 مهمة فوق 200 كم: عدم توفر بديل، خبرة تخصصية، حالة حرجة...' : 'Required beyond 20 assignments over 200 km: no alternative, specialist expertise, critical case...' %>"><%= form.selection_reason || '' %></textarea></label>
+
+  <div class="form-section"><h3><%- ic('users') %><%= t('team_leader') %> / <%= t('participants') %></h3>
+    <p class="muted small"><%= lang === 'ar' ? 'يتحقق النظام من الإجازات والدورات والتعارض مع مهام أخرى، ويُرسل بريدًا لكل عضو بأمر العمل.' : 'Leave, training and conflicting work are checked; every member is emailed the work order.' %></p></div>
+  <label class="span2"><span><%= t('team_leader') %> <span class="req">*</span></span><select name="team_leader_id" id="team-leader" required><option value=""></option><% employees.forEach(e => { %><option value="<%= e.id %>" <%= String(form.team_leader_id) === String(e.id) ? 'selected' : '' %>><%= e.employee_no %> · <%= nm(e) %> (<%= e.section_code || '' %>)</option><% }) %></select></label>
+  <div class="span2">
+    <div class="search-field" style="position:relative"><%- ic('search') %><input class="picker-filter" style="padding-inline-start:38px" placeholder="<%= t('search') %>…" data-target="emp-picker" aria-label="<%= t('search') %> <%= t('participants') %>"></div>
+    <div class="picker" id="emp-picker">
+      <% const sel = [].concat(form.participant_ids || []).map(String); employees.forEach(e => { %>
+        <label data-text="<%= e.employee_no %> <%= e.name_ar %> <%= e.name_en || '' %> <%= e.section_code %> <%= e.job_title_en || '' %>"><input type="checkbox" name="participant_ids" value="<%= e.id %>" <%= sel.includes(String(e.id)) ? 'checked' : '' %>><span class="picker-meta"><span><b class="mono"><%= e.employee_no %></b> <%= nm(e) %></span><small><%= e.section_code %> · <%= e.job_title_en || '' %></small></span></label>
+      <% }) %>
+    </div>
+  </div>
+
+  <div class="form-section"><h3><%- ic('truck') %><%= t('crew_fleet') %></h3><p class="muted small"><%= t('crew_fleet_hint') %></p></div>
+  <div class="span2">
+    <div class="vehicle-pick" id="vehicle-pick">
+      <% const selq = [].concat(form.equipment_ids || []).map(String); const today = new Date().toISOString().slice(0, 10);
+         equipment.filter(q => q.type === 'vehicle').forEach(q => { const off = q.status !== 'available' || (q.expiry_date && q.expiry_date < today); %>
+        <label class="<%= off ? 'disabled' : '' %>" title="<%= off ? (q.status !== 'available' ? t('es_' + q.status) : t('registration_expired')) : '' %>"><input type="checkbox" name="equipment_ids" value="<%= q.id %>" data-seats="<%= q.seats || 0 %>" data-plate="<%= q.plate_number || q.code %>" data-vtype="<%= t('vt_' + (q.vehicle_type || 'other')) %>" <%= selq.includes(String(q.id)) ? 'checked' : '' %> <%= off ? 'disabled' : '' %>>
+          <span class="picker-meta"><span><span class="plate" dir="ltr"><%= q.plate_number || q.code %></span> <b><%= t('vt_' + (q.vehicle_type || 'other')) %></b></span><small><%= q.seats || '?' %> <%= t('seats') %> · <%= q.make_model || q.name %><%= off ? ' · ' + (q.status !== 'available' ? t('es_' + q.status) : t('registration_expired')) : '' %></small></span></label>
+      <% }) %>
+    </div>
+    <div class="crew-panel" id="crew-panel" aria-live="polite">
+      <div class="crew-stat"><small><%= t('team_leader') %></small><b id="crew-leader" style="font-size:14px">—</b></div>
+      <div class="crew-stat"><small><%= t('crew_people') %></small><b id="crew-people">0</b></div>
+      <div class="crew-stat"><small><%= t('vehicles') %></small><b id="crew-vehicles">0</b><small id="crew-types"></small></div>
+      <div class="crew-stat"><small><%= t('seats') %></small><b id="crew-seats">0</b></div>
+      <div class="crew-msg" id="crew-msg"></div>
+    </div>
+  </div>
+  <div class="form-section"><h3><%- ic('wrench') %><%= t('devices') %></h3></div>
+  <div class="span2"><div class="picker short">
+    <% equipment.filter(q => q.type !== 'vehicle').forEach(q => { %>
+      <label class="<%= q.status !== 'available' ? 'disabled' : '' %>"><input type="checkbox" name="equipment_ids" value="<%= q.id %>" <%= selq.includes(String(q.id)) ? 'checked' : '' %>><span class="picker-meta"><span><b class="mono"><%= q.code %></b> <%= q.name %></span><small><%= t('es_' + q.status) %><%= q.expiry_date ? ' · exp ' + q.expiry_date : '' %><%= q.calibration_due ? ' · cal ' + q.calibration_due : '' %></small></span></label>
+    <% }) %>
+  </div></div>
+
+  <div class="form-section"><h3><%- ic('package') %><%= t('materials') %></h3></div>
+  <div class="span2">
+    <p style="margin-bottom:8px"><b><%= t('materials_withdrawn') %></b> <span class="req">*</span></p>
+    <div class="segmented" role="radiogroup">
+      <label><input type="radio" name="materials_withdrawn" value="yes" required <%= form.materials_withdrawn === 'yes' ? 'checked' : '' %>><%= t('yes') %></label>
+      <label><input type="radio" name="materials_withdrawn" value="no" <%= form.materials_withdrawn === 'no' ? 'checked' : '' %>><%= t('no') %></label>
+    </div>
+  </div>
+  <div id="res-fields" class="form-grid span2">
+    <label><span><%= t('reservation_number') %> <span class="req">*</span></span><input name="reservation_number" value="<%= form.reservation_number || '' %>" dir="ltr"></label>
+    <label><%= t('warehouse') %><input name="warehouse" value="<%= form.warehouse || '' %>"></label>
+  </div>
+  <div class="form-actions form-section"><button class="btn primary"><%- ic('save') %><%= t('save') %></button><a class="btn ghost" href="/wo"><%= t('cancel') %></a></div>
+</form>
+<%- include('partials/footer') %>

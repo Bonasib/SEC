@@ -1,0 +1,73 @@
+<%- include('partials/header', { pageTitle: t('travel_assignments') }) %>
+<% const qs = (o) => { const p = new URLSearchParams({ year, ...(band ? { band } : {}), ...(query.section ? { section: query.section } : {}) }); Object.entries(o).forEach(([k, v]) => v == null ? p.delete(k) : p.set(k, v)); return '?' + p; }; %>
+<div class="page-head">
+  <div><div class="eyebrow"><%- ic('route') %><%= t('grp_operations') %><%= sc.employeeId && !sc.all ? ' · ' + t('my_travel') : '' %></div>
+    <h1 class="title-ic"><%= t('travel_assignments') %> <span class="result-count"><%= year %></span></h1>
+    <p class="page-sub"><%= t('travel_page_hint').replace('{n}', limit) %></p></div>
+  <form class="btns" method="get">
+    <div class="segmented" role="group">
+      <a class="seg <%= !band ? 'on' : '' %>" href="<%= qs({ band: null }) %>"><%= t('all') %></a>
+      <a class="seg <%= band === 'over_100' ? 'on' : '' %>" href="<%= qs({ band: 'over_100' }) %>"><%= t('band_over_100') %></a>
+      <a class="seg <%= band === 'over_200' ? 'on' : '' %>" href="<%= qs({ band: 'over_200' }) %>"><%= t('band_over_200') %></a>
+    </div>
+    <select name="year" onchange="this.form.submit()" aria-label="year"><% [year, year - 1, year - 2].forEach(y => { %><option <%= y === year ? 'selected' : '' %>><%= y %></option><% }) %></select>
+    <% if (!sc.employeeId) { %><select name="section" onchange="this.form.submit()" aria-label="<%= t('section') %>"><% if (sc.all) { %><option value=""><%= t('section') %>: <%= t('all') %></option><% } %><% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(query.section || sc.sectionId) === String(s.id) ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select><% } %>
+    <% if (band) { %><input type="hidden" name="band" value="<%= band %>"><% } %>
+    <% if (sc.all) { %><a class="btn" href="/travel/export?year=<%= year %>"><%- ic('sheet') %>Excel</a><% } %>
+  </form>
+</div>
+
+<div class="kpis">
+  <a class="kpi <%= summary.b ? '' : 'zero' %>" href="<%= qs({ band: 'over_100' }) %>"><span class="kpi-icon"><%- ic('route') %></span><span class="kpi-body"><b><%= summary.b || 0 %></b><span class="kpi-label"><%= t('band_over_100') %></span></span></a>
+  <a class="kpi violet <%= summary.c ? '' : 'zero' %>" href="<%= qs({ band: 'over_200' }) %>"><span class="kpi-icon"><%- ic('route') %></span><span class="kpi-body"><b><%= summary.c || 0 %></b><span class="kpi-label"><%= t('band_over_200') %></span></span></a>
+  <div class="kpi crit <%= counts.over ? '' : 'zero' %>"><span class="kpi-icon"><%- ic('siren') %></span><span class="kpi-body"><b><%= counts.over %></b><span class="kpi-label"><%= t('over_limit').replace('{n}', limit) %></span></span></div>
+  <div class="kpi warn <%= counts.limit + counts.near ? '' : 'zero' %>"><span class="kpi-icon"><%- ic('alert') %></span><span class="kpi-body"><b><%= counts.limit + counts.near %></b><span class="kpi-label"><%= t('near_limit') %></span></span></div>
+  <div class="kpi"><span class="kpi-icon"><%- ic('truck') %></span><span class="kpi-body"><b><%= Number(summary.km || 0).toLocaleString('en-US') %></b><span class="kpi-label"><%= t('total_km') %></span></span></div>
+  <div class="kpi"><span class="kpi-icon"><%- ic('moon') %></span><span class="kpi-body"><b><%= summary.overnight || 0 %></b><span class="kpi-label"><%= t('overnight_stays') %></span></span></div>
+  <div class="kpi"><span class="kpi-icon"><%- ic('clock') %></span><span class="kpi-body"><b><%= summary.hours || 0 %></b><span class="kpi-label"><%= t('travel_hours') %></span></span></div>
+  <div class="kpi warn <%= summary.sector ? '' : 'zero' %>"><span class="kpi-icon"><%- ic('pen') %></span><span class="kpi-body"><b><%= summary.sector || 0 %></b><span class="kpi-label"><%= t('needed_sector') %></span></span></div>
+</div>
+
+<section class="card table-card" id="employees">
+  <div class="card-head"><h2><%- ic('users') %><%= t('travel_by_employee') %></h2><span class="pill"><%= rows.length %></span></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th><%= t('employee') %></th><th><%= t('section') %></th><th style="min-width:200px"><%= t('band_over_100') %></th><th style="min-width:200px"><%= t('band_over_200') %></th><th class="num">km</th><th class="num"><%= t('overnight') %></th><th class="num"><%= t('travel_hours') %></th><th><%= t('status') %></th></tr></thead>
+    <tbody>
+    <% if (!rows.length) { %><tr><td colspan="8" class="empty"><%- ic('route') %><%= t('no_records') %></td></tr><% } %>
+    <% const meter = (n) => { const pct = Math.min(100, Math.round(n / limit * 100)); const tone = n > limit ? 'over' : n === limit ? 'limit' : n >= limit * 0.8 ? 'near' : 'ok'; return `<div class="tmeter tm-${tone}" title="${n} / ${limit}"><span class="tm-bar"><span style="width:${pct}%"></span></span><b>${n}</b><small>/ ${limit}</small></div>`; }; %>
+    <% rows.forEach(r => { %>
+      <tr class="<%= r.state === 'over' ? 'row-bad' : r.state === 'limit' ? 'row-warn' : '' %>">
+        <td><a href="/travel?year=<%= year %>&employee=<%= r.id %>#trips" style="display:flex;align-items:center;gap:10px;color:inherit"><span class="avatar" style="width:30px;height:30px;font-size:12px"><%= initials(r) %></span><span><span class="cell-main"><%= nm(r) %></span><span class="cell-sub mono"><%= r.employee_no %> · <%= r.job_title_en || '' %></span></span></a></td>
+        <td class="mono"><%= r.section_code %></td>
+        <td><%- meter(r.b) %></td>
+        <td><%- meter(r.c) %></td>
+        <td class="num"><%= Number(r.km || 0).toLocaleString('en-US') %></td>
+        <td class="num"><%= r.overnight || 0 %></td>
+        <td class="num"><%= r.hours || 0 %></td>
+        <td><span class="pill <%= { over: 'bad', limit: 'warn', near: 'warn', ok: 'ok' }[r.state] %>"><%- ic(r.state === 'ok' ? 'check' : 'alert') %><%= t('ts_' + r.state) %></span></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="card table-card" id="trips">
+  <div class="card-head"><h2><%- ic('clipboard') %><%= t('travel_work_orders') %></h2><span class="pill"><%= trips.length %></span></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th><%= t('wo_number') %></th><th><%= t('title') %></th><th><%= t('travel_distance_band') %></th><th class="num"><%= t('distance_km') %></th><th><%= t('planned_start') %></th><th class="num"><%= t('crew_people') %></th><th><%= t('overnight') %></th><th><%= t('status') %></th></tr></thead>
+    <tbody>
+    <% if (!trips.length) { %><tr><td colspan="8" class="empty"><%- ic('clipboard') %><%= t('no_records') %></td></tr><% } %>
+    <% trips.forEach(w => { %><tr>
+      <td><a class="wo-link" href="/wo/<%= w.id %>"><%= w.wo_number %></a></td>
+      <td><span class="cell-main"><%= w.title %></span><span class="cell-sub mono"><%= w.section_code %><% if (w.needs_sector_approval) { %> · <span class="pill warn"><%= t('step_sector_head') %></span><% } %></span></td>
+      <td><span class="pill <%= w.distance_category === 'C' ? 'bad' : 'warn' %>"><%= t(w.distance_category === 'C' ? 'band_over_200' : 'band_over_100') %></span></td>
+      <td class="num"><%= w.distance_km %></td>
+      <td class="nowrap"><%= fmt(w.planned_start) %></td>
+      <td class="num"><%= w.team_size %></td>
+      <td><%= w.overnight ? t('yes') : '—' %></td>
+      <td><span class="st st-<%= w.status %>"><%= t('st_' + w.status) %></span></td>
+    </tr><% }) %>
+    </tbody>
+  </table></div>
+</section>
+<%- include('partials/footer') %>

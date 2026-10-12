@@ -1,0 +1,25 @@
+<%- include('partials/header', { pageTitle: t('assets') }) %>
+<div class="page-head"><h1 class="title-ic"><%- ic('tower') %><%= t('assets') %> <span class="result-count">(<%= rows.length %>)</span></h1><div class="btns"><a class="btn" href="/data/export/assets"><%- ic('sheet') %>Excel</a><a class="btn" href="/data/export/assets?format=csv"><%- ic('download') %>CSV</a><a class="btn" href="/data#assets"><%- ic('upload') %><%= t('import') %></a></div></div>
+<form class="filters card" method="get" role="search">
+  <div class="search-field"><%- ic('search') %><input name="q" value="<%= query.q || '' %>" placeholder="<%= t('search') %>" aria-label="<%= t('search') %>"></div>
+  <select name="type"><option value=""><%= t('type') %>: <%= t('all') %></option><% ASSET_TYPES.forEach(x => { %><option <%= query.type === x ? 'selected' : '' %>><%= x %></option><% }) %></select>
+  <select name="voltage"><option value=""><%= t('voltage') %></option><% [115, 230, 380].forEach(v => { %><option <%= String(query.voltage) === String(v) ? 'selected' : '' %>><%= v %></option><% }) %></select>
+  <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button>
+</form>
+<% if (canEdit) { %>
+<details class="card collapsible"><summary><b class="inline-h" style="gap:8px;align-items:center"><%- ic('plus') %><%= t('add') %></b></summary><form method="post" action="/assets" class="form-grid">
+  <label><%= t('code') %> *<input name="code" required></label>
+  <label><%= t('type') %> *<select name="type"><% ASSET_TYPES.forEach(x => { %><option><%= x %></option><% }) %></select></label>
+  <label><%= t('name_ar') %><input name="name_ar"></label><label><%= t('name_en') %><input name="name_en"></label>
+  <label><%= t('voltage') %><select name="voltage_kv"><option></option><option>115</option><option>230</option><option>380</option></select></label>
+  <label><%= t('line_code') %><input name="line_code"></label><label><%= t('region') %><input name="region"></label>
+  <label>lat<input name="lat"></label><label>lng<input name="lng"></label>
+  <div class="span2"><button class="btn primary"><%- ic('save') %><%= t('save') %></button></div></form></details>
+<% } %>
+<div class="card table-card"><div class="table-wrap"><table class="tbl">
+  <tr><th><%= t('code') %></th><th><%= t('name') %></th><th><%= t('type') %></th><th><%= t('voltage') %></th><th><%= t('line_code') %></th><th><%= t('work_orders') %></th><th><%- ic('pin') %></th></tr>
+  <% rows.forEach(a => { %><tr><td><b><%= a.code %></b></td><td><%= nm(a) %></td><td><%= a.type %></td><td><%= a.voltage_kv || '' %></td><td><%= a.line_code || '' %></td>
+    <td><% if (a.wo_count) { %><a href="/wo?asset=<%= a.id %>"><%= a.wo_count %></a><% if (a.wo_open) { %> <span class="pill warn"><%= a.wo_open %></span><% } %><% } %></td>
+    <td><% if (a.lat) { %><a href="https://maps.google.com/?q=<%= a.lat %>,<%= a.lng %>" target="_blank" rel="noopener"><%- ic('map') %></a><% } %></td></tr><% }) %>
+</table></div></div>
+<%- include('partials/footer') %>

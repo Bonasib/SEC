@@ -1,0 +1,22 @@
+<%- include('partials/header', { pageTitle: t('leaves') }) %>
+<div class="page-head"><h1 class="title-ic"><%- ic('calendar') %><%= t('leaves') %></h1><div class="btns"><a class="btn" href="/data/export/leaves"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#leaves"><%- ic('upload') %><%= t('import') %></a><a class="btn" href="/calendar"><%- ic('calendar') %><%= t('calendar') %></a><a class="btn ghost" href="?current=1"><%= lang === 'ar' ? 'الحالية والقادمة' : 'Current & upcoming' %></a></div></div>
+<% if (['hr','admin'].includes(user.role)) { %>
+<form method="post" action="/leaves" class="card form-grid">
+  <label><%= t('employee') %> *<select name="employee_id" required><option value=""></option><% employees.forEach(e => { %><option value="<%= e.id %>"><%= e.employee_no %> - <%= nm(e) %></option><% }) %></select></label>
+  <label><%= t('type') %><select name="type" id="leave-type"><% LEAVE_TYPES.forEach(x => { %><option value="<%= x %>"><%= t('lt_' + x) %></option><% }) %></select></label>
+  <div id="mode-wrap" class="span2 hidden"><p style="margin-bottom:8px"><b><%= t('mode') %></b> <span class="req">*</span></p>
+    <div class="segmented" role="radiogroup"><% MODES.forEach(m => { %><label><input type="radio" name="mode" value="<%= m %>"><%= t('mode_' + m) %></label><% }) %></div></div>
+  <label><%= t('location') %><input name="location" placeholder="<%= lang === 'ar' ? 'المصنع / المدينة / الدولة' : 'Factory / city / country' %>"></label>
+  <label><%= t('from') %> *<input type="date" name="start_date" required></label>
+  <label><%= t('to') %> *<input type="date" name="end_date" required></label>
+  <label class="span2"><%= t('notes') %><input name="notes"></label>
+  <div class="span2"><button class="btn primary"><%- ic('plus') %><%= t('add') %></button> <small class="muted"><%= lang === 'ar' ? 'يُمنع إسناد مهام للموظف خلال هذه الفترة، ويُنبَّه قائد الفريق إن كانت لديه مهام قائمة.' : 'The employee cannot be assigned during this period; team leaders of existing work are alerted.' %></small></div>
+</form>
+<% } %>
+<div class="card table-card"><div class="table-wrap"><table class="tbl">
+  <tr><th><%= t('employee') %></th><th><%= t('type') %></th><th><%= t('mode') %> / <%= t('location') %></th><th><%= t('from') %></th><th><%= t('to') %></th><th><%= t('status') %></th><th><%= t('notes') %></th><th></th></tr>
+  <% rows.forEach(l => { %><tr><td><a href="/employees/<%= l.employee_id %>"><%= l.employee_no %></a> <%= nm(l) %></td><td><span class="ev-tag ev-<%= l.type %>"><%= t('lt_' + l.type) %></span></td><td><%= l.mode ? t('mode_' + l.mode) : '' %><%= l.location ? (l.mode ? ' · ' : '') + l.location : '' %></td><td class="mono"><%= l.start_date %></td><td class="mono"><%= l.end_date %></td><td><%= l.status %></td><td><%= l.notes || '' %></td>
+    <td><% if (['hr','admin'].includes(user.role) && l.status !== 'cancelled') { %><form method="post" action="/leaves/<%= l.id %>/cancel"><button class="btn small ghost"><%= t('cancel') %></button></form><% } %></td></tr><% }) %>
+  <% if (!rows.length) { %><tr><td colspan="8" class="muted"><%= t('no_records') %></td></tr><% } %>
+</table></div></div>
+<%- include('partials/footer') %>

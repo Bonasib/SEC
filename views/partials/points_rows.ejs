@@ -1,0 +1,27 @@
+<% const fmtN2 = (n) => Number(n).toLocaleString(lang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US'); %>
+<div class="table-wrap"><table class="tbl small">
+  <thead><tr><th><%= t('date') %></th><th><%= t('point_rules') %></th><th class="num"><%= lang === 'ar' ? 'النقاط' : 'Points' %></th><th><%= t('reference') %></th><th><%= t('reason') %></th><th><%= t('status') %></th><th></th></tr></thead>
+  <tbody>
+  <% if (!rows.length) { %><tr><td colspan="7" class="empty"><%- ic('star') %><%= t('no_records') %></td></tr><% } %>
+  <% rows.forEach(p => { %>
+    <tr class="<%= p.status === 'rejected' || p.status === 'reversed' ? 'muted' : '' %>">
+      <td class="nowrap"><%= fmt(p.decided_at || p.requested_at, false) %></td>
+      <td><%= lang === 'en' ? p.rule_en : p.rule_ar %><span class="cell-sub"><%= lang === 'en' && p.dec_en ? p.dec_en : (p.dec_ar || '') %></span></td>
+      <td class="num"><b class="pts-delta <%= p.points > 0 ? 'up' : p.points < 0 ? 'down' : '' %>" style="<%= p.status === 'reversed' || p.status === 'rejected' ? 'text-decoration:line-through' : '' %>"><%= p.points > 0 ? '+' : '' %><%= fmtN2(p.points) %></b></td>
+      <td class="mono"><% if (/^WO\d{6}$/.test(p.reference || '')) { %><a class="wo-link" href="/wo?q=<%= p.reference %>"><%= p.reference %></a><% } else { %><%= p.reference || '' %><% } %></td>
+      <td><%= p.reason || '' %><% if (p.decision_comment) { %><span class="cell-sub"><%- ic('message') %> <%= p.decision_comment %></span><% } %><% if (p.appeal_at) { %><span class="cell-sub"><span class="pill warn"><%= t('appeal') %></span> <%= p.appeal_reason %></span><% } %></td>
+      <td><span class="pill <%= p.status === 'approved' ? 'ok' : p.status === 'pending' ? 'warn' : p.status === 'rejected' ? 'bad' : '' %>"><%= t('ps_' + p.status) %></span></td>
+      <td>
+        <% if (self && p.status === 'approved' && p.points < 0 && !p.appeal_at) { %>
+          <details><summary class="btn small ghost"><%- ic('message') %><%= t('appeal') %></summary>
+            <form method="post" action="/points/<%= p.id %>/appeal" class="mini-grid" style="grid-template-columns:1fr"><label><%= t('appeal_reason') %><textarea name="reason" required rows="2"></textarea></label><button class="btn small primary"><%= t('appeal') %></button></form></details>
+        <% } %>
+        <% if (canReverse && p.status === 'approved' && p.rule_code !== 'reversal') { %>
+          <details><summary class="btn small ghost"><%- ic('transfer') %><%= t('reverse') %></summary>
+            <form method="post" action="/points/<%= p.id %>/reverse" class="mini-grid" style="grid-template-columns:1fr"><label><span><%= t('reason') %> <span class="req">*</span></span><input name="reason" required></label><button class="btn small danger"><%= t('reverse') %></button></form></details>
+        <% } %>
+      </td>
+    </tr>
+  <% }) %>
+  </tbody>
+</table></div>

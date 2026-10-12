@@ -1,0 +1,41 @@
+# Automatic deployment to a Hostinger VPS on every push to main (after tests pass).
+# Add these repository secrets (Settings → Secrets and variables → Actions):
+#   HOSTINGER_HOST     VPS IP or hostname
+#   HOSTINGER_USER     wms   (the app user created by deploy/setup-vps.sh)
+#   HOSTINGER_SSH_KEY  private key allowed to log in as that user
+#   HOSTINGER_PORT     optional, default 22
+# Without the secrets this workflow only runs the tests and skips deployment.
+name: Deploy to Hostinger VPS
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency: deploy-hostinger
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Check deployment secrets
+        id: check
+        env:
+          HOST: ${{ secrets.HOSTINGER_HOST }}
+        run: echo "ready=$([ -n "$HOST" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - name: Deploy over SSH
+        if: steps.check.outputs.ready == 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: ${{ secrets.HOSTINGER_PORT || 22 }}
+          script: bash /opt/sec-wms/deploy/update.sh
+      - name: Skipped
+        if: steps.check.outputs.ready != 'true'
+        run: echo "HOSTINGER_* secrets not set - tests passed, deployment skipped."

@@ -1,0 +1,25 @@
+{
+  "name": "sec-transmission-wms",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bilingual workforce, work-order and asset maintenance system (MVP) for SEC Transmission",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --no-warnings --env-file-if-exists=.env src/server.js",
+    "dev": "node --no-warnings --env-file-if-exists=.env --watch src/server.js",
+    "seed": "node --no-warnings --env-file-if-exists=.env src/seed.js",
+    "reset": "rm -f data/app.db && node --no-warnings src/seed.js",
+    "backup": "node --no-warnings --env-file-if-exists=.env src/backup.js",
+    "test": "node --no-warnings --test test/*.test.js"
+  },
+  "dependencies": {
+    "ejs": "^7.0.1",
+    "exceljs": "^4.4.0",
+    "express": "^4.22.3",
+    "multer": "^1.4.4",
+    "nodemailer": "^10.1.0"
+  }
+}

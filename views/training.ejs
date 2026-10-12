@@ -1,0 +1,68 @@
+<%- include('partials/header', { pageTitle: t('training') }) %>
+<% const fmtPlace = (c) => c.mode === 'remote' ? t('mode_remote') : [c.city, c.country].filter(Boolean).join(' · ');
+   const groups = scope ? [scope] : ['international', 'local']; %>
+<div class="page-head">
+  <div><div class="eyebrow"><%- ic('user-check') %><%= t('grp_people') %></div><h1 class="title-ic"><%= t('training') %> <span class="result-count"><%= year %></span></h1></div>
+  <form class="btns" method="get">
+    <div class="segmented" role="group">
+      <a class="seg <%= !scope ? 'on' : '' %>" href="?year=<%= year %>"><%= t('all') %></a>
+      <a class="seg <%= scope === 'international' ? 'on' : '' %>" href="?year=<%= year %>&scope=international"><%= t('scope_international') %></a>
+      <a class="seg <%= scope === 'local' ? 'on' : '' %>" href="?year=<%= year %>&scope=local"><%= t('scope_local') %></a>
+    </div>
+    <select name="year" onchange="this.form.submit()" aria-label="year"><% [...new Set([year, ...years])].sort((a, b) => b - a).forEach(y => { %><option <%= y === year ? 'selected' : '' %>><%= y %></option><% }) %></select>
+    <% if (scope) { %><input type="hidden" name="scope" value="<%= scope %>"><% } %>
+  </form>
+</div>
+<div class="kpis">
+  <div class="kpi"><span class="kpi-icon"><%- ic('file') %></span><span class="kpi-body"><b><%= stats.courses %></b><span class="kpi-label"><%= t('courses') %></span></span></div>
+  <div class="kpi violet"><span class="kpi-icon"><%- ic('globe') %></span><span class="kpi-body"><b><%= stats.international %></b><span class="kpi-label"><%= t('scope_international') %></span></span></div>
+  <div class="kpi"><span class="kpi-icon"><%- ic('users') %></span><span class="kpi-body"><b><%= stats.people %></b><span class="kpi-label"><%= t('employees_trained') %></span></span></div>
+  <div class="kpi ok"><span class="kpi-icon"><%- ic('check-circle') %></span><span class="kpi-body"><b><%= stats.attended %></b><span class="kpi-label"><%= t('attended') %></span></span></div>
+  <div class="kpi ok"><span class="kpi-icon"><%- ic('star') %></span><span class="kpi-body"><b><%= stats.attended ? Math.round(stats.passed / stats.attended * 100) : 0 %>%</b><span class="kpi-label"><%= t('pass_rate') %></span></span></div>
+  <div class="kpi"><span class="kpi-icon"><%- ic('clock') %></span><span class="kpi-body"><b><%= Math.round(stats.hours) %></b><span class="kpi-label"><%= t('training_hours') %></span></span></div>
+</div>
+
+<% groups.forEach(g => { const list = courses.filter(c => c.scope === g); %>
+<section class="card table-card">
+  <div class="card-head"><h2><%- ic(g === 'international' ? 'globe' : 'pin') %><%= g === 'international' ? t('courses_international') : t('courses_local') %></h2><span class="pill"><%= list.length %></span></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th><%= t('course') %></th><th><%= t('place') %></th><th><%= t('date') %></th><th class="num"><%= t('days') %></th><th><%= t('category') %></th><th><%= t('attendees') %></th><th><%= t('status') %></th></tr></thead>
+    <tbody>
+    <% if (!list.length) { %><tr><td colspan="7" class="empty"><%- ic('file') %><%= t('no_records') %></td></tr><% } %>
+    <% list.forEach(c => { const att = byCourse[c.id] || []; const upcoming = c.start_date > today; %>
+      <tr>
+        <td><a class="cell-main" href="/training/<%= c.id %>"><%= lang === 'en' ? c.title_en : c.title_ar %></a><span class="cell-sub mono"><%= c.code %><%= c.provider ? ' · ' + c.provider : '' %></span></td>
+        <td><span class="pill <%= c.mode === 'remote' ? 'info' : '' %>"><%- ic(c.mode === 'remote' ? 'globe' : 'pin') %><%= fmtPlace(c) %></span></td>
+        <td class="nowrap mono"><%= c.start_date %><span class="cell-sub"><%= c.end_date %></span></td>
+        <td class="num"><%= Math.round((Date.parse(c.end_date) - Date.parse(c.start_date)) / 864e5) + 1 %></td>
+        <td><span class="small"><%= t('cat_' + c.category) %></span></td>
+        <td><div class="avatar-stack"><% att.slice(0, 5).forEach(a => { %><a class="avatar <%= a.attendance === 'attended' ? 'av-ok' : a.attendance === 'absent' ? 'av-bad' : '' %>" href="/employees/<%= a.employee_id %>" title="<%= a.employee_no %> <%= nm(a) %> · <%= t('att_' + a.attendance) %>"><%= initials(a) %></a><% }) %><% if (att.length > 5) { %><span class="avatar more">+<%= att.length - 5 %></span><% } %></div>
+          <span class="cell-sub"><%= c.enrolled %><%= c.capacity ? ' / ' + c.capacity : '' %> · <%= t('attended') %> <%= c.attended %> · <%= t('passed') %> <%= c.passed %></span></td>
+        <td><span class="pill <%= c.status === 'completed' ? 'ok' : c.status === 'cancelled' ? 'bad' : upcoming ? 'info' : 'warn' %>"><%= c.status === 'planned' && !upcoming ? t('cs_running') : t('cs_' + c.status) %></span></td>
+      </tr>
+    <% }) %>
+    </tbody>
+  </table></div>
+</section>
+<% }) %>
+
+<% if (canManage) { %>
+<section class="card">
+  <details class="collapsible"><summary><h2 class="inline-h"><%- ic('plus') %><%= t('add_course') %></h2></summary>
+  <%- include('partials/course_form', { c: {} }) %></details>
+</section>
+<% } %>
+
+<% if (suggestions.length) { const prio = suggestions.filter(s => s.priority < 2), general = suggestions.filter(s => s.priority === 2); %>
+<section class="card table-card" id="suggestions">
+  <div class="card-head"><h2><%- ic('route') %><%= t('suggested_improvements') %></h2><span class="pill warn"><%= suggestions.length %></span></div>
+  <p class="muted small" style="padding:0 20px"><%= t('suggestions_hint') %></p>
+  <%- include('partials/suggestion_rows', { list: prio, title: t('priority_improvement'), tone: 'bad' }) %>
+  <% if (general.length) { %>
+  <details class="collapsible" style="padding:14px 20px;border-top:1px solid var(--border)"><summary><b><%= t('general_development') %></b>&nbsp;<span class="pill"><%= general.length %></span></summary>
+    <%- include('partials/suggestion_rows', { list: general, title: null, tone: '' }) %>
+  </details>
+  <% } %>
+</section>
+<% } %>
+<%- include('partials/footer') %>
