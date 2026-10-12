@@ -523,7 +523,7 @@ const ENTITIES = {
         task_date: required(dateOnly, 'task_date'), start_time: time('start_time'), end_time: time('end_time'), title: required(text, 'title'), details: text, location: text,
         section_id: () => (str(row.section_code) ? mustUnit(row.section_code, 'section_code').id : null),
         priority: (v) => oneOf(str(v).toLowerCase(), ['normal', 'high', 'urgent'], 'priority') || 'normal',
-        assignee_ids: (v) => { const nos = str(v).split(/[,;\s]+/).filter(Boolean); if (!nos.length) throw new Error('assignee_nos: required'); return nos.map((n) => mustEmp(n, 'assignee_nos').id); },
+        assignee_ids: () => { const nos = str(row.assignee_nos).split(/[,;\s،]+/).filter(Boolean); if (!nos.length) throw new Error('assignee_nos: required'); return nos.map((n) => mustEmp(n, 'assignee_nos').id); },
         wo_number: (v) => (str(v) ? str(v).toUpperCase() : null),
         status: (v) => oneOf(str(v).toLowerCase(), ['open', 'done', 'cancelled'], 'status') || 'open',
       });
@@ -723,7 +723,7 @@ function woFilterSql(q = {}, user) {
   if (q.asset) { cond.push('w.asset_id = ?'); params.push(Number(q.asset)); }
   if (q.from) { cond.push('w.planned_start >= ?'); params.push(localToUtc(q.from)); }
   if (q.to) { cond.push('w.planned_start <= ?'); params.push(localToUtc(q.to + 'T23:59')); }
-  if (q.q) { cond.push('(w.wo_number LIKE ? OR w.title LIKE ? OR w.location LIKE ?)'); params.push(`%${q.q}%`, `%${q.q}%`, `%${q.q}%`); }
+  if (q.q) { cond.push('(skey(w.wo_number) LIKE skey(?) OR skey(w.title) LIKE skey(?) OR skey(w.location) LIKE skey(?))'); params.push(`%${q.q}%`, `%${q.q}%`, `%${q.q}%`); }
   if (q.missing_photos) cond.push("w.status IN ('in_progress','pending_closure','closed') AND (NOT EXISTS (SELECT 1 FROM wo_photos p WHERE p.wo_id = w.id AND p.stage='before') OR NOT EXISTS (SELECT 1 FROM wo_photos p WHERE p.wo_id = w.id AND p.stage='after'))");
   if (q.mine) { cond.push('w.id IN (SELECT wo_id FROM wo_participants WHERE employee_id = ?)'); params.push(user.id); }
   if (user) { const sc = require('./access').woScope(user); if (sc.sql) { cond.push(sc.sql); params.push(...sc.params); } }

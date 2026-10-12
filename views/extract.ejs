@@ -1,0 +1,55 @@
+<%- include('partials/header', { pageTitle: t('extract_title') }) %>
+<% const st = { pending_review: 'warn', exported: 'ok', partially_exported: 'warn', rejected: 'bad' }; %>
+<div class="page-head">
+  <div><div class="eyebrow"><%- ic('transfer') %><%= t('grp_admin') %></div>
+    <h1><%= t('extract_title') %></h1>
+    <p class="page-sub"><%= t('extract_hint') %></p></div>
+  <div class="btns"><a class="btn" href="/data"><%- ic('sheet') %><%= t('data') %></a></div>
+</div>
+<ol class="flow-steps" aria-label="<%= t('how_it_works') %>">
+  <li><span class="fs-n">1</span><span><b><%= t('step_upload') %></b><small><%= t('step_upload_hint') %></small></span></li>
+  <li><span class="fs-n">2</span><span><b><%= t('step_review') %></b><small><%= t('step_review_hint') %></small></span></li>
+  <li><span class="fs-n">3</span><span><b><%= t('step_export') %></b><small><%= t('step_export_hint') %></small></span></li>
+</ol>
+<div class="kpis">
+  <a class="kpi warn <%= stats.pending ? '' : 'zero' %>" href="?status=pending_review"><span class="kpi-icon"><%- ic('hourglass') %></span><span class="kpi-body"><b><%= stats.pending %></b><span class="kpi-label"><%= t('xs_pending_review') %></span></span></a>
+  <a class="kpi ok <%= stats.exported ? '' : 'zero' %>" href="?status=exported"><span class="kpi-icon"><%- ic('check-circle') %></span><span class="kpi-body"><b><%= stats.exported %></b><span class="kpi-label"><%= t('xs_exported') %></span></span></a>
+  <a class="kpi crit <%= stats.rejected ? '' : 'zero' %>" href="?status=rejected"><span class="kpi-icon"><%- ic('x-circle') %></span><span class="kpi-body"><b><%= stats.rejected %></b><span class="kpi-label"><%= t('xs_rejected') %></span></span></a>
+  <div class="kpi <%= aiOn ? 'violet' : 'zero' %>"><span class="kpi-icon"><%- ic('zap') %></span><span class="kpi-body"><b><%= aiOn ? t('enabled') : t('disabled') %></b><span class="kpi-label"><%= t('ai_extraction') %></span></span></div>
+</div>
+
+<section class="card">
+  <h2><%- ic('upload') %><%= t('upload_files') %></h2>
+  <form method="post" action="/extract" enctype="multipart/form-data" class="form-grid">
+    <label class="file-drop span2"><input type="file" name="files" multiple required accept=".xlsx,.csv,.docx,.pdf,.jpg,.jpeg,.png,.webp,.txt"><span class="fd-text"><%- ic('upload') %> <%= t('choose_files') %> <small class="muted">Excel · CSV · Word · PDF · <%= t('images') %> — 25 MB</small></span></label>
+    <label><%= t('target_type') %><select name="entity"><option value="auto"><%= t('auto_detect') %></option><% TARGETS.forEach(e => { %><option value="<%= e %>"><%= t(ENTITIES[e].label) %></option><% }) %></select></label>
+    <label><%= t('read_method') %><select name="method">
+      <option value="auto"><%= t('rm_auto') %></option>
+      <option value="local"><%= t('rm_local') %></option>
+      <% if (aiOn) { %><option value="ai"><%= t('rm_ai') %></option><% } %></select>
+      <small class="muted"><%= aiOn ? t('ai_on_hint') : t('ai_off_hint') %></small></label>
+    <label class="span2"><%= t('notes') %><input name="note" placeholder="<%= t('optional') %>"></label>
+    <div class="form-actions"><button class="btn primary"><%- ic('upload') %><%= t('extract_btn') %></button></div>
+  </form>
+</section>
+
+<section class="card table-card">
+  <div class="card-head"><h2><%- ic('file') %><%= reviewer ? t('all_extractions') : t('my_extractions') %></h2><span class="pill"><%= rows.length %></span></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th>#</th><th><%= t('file') %></th><th><%= t('target_type') %></th><th class="num"><%= t('rows') %></th><th><%= t('read_method') %></th><th><%= t('uploaded_by') %></th><th><%= t('date') %></th><th><%= t('status') %></th></tr></thead>
+    <tbody>
+    <% if (!rows.length) { %><tr><td colspan="8" class="empty"><%- ic('file') %><%= t('no_records') %></td></tr><% } %>
+    <% rows.forEach(x => { %><tr>
+      <td><a class="wo-link" href="/extract/<%= x.id %>">#<%= x.id %></a></td>
+      <td><a href="/extract/<%= x.id %>" style="color:inherit"><span class="cell-main"><%= x.original_name %></span></a></td>
+      <td><%= x.entity ? t(ENTITIES[x.entity].label) : '—' %></td>
+      <td class="num"><%= x.n %><% if (x.approved) { %><span class="cell-sub"><%= t('approved_rows') %> <%= x.approved %></span><% } %><% if (x.bad) { %><span class="cell-sub warn-text"><%= t('rows_with_errors') %> <%= x.bad %></span><% } %></td>
+      <td><span class="pill"><%= t('rm_used_' + x.method) %></span></td>
+      <td><%= nm(x) %></td>
+      <td class="nowrap" data-sort-value="<%= x.created_at %>"><%= fmt(x.created_at) %></td>
+      <td><span class="pill <%= st[x.status] %>"><%= t('xs_' + x.status) %></span><% if (x.rev_ar) { %><span class="cell-sub"><%= nm({ name_ar: x.rev_ar, name_en: x.rev_en }) %></span><% } %></td>
+    </tr><% }) %>
+    </tbody>
+  </table></div>
+</section>
+<%- include('partials/footer') %>

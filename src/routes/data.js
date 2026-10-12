@@ -103,37 +103,8 @@ router.post('/data/import/batch/:id/commit', (req, res) => {
   const b = loadBatch(req);
   if (b.status !== 'preview') throw new HttpError(400, 'This batch was already processed / تمت معالجة هذه الدفعة');
   if (!canImport(b.entity, req.user)) throw new HttpError(403, 'Forbidden');
-  const def = ENTITIES[b.entity];
   const payload = JSON.parse(b.rows_json);
-  // Work orders commit row by row (each has its own transaction and emails);
-  // other data commits in one transaction with a savepoint per row.
-  const wrap = !['work_orders', 'point_requests', 'courses', 'course_attendees'].includes(b.entity);
-  let inserted = 0, updated = 0;
-  if (wrap) db.exec('BEGIN IMMEDIATE');
-  try {
-    for (const r of payload.results) {
-      if (r.errors.length) { r.outcome = 'skipped'; continue; }
-      // Re-validate: data may have changed since the preview
-      const v = def.validate(r.raw, req);
-      if (v.errors.length) { r.errors = v.errors; r.outcome = 'failed'; continue; }
-      if (wrap) db.exec('SAVEPOINT row');
-      try {
-        const ref = def.apply(v.data, v.mode, req);
-        if (wrap) db.exec('RELEASE row');
-        r.outcome = v.mode === 'update' ? 'updated' : 'inserted';
-        if (ref) r.ref = ref;
-        v.mode === 'update' ? updated++ : inserted++;
-      } catch (e) {
-        if (wrap) { db.exec('ROLLBACK TO row'); db.exec('RELEASE row'); }
-        r.errors = [e.message];
-        r.outcome = 'failed';
-      }
-    }
-    if (wrap) db.exec('COMMIT');
-  } catch (e) {
-    if (wrap) db.exec('ROLLBACK');
-    throw e;
-  }
+  const { inserted, updated } = require('../importexport').commitRows(b.entity, payload.results, req);
   run("UPDATE import_batches SET status = 'committed', inserted = ?, updated = ?, rows_json = ?, committed_at = ? WHERE id = ?",
     inserted, updated, JSON.stringify(payload), nowIso(), b.id);
   audit(req, 'import_commit', b.entity, b.id, null, { inserted, updated, file: b.file_name });

@@ -10,6 +10,11 @@ fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const db = new DatabaseSync(DB_PATH);
 db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
 
+// Search key: Arabic letter variants match (أ إ آ ٱ → ا, ة → ه, ى → ي), diacritics and tatweel ignored, case-insensitive.
+// Used as skey(column) LIKE skey(?) so searching works the way people type.
+const searchKey = (s) => (s == null ? '' : String(s).normalize('NFKC').replace(/[\u064B-\u0652\u0670\u0640]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').toLowerCase());
+db.function('skey', { deterministic: true }, (s) => searchKey(s));
+
 db.exec(`
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 
@@ -514,6 +519,32 @@ CREATE TABLE IF NOT EXISTS documents (
 );
 CREATE INDEX IF NOT EXISTS idx_docs_entity ON documents(entity, entity_id);
 
+-- Records extracted from uploaded files, waiting for an auditor to review and add them to the system
+CREATE TABLE IF NOT EXISTS extractions (
+  id INTEGER PRIMARY KEY,
+  file_name TEXT NOT NULL,
+  original_name TEXT,
+  mime TEXT,
+  size INTEGER,
+  sha256 TEXT,
+  entity TEXT,
+  method TEXT,
+  status TEXT NOT NULL DEFAULT 'pending_review' CHECK (status IN ('pending_review','exported','partially_exported','rejected')),
+  rows_json TEXT,
+  preview_json TEXT,
+  warnings_json TEXT,
+  notes TEXT,
+  document_id INTEGER REFERENCES documents(id),
+  created_by INTEGER REFERENCES employees(id),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  reviewed_by INTEGER REFERENCES employees(id),
+  reviewed_at TEXT,
+  review_note TEXT,
+  exported_at TEXT,
+  import_batch_id INTEGER REFERENCES import_batches(id),
+  result_json TEXT
+);
+
 CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY,
   employee_id INTEGER NOT NULL REFERENCES employees(id),
@@ -602,14 +633,22 @@ for (const [table, col, def] of [
 // Older work orders: derive the travel answer from the recorded distance
 db.exec("UPDATE work_orders SET involves_travel = CASE WHEN distance_category IN ('B','C') THEN 'yes' ELSE 'no' END WHERE involves_travel IS NULL");
 
+// Transaction helper; nested calls (e.g. a save inside a bulk import) become savepoints
+let depth = 0;
+const inTransaction = () => (typeof db.isTransaction === 'boolean' ? db.isTransaction : depth > 0);
 function tx(fn) {
-  db.exec('BEGIN IMMEDIATE');
+  const nested = inTransaction();
+  const sp = `sp${depth}`;
+  db.exec(nested ? `SAVEPOINT ${sp}` : 'BEGIN IMMEDIATE');
+  depth++;
   try {
     const r = fn();
-    db.exec('COMMIT');
+    depth--;
+    db.exec(nested ? `RELEASE ${sp}` : 'COMMIT');
     return r;
   } catch (e) {
-    db.exec('ROLLBACK');
+    depth--;
+    if (nested) { db.exec(`ROLLBACK TO ${sp}`); db.exec(`RELEASE ${sp}`); } else db.exec('ROLLBACK');
     throw e;
   }
 }
@@ -643,4 +682,4 @@ function setSetting(key, value) {
   run('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', key, String(value));
 }
 
-module.exports = { db, tx, all, get, run, setting, setSetting, DEFAULT_SETTINGS, DB_PATH };
+module.exports = { db, tx, all, get, run, setting, setSetting, DEFAULT_SETTINGS, DB_PATH, searchKey };

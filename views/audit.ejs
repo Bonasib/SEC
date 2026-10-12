@@ -8,7 +8,7 @@
   <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button>
 </form>
 <div class="card table-card"><div class="table-wrap"><table class="tbl small">
-  <tr><th>#</th><th><%= t('date') %></th><th><%= t('employee') %></th><th><%= t('actions') %></th><th><%= t('entity') %></th><th>ID</th><th>before → after</th><th>IP</th></tr>
+  <tr><th>#</th><th><%= t('date') %></th><th><%= t('employee') %></th><th><%= t('actions') %></th><th><%= t('entity') %></th><th>ID</th><th><%= t('before_after') %></th><th>IP</th></tr>
   <% rows.forEach(a => { %><tr><td><%= a.id %></td><td class="nowrap"><%= fmt(a.at) %></td><td><%= a.employee_no || 'system' %></td><td><b><%= lbl('action', a.action) %></b></td><td><%= lbl('entity', a.entity) %></td><td class="mono"><%= a.entity_id || '' %></td>
     <td class="mono wrap"><% if (a.reason) { %><%- ic('message') %><%= a.reason %><br><% } %><details><summary><%= (a.after_json || '').slice(0, 90) %></summary><div>before: <%= a.before_json || '—' %></div><div>after: <%= a.after_json || '—' %></div></details></td><td class="small"><%= a.ip || '' %></td></tr><% }) %>
 </table></div></div>

@@ -17,6 +17,8 @@ const PERMISSIONS = {
   'employees.manage': ['إضافة وتعديل الموظفين', 'Add and edit employees'],
   'materials.manage': ['إدارة المواد والعدد والمعدات والمخزون', 'Manage materials, tools, equipment & stock'],
   'tasks.dispatch': ['إنشاء المهام اليومية وإرسالها', 'Create and send daily tasks'],
+  'data.extract': ['رفع ملفات لاستخراج البيانات منها', 'Upload files to extract data'],
+  'data.review': ['مراجعة البيانات المستخرجة وإضافتها للنظام (مدقق)', 'Review extracted data and add it to the system (auditor)'],
 };
 
 const MANAGERS = ['section_head', 'division_manager', 'department_manager', 'sector_head'];
@@ -32,6 +34,8 @@ const ROLE_DEFAULTS = {
   'employees.manage': ['hr', 'admin'],
   'materials.manage': ['warehouse', 'admin'],
   'tasks.dispatch': [...MANAGERS, 'team_leader', 'foreman', 'admin'],
+  'data.extract': [...MANAGERS, 'team_leader', 'foreman', 'hr', 'safety', 'warehouse', 'admin'],
+  'data.review': ['auditor', 'admin'],
 };
 const GRANTERS = ['hr', 'admin'];
 

@@ -10,6 +10,13 @@
   </div>
 </section>
 
+<% if (followUps.length) { %>
+<section class="card attention" aria-labelledby="att-h">
+  <h2 id="att-h"><%- ic('bell') %><%= t('needs_attention') %></h2>
+  <div class="att-list"><% followUps.forEach(f => { %><a class="att <%= f.tone %>" href="<%= f.href %>"><b class="att-n"><%= f.n %></b><%- ic(f.icon) %><span class="att-t"><%= t(f.key) %></span><%- ic('chevron', 'ic-dir att-go') %></a><% }) %></div>
+</section>
+<% } %>
+
 <div class="kpis">
   <% const K = (key, val, href, tone, icon) => `<a class="kpi ${tone || ''} ${val ? '' : 'zero'}" ${href ? `href="${href}"` : ''}><span class="kpi-icon">${ic(icon)}</span><span class="kpi-body"><b>${val}</b><span class="kpi-label">${t(key)}</span></span></a>`; %>
   <%- K('kpi_critical_open', kpi.critical_open, '/wo?priority=critical', 'crit', 'siren') %>
@@ -32,7 +39,7 @@
 
 <div class="grid2">
   <section class="card">
-    <div class="card-head"><h2><%- ic('tasks') %><%= t('my_day') %></h2><a class="small" href="/tasks"><%= t('daily_tasks') %> →</a></div>
+    <div class="card-head"><h2><%- ic('tasks') %><%= t('my_day') %></h2><a class="small" href="/tasks"><%= t('daily_tasks') %> <%= arrow %></a></div>
     <% if (!myTasks.length) { %><p class="muted"><%= t('no_tasks_day') %></p><% } %>
     <ul class="list">
       <% myTasks.forEach(tk => { %>
@@ -44,7 +51,7 @@
     <% if (dispatcher) { %><p style="margin-top:10px"><a class="btn btn-sm" href="/tasks#send"><%- ic('send', 'ic-dir') %><%= t('send_all_btn') %></a></p><% } %>
   </section>
   <section class="card honor">
-    <div class="card-head"><h2><%- ic('star') %><%= t('honor_board') %> · <%= t('per_month') %></h2><a class="small" href="/board"><%= t('board') %> →</a></div>
+    <div class="card-head"><h2><%- ic('star') %><%= t('honor_board') %> · <%= t('per_month') %></h2><a class="small" href="/board"><%= t('board') %> <%= arrow %></a></div>
     <% if (!stars.length) { %><p class="muted"><%= t('honor_empty') %></p><% } %>
     <ol class="rank-list"><% stars.forEach((e, i) => { %><li><a <%- empHref(e.id) %>><span class="medal-dot m<%= i %>"><%= i + 1 %></span><span class="avatar"><%- face(e) %></span><span class="grow"><%= nm(e) %><small class="muted"> · <%= e.section_code || '' %></small></span><b><%= e.score %></b></a></li><% }) %></ol>
   </section>
@@ -54,7 +61,7 @@
   <section class="card">
     <div class="card-head"><h2><%- ic('pen') %><%= t('awaiting_my_approval') %></h2><span class="pill <%= myApprovals.length + myExtensions.length ? 'warn' : '' %>"><%= myApprovals.length + myExtensions.length %></span></div>
     <% if (myExtensions.length || myHandovers.length) { %><ul class="list"><% myExtensions.forEach(x => { %>
-      <li><a class="wo-link" href="/wo/<%= x.wid %>#schedule"><%= x.wo_number %></a><span class="grow"><span class="cell-main"><%= t('act_request_extension') %>: <%= x.title %></span><span class="cell-sub"><%= fmt(x.old_end) %> → <%= fmt(x.new_end) %></span></span><a class="btn btn-sm" href="/wo/<%= x.wid %>#schedule"><%= t('approve') %></a></li>
+      <li><a class="wo-link" href="/wo/<%= x.wid %>#schedule"><%= x.wo_number %></a><span class="grow"><span class="cell-main"><%= t('act_request_extension') %>: <%= x.title %></span><span class="cell-sub"><bdi><%= fmt(x.old_end) %></bdi> <%= arrow %> <bdi><%= fmt(x.new_end) %></bdi></span></span><a class="btn btn-sm" href="/wo/<%= x.wid %>#schedule"><%= t('approve') %></a></li>
     <% }) %><% myHandovers.forEach(h => { %>
       <li><a class="wo-link" href="/wo/<%= h.wid %>#schedule"><%= h.wo_number %></a><span class="grow"><span class="cell-main"><%- ic('transfer') %> <%= t('handover') %>: <%= h.title %></span><span class="cell-sub"><%= t('handover_at') %> <%= fmt(h.scheduled_at) %></span></span><span class="pill warn"><%= t('ho_scheduled') %></span></li>
     <% }) %></ul><% } %>
@@ -109,7 +116,7 @@
     <% }) %></ul><% } %>
   </section>
   <section class="card">
-    <div class="card-head"><h2><%- ic('calendar') %><%= lang === 'ar' ? 'الأسبوعان القادمان في فريقي' : 'Next two weeks in my team' %></h2><a class="btn ghost btn-sm" href="/calendar?view=month"><%= t('calendar') %><%- ic('chevron', 'ic-dir') %></a></div>
+    <div class="card-head"><h2><%- ic('calendar') %><%= t('next_two_weeks_team') %></h2><a class="btn ghost btn-sm" href="/calendar?view=month"><%= t('calendar') %><%- ic('chevron', 'ic-dir') %></a></div>
     <% if (!upcoming.length) { %><div class="empty-inline"><%- ic('calendar') %><%= t('no_records') %></div><% } else { %>
     <ul class="list"><% upcoming.forEach(ev => { %>
       <li><span class="ev-tag ev-<%= ev.type %>"><%= ev.kind === 'holiday' ? t('holiday') : ev.kind === 'acting' ? t('ev_acting') : t('lt_' + ev.type) %></span>

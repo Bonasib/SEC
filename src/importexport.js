@@ -145,4 +145,40 @@ async function parseUpload(buffer, fileName, entity) {
   return { rows, unknown };
 }
 
-module.exports = { templateWorkbook, exportWorkbook, toCsv, parseUpload, parseCsv };
+/**
+ * Apply validated rows to the system (used by Excel import and by reviewed file extraction).
+ * results: [{ raw, errors }]. Each row is re-validated; work orders and similar commit row by row
+ * (own transactions and emails), other data in one transaction with a savepoint per row.
+ */
+function commitRows(entity, results, req) {
+  const { db } = require('./db');
+  const def = ENTITIES[entity];
+  const wrap = !['work_orders', 'point_requests', 'courses', 'course_attendees'].includes(entity);
+  let inserted = 0, updated = 0, failed = 0;
+  if (wrap) db.exec('BEGIN IMMEDIATE');
+  try {
+    for (const r of results) {
+      if (r.errors && r.errors.length) { r.outcome = 'skipped'; continue; }
+      const v = def.validate(r.raw, req);
+      if (v.errors.length) { r.errors = v.errors; r.outcome = 'failed'; failed++; continue; }
+      if (wrap) db.exec('SAVEPOINT row');
+      try {
+        const ref = def.apply(v.data, v.mode, req);
+        if (wrap) db.exec('RELEASE row');
+        r.outcome = v.mode === 'update' ? 'updated' : 'inserted';
+        if (ref) r.ref = ref;
+        v.mode === 'update' ? updated++ : inserted++;
+      } catch (e) {
+        if (wrap) { db.exec('ROLLBACK TO row'); db.exec('RELEASE row'); }
+        r.errors = [e.message]; r.outcome = 'failed'; failed++;
+      }
+    }
+    if (wrap) db.exec('COMMIT');
+  } catch (e) {
+    if (wrap) db.exec('ROLLBACK');
+    throw e;
+  }
+  return { inserted, updated, failed };
+}
+
+module.exports = { templateWorkbook, exportWorkbook, toCsv, parseUpload, parseCsv, commitRows };

@@ -47,6 +47,7 @@
       <div class="nav-group"><span class="nav-label"><%= t('grp_admin') %></span>
         <%- L('/permissions', 'permissions', 'shield', ['hr','admin','auditor'].includes(r)) %>
         <%- L('/data', 'data', 'transfer') %>
+        <%- L('/extract', 'extract_title', 'image', !!(hasPerm('data.extract') || hasPerm('data.review')), pendingExtractions) %>
         <%- L('/outbox', 'outbox', 'mail', ['admin','auditor'].includes(r)) %>
         <%- L('/audit', 'audit', 'file', ['admin','auditor'].includes(r)) %>
         <%- L('/settings', 'settings', 'settings', r === 'admin') %>
@@ -58,7 +59,12 @@
   <div class="main-col">
     <header class="topbar">
       <button class="icon-btn menu-btn" type="button" aria-label="<%= t('menu') %>" aria-controls="sidebar" aria-expanded="false" data-toggle-nav><%- ic('menu') %></button>
+      <% if (path !== '/search') { %><form class="top-search hide-sm" method="get" action="/search" role="search">
+        <label class="search-field"><%- ic('search') %><input type="search" name="q" placeholder="<%= t('search_all') %>" aria-label="<%= t('search_all') %>" maxlength="80" data-search-key><kbd aria-hidden="true">/</kbd></label>
+        <input type="hidden" name="jump" value="1">
+      </form><% } %>
       <div class="topbar-spacer"></div>
+      <a class="icon-btn show-sm" href="/search" aria-label="<%= t('search_title') %>" title="<%= t('search_title') %>"><%- ic('search') %></a>
       <% if (canCreate && path !== '/wo/new') { %><a class="btn primary btn-sm hide-sm" href="/wo/new"><%- ic('plus') %><%= t('new_wo') %></a><% } %>
       <button class="icon-btn" type="button" data-theme-toggle aria-label="<%= t('theme_dark') %> / <%= t('theme_light') %>" title="<%= t('theme_dark') %> / <%= t('theme_light') %>"><%- ic('moon', 'only-light') %><%- ic('sun', 'only-dark') %></button>
       <a class="icon-btn lang-btn" href="/lang/<%= lang === 'ar' ? 'en' : 'ar' %>" title="<%= t('language') %>" lang="<%= lang === 'ar' ? 'en' : 'ar' %>"><%- ic('globe') %><span><%= lang === 'ar' ? 'EN' : 'ع' %></span></a>

@@ -1,5 +1,5 @@
 <%- include('partials/header', { pageTitle: t('daily_tasks') }) %>
-<% const range = to ? `${day} → ${to}` : day;
+<% const range = to ? `${day} ${arrow} ${to}` : day;
    const dayName = (d) => new Date(d + 'T12:00:00Z').toLocaleDateString(lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
    const keep = (extra) => { const p = new URLSearchParams(Object.entries(q).filter(([k, v]) => v && !['day', 'to'].includes(k))); Object.entries(extra).forEach(([k, v]) => p.set(k, v)); return '?' + p.toString(); };
    const ft = editTask || {};
@@ -27,7 +27,7 @@
 
 <% if (sent) { %>
 <section class="card" role="status">
-  <div class="flash flash-success" style="margin:0 0 12px"><%- ic('check-circle') %><div><b><%= t('dispatch_done') %></b> — <%= sent.recipients %> <%= t('recipients') %> · <%= sent.emails %> <%= t('emails') %> · <%= sent.items %> <%= t('items') %></div></div>
+  <div class="flash flash-success" style="margin:0 0 12px"><%- ic('check-circle') %><div><b><%= t('dispatch_done') %></b> — <%= sent.recipients %> <%= t('recipients') %> · <%= sent.emails %> <%= t('emails') %> · <%= sent.items %> <%= t('items_n') %></div></div>
   <p class="muted small"><%= t('whatsapp_hint') %></p>
   <%- include('partials/dispatch_messages', { messages: sent.messages }) %>
 </section>

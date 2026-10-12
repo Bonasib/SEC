@@ -18,6 +18,7 @@
       <% if (d.state && d.state !== 'valid') { %><span class="pill <%= d.state === 'expired' ? 'bad' : 'warn' %>"><%- ic('alert') %><%= t('doc_' + d.state) %></span><% } else if (d.state === 'valid') { %><span class="pill ok"><%- ic('check') %><%= t('doc_valid') %></span><% } %>
       <div class="doc-actions">
         <a class="icon-btn" href="/documents/<%= d.id %>?download=1" aria-label="<%= t('download') %>" title="<%= t('download') %>"><%- ic('download') %></a>
+        <% if ((hasPerm('data.extract') || hasPerm('data.review')) && /pdf|image|sheet|wordprocessing|csv|text\/plain/.test(d.mime || '')) { %><form method="post" action="/extract/from-document/<%= d.id %>"><button class="icon-btn" aria-label="<%= t('extract_from_doc') %>" title="<%= t('extract_from_doc') %>"><%- ic('transfer') %></button></form><% } %>
         <% if (rights.edit) { %><form method="post" action="/documents/<%= d.id %>/delete" data-confirm="<%= t('confirm_remove') %>"><button class="icon-btn" aria-label="<%= t('remove') %>" title="<%= t('remove') %>"><%- ic('trash') %></button></form><% } %>
       </div>
     </li>

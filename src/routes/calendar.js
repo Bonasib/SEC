@@ -63,8 +63,8 @@ router.get('/calendar/export', async (req, res, next) => {
     }
     const rows = events.map((e) => ({
       type: e.type, start: e.start, end: e.end,
-      title: e.kind === 'holiday' ? `${e.name_ar} / ${e.name_en}` : e.kind === 'work' ? `${e.wo_number} ${e.title}` : e.kind === 'acting' ? `${e.unit_ar} / ${e.unit_en}` : e.notes || '',
-      employee_no: e.employee_no || '', employee: e.name_ar || '', section: e.section_code || e.unit_code || '',
+      title: e.kind === 'holiday' ? `${e.name_ar} / ${e.name_en}` : e.kind === 'work' ? `${e.wo_number} ${e.title}` : e.kind === 'task' ? `${e.time || ''} ${e.title}`.trim() : e.kind === 'acting' ? `${e.unit_ar} / ${e.unit_en}` : e.notes || '',
+      employee_no: e.employee_no || '', employee: e.name_ar || e.people || '', section: e.section_code || e.unit_code || '',
       mode: e.mode || '', location: e.location || '', status: e.status || (e.pending ? 'pending' : ''), wo_number: e.wo_number || '',
     }));
     if (req.query.format === 'csv') { res.type('text/csv; charset=utf-8').attachment(`team_calendar_${year}.csv`); return res.send(toCsv(rows)); }

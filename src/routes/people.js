@@ -27,7 +27,7 @@ router.get('/employees', requireRole(...PEOPLE_VIEW), (req, res) => {
   const cond = [], p = [];
   if (req.query.section) { cond.push('e.section_id = ?'); p.push(Number(req.query.section)); }
   if (req.query.role) { cond.push('e.role = ?'); p.push(req.query.role); }
-  if (req.query.q) { cond.push('(e.employee_no LIKE ? OR e.name_ar LIKE ? OR e.name_en LIKE ? OR e.job_title_en LIKE ?)'); p.push(...Array(4).fill(`%${req.query.q}%`)); }
+  if (req.query.q) { cond.push('(skey(e.employee_no) LIKE skey(?) OR skey(e.name_ar) LIKE skey(?) OR skey(e.name_en) LIKE skey(?) OR skey(e.job_title_en) LIKE skey(?))'); p.push(...Array(4).fill(`%${req.query.q}%`)); }
   const today = todayRiyadh();
   if (req.query.status) { cond.push('e.status = ?'); p.push(req.query.status); }
   if (req.query.nationality) { cond.push('e.nationality = ?'); p.push(req.query.nationality); }
@@ -40,8 +40,11 @@ router.get('/employees', requireRole(...PEOPLE_VIEW), (req, res) => {
   if (req.query.availability === 'available') rows = rows.filter((e) => e.status === 'active' && !e.leave_today && !e.busy);
   if (req.query.availability === 'away') rows = rows.filter((e) => e.leave_today);
   if (req.query.availability === 'busy') rows = rows.filter((e) => e.busy);
+  // Expiring cards / licences / certificates: shown to those who manage employee files
+  const docFlags = canManagePeople(req.user) ? require('../documents').expirySummary('employee') : {};
+  if (req.query.docs === 'expiring') rows = rows.filter((e) => docFlags[e.id]);
   const pts = Object.fromEntries(require('../points').leaderboard().rows.map((r) => [r.id, r]));
-  res.render('employees', { rows, sections: sections(), ROLES, pts, canManage: canManagePeople(req.user),
+  res.render('employees', { rows, docFlags, sections: sections(), ROLES, pts, canManage: canManagePeople(req.user),
     nationalities: all("SELECT DISTINCT nationality FROM employees WHERE nationality IS NOT NULL AND nationality <> '' ORDER BY nationality").map((r) => r.nationality) });
 });
 

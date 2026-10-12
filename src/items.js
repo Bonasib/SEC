@@ -46,7 +46,7 @@ function list(q = {}) {
   if (q.category) { cond.push('i.category = ?'); p.push(q.category); }
   if (q.section) { cond.push('i.section_id = ?'); p.push(Number(q.section)); }
   if (q.status) { cond.push('i.status = ?'); p.push(q.status); } else cond.push("i.status = 'active'");
-  if (q.q) { cond.push('(i.code LIKE ? OR i.inventory_no LIKE ? OR i.name_ar LIKE ? OR i.name_en LIKE ? OR i.location LIKE ?)'); p.push(...Array(5).fill(`%${q.q}%`)); }
+  if (q.q) { cond.push('(skey(i.code) LIKE skey(?) OR skey(i.inventory_no) LIKE skey(?) OR skey(i.name_ar) LIKE skey(?) OR skey(i.name_en) LIKE skey(?) OR skey(i.location) LIKE skey(?))'); p.push(...Array(5).fill(`%${q.q}%`)); }
   const col = SORTS[q.sort] || 'i.code';
   const dir = q.dir === 'desc' ? 'DESC' : 'ASC';
   let rows = all(`SELECT i.*, s.code section_code, (SELECT MAX(created_at) FROM item_movements m WHERE m.item_id = i.id) last_move,

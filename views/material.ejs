@@ -108,7 +108,7 @@
 </section>
 
 <section class="card table-card" id="movements">
-  <div class="card-head"><h2><%- ic('transfer') %><%= t('item_transactions') %></h2><a class="small" href="/materials/transactions?item=<%= item.id %>"><%= t('show_more') %> →</a></div>
+  <div class="card-head"><h2><%- ic('transfer') %><%= t('item_transactions') %></h2><a class="small" href="/materials/transactions?item=<%= item.id %>"><%= t('show_more') %> <%= arrow %></a></div>
   <%- include('partials/tx_table', { rows: transactions, showItem: false }) %>
 </section>
 <%- include('partials/footer') %>

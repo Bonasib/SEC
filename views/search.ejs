@@ -1,0 +1,38 @@
+<%- include('partials/header', { pageTitle: q ? q + ' · ' + t('search_title') : t('search_title') }) %>
+<% const n = groups.reduce((s, g) => s + g.rows.length, 0);
+   const TONE = { in_progress: 'info', open: 'info', pending_closure: 'warn', closed: 'ok', done: 'ok', completed: 'ok', cancelled: 'bad', available: 'ok', in_use: 'info', maintenance: 'warn', out_of_service: 'bad', inactive: 'bad', terminated: 'bad', planned: 'info' }; %>
+<section class="page-head">
+  <div><h1><%= t('search_title') %></h1><p class="muted"><%= t('search_hint') %></p></div>
+</section>
+<form class="card search-big" method="get" action="/search" role="search">
+  <label class="search-field"><%- ic('search') %><input type="search" name="q" value="<%= q %>" placeholder="<%= t('search_all') %>" aria-label="<%= t('search_all') %>" data-search-key autofocus minlength="2" maxlength="80"></label>
+  <button class="btn primary"><%- ic('search') %><%= t('search') %></button>
+</form>
+<% if (!q) { %>
+  <p class="muted"><%= t('search_tips') %></p>
+<% } else if (q.length < 2) { %>
+  <div class="card empty"><%- ic('search') %><p><%= t('search_min') %></p></div>
+<% } else if (!n) { %>
+  <div class="card empty"><%- ic('search') %><p><%= t('search_none') %> “<%= q %>”</p></div>
+<% } else { %>
+  <p class="muted small" aria-live="polite"><%= n %><%= groups.some(g => g.more) ? '+' : '' %> <%= t('search_results') %> · <%= groups.length %> <%= t('search_sections') %></p>
+  <nav class="chips search-jump" aria-label="<%= t('search_sections') %>"><% groups.forEach(g => { %><a class="sj-chip" href="#g-<%= g.key %>"><%- ic(g.icon) %><%= t(g.key) %> <b><%= g.rows.length %><%= g.more ? '+' : '' %></b></a><% }) %></nav>
+  <div class="search-groups">
+  <% groups.forEach(g => { %>
+    <section class="card search-group" id="g-<%= g.key %>">
+      <div class="card-head"><h2><%- ic(g.icon) %><%= t(g.key) %> <span class="muted small">(<%= g.rows.length %><%= g.more ? '+' : '' %>)</span></h2>
+        <% if (g.more) { %><a class="small" href="<%= g.more %>"><%= t('search_more') %></a><% } %></div>
+      <ul class="search-list">
+      <% g.rows.forEach(r => { %>
+        <li><a href="<%= r.href %>" <%- r.external ? 'target="_blank" rel="noopener"' : '' %>>
+          <% if (r.code) { %><span class="mono sr-code"><%= r.code %></span><% } %>
+          <span class="sr-main"><b title="<%= r.title %>"><%= r.title %></b><% if (r.sub && r.sub.length) { %><small><% r.sub.forEach((s, k) => { %><%= k ? ' · ' : '' %><bdi><%= s %></bdi><% }) %></small><% } %></span>
+          <% if (r.status) { %><span class="pill <%= TONE[r.tone] || '' %>"><%= r.status %></span><% } %>
+        </a><% if (r.parent) { %><a class="small sr-parent" href="<%= r.parent %>"><%= t('search_open_record') %></a><% } %></li>
+      <% }) %>
+      </ul>
+    </section>
+  <% }) %>
+  </div>
+<% } %>
+<%- include('partials/footer') %>

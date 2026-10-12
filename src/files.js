@@ -9,7 +9,7 @@ const { HttpError } = require('./util');
 const UPLOAD_DIR = process.env.UPLOAD_DIR || (process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'uploads') : path.join(__dirname, '..', 'uploads'));
 
 const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif|heic|heif)$/;
-const DOC_TYPES = /^(application\/pdf|image\/(jpeg|png|webp|heic|heif)|application\/msword|application\/vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|application\/vnd\.ms-excel|text\/plain)$/;
+const DOC_TYPES = /^(application\/pdf|image\/(jpeg|png|webp|heic|heif)|application\/msword|application\/vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|application\/vnd\.ms-excel|text\/plain|text\/csv)$/;
 
 function storage(sub) {
   return multer.diskStorage({
@@ -23,7 +23,15 @@ function storage(sub) {
 }
 
 // Wrong file types are rejected with a clear message (not silently dropped)
-const filter = (re, msg) => (req, file, cb) => (re.test(file.mimetype) ? cb(null, true) : cb(new HttpError(400, msg)));
+// Some browsers send a generic type (application/octet-stream): the file extension then decides
+const EXT_TYPES = { '.pdf': 'application/pdf', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif',
+  '.heic': 'image/heic', '.doc': 'application/msword', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', '.xls': 'application/vnd.ms-excel', '.csv': 'text/csv', '.txt': 'text/plain' };
+const filter = (re, msg) => (req, file, cb) => {
+  const byExt = EXT_TYPES[path.extname(file.originalname || '').toLowerCase()];
+  if (!re.test(file.mimetype) && byExt && re.test(byExt) && /^(application\/octet-stream|binary\/octet-stream|)$/.test(file.mimetype || '')) file.mimetype = byExt;
+  return re.test(file.mimetype) ? cb(null, true) : cb(new HttpError(400, msg));
+};
 const imageUpload = multer({ storage: storage('images'), limits: { fileSize: 8 * 1024 * 1024, files: 1 }, fileFilter: filter(IMAGE_TYPES, 'Choose an image (JPG, PNG, WEBP) / اختر صورة') });
 const docUpload = multer({ storage: storage('docs'), limits: { fileSize: 25 * 1024 * 1024, files: 10 }, fileFilter: filter(DOC_TYPES, 'Allowed: PDF, images, Word, Excel / الملفات المسموحة: PDF، صور، Word، Excel') });
 

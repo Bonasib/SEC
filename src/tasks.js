@@ -101,7 +101,7 @@ function agenda({ day, to, section, status, priority, assignee, q, sort, kinds }
   if (priority) { tc.push('t.priority = ?'); tp.push(priority); }
   if (assignee) { tc.push('t.id IN (SELECT task_id FROM task_assignees WHERE employee_id = ?)'); tp.push(Number(assignee)); }
   if (userScope) { tc.push('(t.id IN (SELECT task_id FROM task_assignees WHERE employee_id = ?) OR t.created_by = ?)'); tp.push(userScope.id, userScope.id); }
-  if (q) { tc.push('(t.title LIKE ? OR t.details LIKE ? OR t.location LIKE ?)'); tp.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+  if (q) { tc.push('(skey(t.title) LIKE skey(?) OR skey(t.details) LIKE skey(?) OR skey(t.location) LIKE skey(?))'); tp.push(`%${q}%`, `%${q}%`, `%${q}%`); }
   const tasks = kinds === 'wo' ? [] : all(`SELECT t.*, s.code section_code, w.wo_number FROM tasks t LEFT JOIN org_units s ON s.id = t.section_id LEFT JOIN work_orders w ON w.id = t.wo_id
     WHERE ${tc.join(' AND ')} ORDER BY ${SORTS[sort] || SORTS.time}`, ...tp);
   for (const t of tasks) t.people = all(`SELECT e.id, e.employee_no, e.name_ar, e.name_en, e.email, e.phone FROM task_assignees a JOIN employees e ON e.id = a.employee_id WHERE a.task_id = ? ORDER BY e.employee_no`, t.id);
@@ -113,7 +113,7 @@ function agenda({ day, to, section, status, priority, assignee, q, sort, kinds }
   if (priority === 'urgent') wc.push("w.priority IN ('C1','C2','C3','C4')");
   else if (priority) wc.push('0');
   if (status && status !== 'open') wc.push('0');
-  if (q) { wc.push('(w.wo_number LIKE ? OR w.title LIKE ? OR w.location LIKE ?)'); wp.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+  if (q) { wc.push('(skey(w.wo_number) LIKE skey(?) OR skey(w.title) LIKE skey(?) OR skey(w.location) LIKE skey(?))'); wp.push(`%${q}%`, `%${q}%`, `%${q}%`); }
   if (userScope) { const sc = require('./access').woScope(userScope); if (sc.sql) { wc.push(sc.sql); wp.push(...sc.params); } }
   const wos = kinds === 'tasks' ? [] : all(`SELECT w.*, s.code section_code FROM work_orders w LEFT JOIN org_units s ON s.id = w.section_id WHERE ${wc.join(' AND ')} ORDER BY w.planned_start`, ...wp);
   for (const w of wos) {

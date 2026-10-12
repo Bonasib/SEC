@@ -43,7 +43,7 @@
 <% } %>
 <% if (docs.view) { %><%- include('partials/documents', { kind: 'employee', id: e.id, documents, rights: docs, types: DOC_TYPES, hint: t('employee_docs_hint') }) %><% } %>
 <div class="grid2">
-<section class="card"><div class="card-head"><h2><%- ic('tasks') %><%= t('daily_tasks') %></h2><a class="small" href="/tasks"><%= t('daily_tasks') %> →</a></div>
+<section class="card"><div class="card-head"><h2><%- ic('tasks') %><%= t('daily_tasks') %></h2><a class="small" href="/tasks"><%= t('daily_tasks') %> <%= arrow %></a></div>
   <table class="tbl small"><% tasks.forEach(tk => { %><tr><td class="mono"><%= tk.task_date %></td><td><%= tk.start_time || '' %></td><td><%= tk.title %></td><td><span class="pill <%= tk.status === 'done' ? 'ok' : 'info' %>"><%= t('task_' + tk.status) %></span></td></tr><% }) %>
   <% if (!tasks.length) { %><tr><td class="muted"><%= t('no_records') %></td></tr><% } %></table>
 </section>
@@ -54,7 +54,7 @@
 </div>
 <div class="grid2">
 <section class="card"><h2><%- ic('calendar') %><%= t('leaves') %></h2>
-  <table class="tbl small"><% leaves.forEach(l => { %><tr><td><%= lbl('leave_type', l.type) %></td><td><%= l.start_date %> → <%= l.end_date %></td><td><%= lbl('leave_status', l.status) %></td></tr><% }) %>
+  <table class="tbl small"><% leaves.forEach(l => { %><tr><td><%= lbl('leave_type', l.type) %></td><td class="mono" dir="ltr" style="text-align:start"><%= l.start_date %> → <%= l.end_date %></td><td><%= lbl('leave_status', l.status) %></td></tr><% }) %>
   <% if (!leaves.length) { %><tr><td class="muted"><%= t('no_records') %></td></tr><% } %></table>
 </section>
 </div>

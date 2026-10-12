@@ -25,7 +25,7 @@ function courseFilters(q) {
   if (q.category) { c.push('c.category = ?'); p.push(q.category); }
   if (q.status) { c.push('c.status = ?'); p.push(q.status); }
   if (q.mode) { c.push('c.mode = ?'); p.push(q.mode); }
-  if (q.q) { c.push('(c.code LIKE ? OR c.title_ar LIKE ? OR c.title_en LIKE ? OR c.provider LIKE ? OR c.city LIKE ? OR c.country LIKE ?)'); p.push(...Array(6).fill(`%${q.q}%`)); }
+  if (q.q) { c.push('(skey(c.code) LIKE skey(?) OR skey(c.title_ar) LIKE skey(?) OR skey(c.title_en) LIKE skey(?) OR skey(c.provider) LIKE skey(?) OR skey(c.city) LIKE skey(?) OR skey(c.country) LIKE skey(?))'); p.push(...Array(6).fill(`%${q.q}%`)); }
   return { sql: c.map((x) => 'AND ' + x).join(' '), params: p };
 }
 

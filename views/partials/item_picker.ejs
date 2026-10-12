@@ -12,7 +12,7 @@
     <span class="pill info" data-ig-count aria-live="polite">0</span>
   </div>
   <div class="ig-list" role="list">
-    <% if (!items.length) { %><p class="muted" style="padding:12px"><%= t('no_items_yet') %> <a href="/materials"><%= t('materials_tools') %> →</a></p><% } %>
+    <% if (!items.length) { %><p class="muted" style="padding:12px"><%= t('no_items_yet') %> <a href="/materials"><%= t('materials_tools') %> <%= arrow %></a></p><% } %>
     <% items.forEach(i => { const off = i.available <= 0 && !chosen[i.id]; %>
     <div class="ig-row <%= off ? 'off' : '' %> <%= chosen[i.id] ? 'picked' : '' %>" role="listitem" data-kind="<%= i.kind %>" data-text="<%= [i.code, i.inventory_no, i.name_ar, i.name_en, i.category].filter(Boolean).join(' ').toLowerCase() %>">
       <%- thumb(i) %>

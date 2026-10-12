@@ -13,7 +13,7 @@ router.get('/assets', (req, res) => {
   const cond = [], p = [];
   if (req.query.type) { cond.push('a.type = ?'); p.push(req.query.type); }
   if (req.query.voltage) { cond.push('a.voltage_kv = ?'); p.push(Number(req.query.voltage)); }
-  if (req.query.q) { cond.push('(a.code LIKE ? OR a.name_ar LIKE ? OR a.name_en LIKE ? OR a.line_code LIKE ?)'); p.push(...Array(4).fill(`%${req.query.q}%`)); }
+  if (req.query.q) { cond.push('(skey(a.code) LIKE skey(?) OR skey(a.name_ar) LIKE skey(?) OR skey(a.name_en) LIKE skey(?) OR skey(a.line_code) LIKE skey(?))'); p.push(...Array(4).fill(`%${req.query.q}%`)); }
   const rows = all(`SELECT a.*, (SELECT COUNT(*) FROM work_orders w WHERE w.asset_id = a.id AND w.status <> 'cancelled') wo_count,
       (SELECT COUNT(*) FROM work_orders w WHERE w.asset_id = a.id AND w.status IN ('open','in_progress','pending_closure')) wo_open
     FROM assets a ${cond.length ? 'WHERE ' + cond.join(' AND ') : ''} ORDER BY a.code LIMIT 1000`, ...p);
@@ -56,7 +56,7 @@ router.get('/fleet', (req, res) => {
   if (req.query.section) { cond.push('q.section_id = ?'); p.push(Number(req.query.section)); }
   if (req.query.vtype) { cond.push('q.vehicle_type = ?'); p.push(req.query.vtype); }
   if (req.query.status) { cond.push('q.status = ?'); p.push(req.query.status); }
-  if (req.query.q) { cond.push('(q.code LIKE ? OR q.plate_number LIKE ? OR q.make_model LIKE ? OR q.name LIKE ?)'); p.push(...Array(4).fill(`%${req.query.q}%`)); }
+  if (req.query.q) { cond.push('(skey(q.code) LIKE skey(?) OR skey(q.plate_number) LIKE skey(?) OR skey(q.make_model) LIKE skey(?) OR skey(q.name) LIKE skey(?))'); p.push(...Array(4).fill(`%${req.query.q}%`)); }
   const SORT = { code: 'q.code', plate: 'q.plate_number', type: 'q.vehicle_type', seats: 'q.seats', expiry: 'q.expiry_date', section: 's.code', year: 'q.model_year' };
   const rows = all(`SELECT q.*, s.code section_code FROM equipment q LEFT JOIN org_units s ON s.id = q.section_id WHERE ${cond.join(' AND ')}
     ORDER BY ${SORT[req.query.sort] || 'q.code'} ${req.query.dir === 'desc' ? 'DESC' : 'ASC'}, q.code`, ...p);
@@ -68,6 +68,9 @@ router.get('/fleet', (req, res) => {
       WHERE x.equipment_id = ? AND w.status IN ('open','awaiting_authorization') AND w.planned_start > ? ORDER BY w.planned_start LIMIT 3`, q.id, now);
     q.trips = get(`SELECT COUNT(*) n FROM wo_equipment x JOIN work_orders w ON w.id = x.wo_id WHERE x.equipment_id = ? AND w.status = 'closed'`, q.id).n;
   }
+  const docFlags = require('../documents').expirySummary('vehicle');
+  // From the dashboard: vehicles whose registration or papers expire soon
+  if (req.query.docs === 'expiring') rows.splice(0, rows.length, ...rows.filter((q) => q.flag || docFlags[q.id]));
   const stats = {
     total: rows.length,
     available: rows.filter((q) => q.status === 'available' && !q.current && q.flag !== 'expired').length,
@@ -76,7 +79,7 @@ router.get('/fleet', (req, res) => {
     expired: rows.filter((q) => q.flag === 'expired').length,
     seats: rows.filter((q) => q.status === 'available' && q.flag !== 'expired').reduce((a, q) => a + (q.seats || 0), 0),
   };
-  res.render('fleet', { rows, stats, VEHICLE_TYPES, EQUIP_STATUS, sections: sections(), canEdit: FLEET_EDIT(req), docFlags: require('../documents').expirySummary('vehicle') });
+  res.render('fleet', { rows, stats, VEHICLE_TYPES, EQUIP_STATUS, sections: sections(), canEdit: FLEET_EDIT(req), docFlags });
 });
 
 router.get('/fleet/:id(\\d+)', (req, res) => {

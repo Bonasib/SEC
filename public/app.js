@@ -23,6 +23,15 @@
   if (navBtn) navBtn.addEventListener('click', function () { setNav(!document.body.classList.contains('nav-open')); });
   document.querySelectorAll('[data-close-nav]').forEach(function (el) { el.addEventListener('click', function () { setNav(false); }); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.body.classList.contains('nav-open')) { setNav(false); navBtn && navBtn.focus(); } });
+  // "/" anywhere (outside a field) jumps to the global search
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+    var el = document.activeElement, tag = el && el.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (el && el.isContentEditable)) return;
+    var box = document.querySelector('[data-search-key]');
+    e.preventDefault();
+    if (box && box.offsetParent) box.focus(); else location.href = '/search';
+  });
 
   // ---- login: click a demo account to fill it ----
   document.querySelectorAll('[data-demo]').forEach(function (b) {
@@ -175,6 +184,11 @@
     });
   });
 
+  // ---- confirmation on specific buttons (the form has other buttons) ----
+  document.querySelectorAll('button[data-confirm-click]').forEach(function (b) {
+    b.addEventListener('click', function (e) { if (!window.confirm(b.dataset.confirmClick)) e.preventDefault(); });
+  });
+
   // ---- confirmation before destructive actions ----
   document.querySelectorAll('form[data-confirm]').forEach(function (f) {
     f.addEventListener('submit', function (e) {
@@ -279,6 +293,7 @@
 
   // ---- every table: click a column to sort, type to filter rows ----
   var TXT = rtl ? { filter: 'تصفية الصفوف…', of: 'من', sort: 'ترتيب حسب' } : { filter: 'Filter rows…', of: 'of', sort: 'Sort by' };
+  var findUsed = false; // ?find= from the global search fills the first table's filter
   var collator = new Intl.Collator(root.lang || undefined, { numeric: true, sensitivity: 'base' });
   var cellValue = function (row, i) {
     var c = row.cells[i];
@@ -305,7 +320,8 @@
     var rows = dataRows();
     if (!rows.length) return;
     // Quick filter for longer tables
-    if (rows.length >= 6 && !tbl.hasAttribute('data-nofilter')) {
+    var find = !findUsed && new URLSearchParams(location.search).get('find');
+    if ((rows.length >= 6 || find) && !tbl.hasAttribute('data-nofilter')) {
       var bar = document.createElement('div');
       bar.className = 'table-tools';
       bar.innerHTML = '<label class="search-field"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="' + TXT.filter + '" aria-label="' + TXT.filter + '"></label><span class="muted small" aria-live="polite"></span>';
@@ -317,6 +333,7 @@
         all.forEach(function (r) { var ok = !q || r.textContent.toLowerCase().indexOf(q) >= 0; r.hidden = !ok; if (ok) shown++; });
         count.textContent = q ? shown + ' ' + TXT.of + ' ' + all.length : all.length;
       };
+      if (find) { input.value = find; findUsed = true; }
       input.addEventListener('input', apply); apply();
     }
     if (rows.length < 2 || tbl.hasAttribute('data-server-sort')) return;

@@ -4,7 +4,7 @@ const { all } = require('./db');
 const { riyadhDate } = require('./workorders');
 
 const ABSENCE_TYPES = ['annual', 'sick', 'emergency', 'training', 'workshop', 'factory_test', 'permission', 'business_travel', 'other'];
-const EVENT_TYPES = ['holiday', 'work', ...ABSENCE_TYPES, 'acting'];
+const EVENT_TYPES = ['holiday', 'work', 'task', ...ABSENCE_TYPES, 'acting'];
 
 const addDays = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
 const daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
@@ -54,6 +54,19 @@ function eventsBetween(from, to, { sectionId, employeeId, types } = {}) {
     }
   }
 
+  // Daily tasks (one day each), with the people assigned
+  if (want('task')) {
+    const cond = ["t.status <> 'cancelled'", 't.task_date BETWEEN ? AND ?'], params = [from, to];
+    if (sectionId) { cond.push('(t.section_id = ? OR t.id IN (SELECT a.task_id FROM task_assignees a JOIN employees e ON e.id = a.employee_id WHERE e.section_id = ?))'); params.push(sectionId, sectionId); }
+    if (employeeId) { cond.push('t.id IN (SELECT task_id FROM task_assignees WHERE employee_id = ?)'); params.push(employeeId); }
+    for (const t of all(`SELECT t.*, s.code section_code, (SELECT GROUP_CONCAT(e.name_ar, '، ') FROM task_assignees a JOIN employees e ON e.id = a.employee_id WHERE a.task_id = t.id) people,
+        (SELECT COUNT(*) FROM task_assignees a WHERE a.task_id = t.id) team_size
+      FROM tasks t LEFT JOIN org_units s ON s.id = t.section_id WHERE ${cond.join(' AND ')} ORDER BY t.task_date, IFNULL(t.start_time, '99')`, ...params)) {
+      out.push({ kind: 'task', type: 'task', start: t.task_date, end: t.task_date, id: t.id, title: t.title, time: t.start_time, end_time: t.end_time,
+        status: t.status, priority: t.priority, section_code: t.section_code, people: t.people || '', team_size: t.team_size, location: t.location });
+    }
+  }
+
   if (want('acting')) {
     const cond = ['a.cancelled = 0', 'a.start_at <= ?', 'a.end_at >= ?'];
     const params = [addDays(to, 1) + 'T00:00:00Z', addDays(from, -1) + 'T00:00:00Z'];
@@ -72,7 +85,7 @@ function eventsBetween(from, to, { sectionId, employeeId, types } = {}) {
 // Per-day buckets for [from, to]
 function byDay(events, from, to) {
   const days = {};
-  for (let d = from; d <= to; d = addDays(d, 1)) days[d] = { date: d, holidays: [], work: [], absences: [], acting: [] };
+  for (let d = from; d <= to; d = addDays(d, 1)) days[d] = { date: d, holidays: [], work: [], tasks: [], absences: [], acting: [] };
   for (const ev of events) {
     const s = ev.start < from ? from : ev.start;
     const e = ev.end > to ? to : ev.end;
@@ -81,6 +94,7 @@ function byDay(events, from, to) {
       if (!b) continue;
       if (ev.kind === 'holiday') b.holidays.push(ev);
       else if (ev.kind === 'work') b.work.push(ev);
+      else if (ev.kind === 'task') b.tasks.push(ev);
       else if (ev.kind === 'acting') b.acting.push(ev);
       else b.absences.push(ev);
     }
@@ -110,6 +124,7 @@ function toIcs(events, lang = 'ar') {
   events.forEach((ev, i) => {
     const title = ev.kind === 'holiday' ? (lang === 'en' ? ev.name_en : ev.name_ar)
       : ev.kind === 'work' ? `${ev.wo_number} ${ev.title}`
+      : ev.kind === 'task' ? `${ev.time ? ev.time + ' ' : ''}${ev.title}${ev.people ? ' - ' + ev.people : ''}`
       : ev.kind === 'acting' ? `${lang === 'en' ? ev.name_en || ev.name_ar : ev.name_ar} - ${lang === 'en' ? ev.unit_en : ev.unit_ar}`
       : `${ev.name_ar} - ${ev.type}${ev.mode ? ' (' + ev.mode + ')' : ''}`;
     lines.push('BEGIN:VEVENT', `UID:${ev.kind}-${ev.id || ev.employee_no || ''}-${ev.start}-${i}@sec-wms`, `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`,

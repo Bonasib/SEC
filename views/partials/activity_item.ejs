@@ -4,7 +4,7 @@
     schedule_handover: 'clock', cancel_handover: 'clock', handover: 'transfer', attendance: 'users' };
   const tone = ['approve', 'approve_extension', 'handover', 'verify'].includes(a.action) ? 'ok' : ['reject', 'cancel', 'reject_extension'].includes(a.action) ? 'bad' : ['request_extension', 'schedule_handover', 'submit_closure'].includes(a.action) ? 'warn' : '';
   let after = {}; try { after = JSON.parse(a.after_json || '{}'); } catch (e) {}
-  const detail = [after.status ? t('st_' + after.status) : null, after.planned_end ? '→ ' + fmt(after.planned_end) : null, after.stage ? t(after.stage) : null, after.to ? '→ ' + after.to : null, after.material_number || null, after.reservation_number || null].filter(Boolean).join(' · ');
+  const detail = [after.status ? t('st_' + after.status) : null, after.planned_end ? arrow + ' ' + fmt(after.planned_end) : null, after.stage ? t(after.stage) : null, after.to ? '→ ' + after.to : null, after.material_number || null, after.reservation_number || null].filter(Boolean).join(' · ');
 %>
 <li class="act act-<%= tone %>">
   <span class="act-ic"><%- ic(AI[a.action] || 'pen') %></span>

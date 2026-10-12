@@ -523,3 +523,87 @@ test('inventory: supplier orders raise "on order", receipts add stock, transacti
   assert.ok(kinds.has('receive') && kinds.has('order_received'));
   assert.deepStrictEqual(I.parseLines({ item_ids: [String(it.id), '9999'], item_qtys: ['5', ''] }), [{ item_id: it.id, qty: 5 }], 'empty picker rows are ignored');
 });
+
+// ---------- file extraction ----------
+test('extraction: headings in Arabic or English map to the right fields; "label: value" text becomes a record', () => {
+  const X = require('../src/extract');
+  const m = X.mapContent({ matrices: [[['كشف'], ['الرقم الوظيفي', 'الاسم', 'البريد الالكتروني', 'القسم'], ['F950', 'تجربة', 'f950@example.com', 'H1']]] }, 'auto');
+  assert.strictEqual(m.entity, 'employees');
+  assert.deepStrictEqual(m.rows[0], { employee_no: 'F950', name_ar: 'تجربة', email: 'f950@example.com', section_code: 'H1' });
+  const t = X.rowsFromText('Item code: MAT-T-1\nKind: material\nArabic name: صنف تجربة\nQuantity: 4', 'items');
+  assert.strictEqual(t.rows[0].code, 'MAT-T-1');
+  assert.strictEqual(t.rows[0].quantity, '4');
+});
+
+test('extraction: an auditor (not the uploader) approves rows, and only approved valid rows are added', () => {
+  const X = require('../src/extract');
+  const file = { rel: 'docs/x.csv', name: 'x.csv', mime: 'text/csv', size: 1, sha256: 'x' };
+  const result = { entity: 'items', method: 'local', warnings: [], unmapped: [], preview: {}, rows: [{ code: 'MAT-X-1', kind: 'material', name_ar: 'صنف أ', quantity: '5' }, { code: 'MAT-X-2', kind: 'bad-kind', name_ar: 'صنف ب' }] };
+  const id = X.create({ file, entity: 'items', method: 'local' }, result, req('DEMO-WH'));
+  let x = X.load(id, emp('DEMO-AUD'));
+  assert.strictEqual(x.rows[0].errors.length, 0);
+  assert.ok(x.rows[1].errors.length, 'invalid kind flagged');
+  assert.ok(get("SELECT 1 FROM notifications WHERE type = 'extraction_review' AND employee_id = ?", emp('DEMO-AUD').id), 'auditor notified');
+  assert.throws(() => X.load(id, emp('F001')), /Forbidden/);
+  // The uploader cannot approve rows or export
+  x = X.saveEdits(x, { entity: 'items', rows: { 0: { ...x.rows[0].data, __state: 'approved' } } }, req('DEMO-WH'));
+  assert.strictEqual(x.rows[0].state, 'pending');
+  assert.throws(() => X.exportApproved(X.load(id, emp('DEMO-WH')), req('DEMO-WH')), /auditor|reviewer/i);
+  // Auditor approves the valid rows (the invalid one stays pending) and exports
+  x = X.saveEdits(X.load(id, emp('DEMO-AUD')), { entity: 'items', action: 'approve_valid', rows: { 0: result.rows[0], 1: result.rows[1] } }, req('DEMO-AUD'));
+  assert.deepStrictEqual(x.rows.map((r) => r.state), ['approved', 'pending']);
+  const out = X.exportApproved(X.load(id, emp('DEMO-AUD')), req('DEMO-AUD'));
+  assert.strictEqual(out.inserted, 1);
+  assert.ok(get("SELECT 1 FROM items WHERE code = 'MAT-X-1' AND quantity = 5"));
+  assert.ok(!get("SELECT 1 FROM items WHERE code = 'MAT-X-2'"));
+  assert.strictEqual(X.load(id, emp('DEMO-AUD')).status, 'exported');
+  assert.throws(() => X.exportApproved(X.load(id, emp('DEMO-AUD')), req('DEMO-AUD')), /processed/);
+});
+
+test('extraction: Word tables and PDF text are read', async () => {
+  const X = require('../src/extract');
+  // Minimal text PDF with a two-line table
+  const lines = ['Item code   Kind   Arabic name   Quantity', 'MAT-PDF-1   material   test   7'];
+  const stream = `BT /F1 12 Tf 40 760 Td ${lines.map((l, i) => `${i ? '0 -20 Td ' : ''}(${l}) Tj`).join(' ')} ET`;
+  const objs = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`, '<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>'];
+  let pdf = '%PDF-1.4\n'; const offs = [];
+  objs.forEach((o, i) => { offs.push(pdf.length); pdf += `${i + 1} 0 obj\n${o}\nendobj\n`; });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${offs.map((o) => String(o).padStart(10, '0') + ' 00000 n \n').join('')}trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  const raw = await X.readPdf(Buffer.from(pdf, 'latin1'));
+  const m = X.mapContent(raw, 'items');
+  assert.ok(m.rows.some((r) => r.code === 'MAT-PDF-1' && r.quantity === '7'), JSON.stringify(m.rows));
+});
+
+// ---------- global search and follow-ups ----------
+test('global search: Arabic letter variants match, and results follow each page\'s visibility rules', () => {
+  const S = require('../src/search');
+  const h = { t: (k) => k, nm: (o) => o.name_ar, lbl: (g, v) => v, fmt: (d) => d, lang: 'ar' };
+  run("INSERT INTO items (code, name_ar, kind, uom, quantity) VALUES ('MAT-SRCH-1', 'مادة إختبار البحث', 'material', 'pcs', 1)");
+  // Typed without hamza and with ه instead of ة
+  const g = S.search('اختبار البحث', emp('F001'), h);
+  assert.ok(g.find((x) => x.key === 'materials_tools')?.rows.some((r) => r.code === 'MAT-SRCH-1'));
+  // LIKE wildcards in the query are literal
+  assert.strictEqual(S.search('%%', emp('F001'), h).length, 0);
+  // An employee does not get the employees group; HR does
+  assert.ok(!S.search('F00', emp('F001'), h).some((x) => x.key === 'employees'));
+  assert.ok(S.search('F00', emp('DEMO-HR'), h).some((x) => x.key === 'employees'));
+  // Work orders: only those the user may view
+  const P = require('../src/perm');
+  for (const r of (S.search('WO', emp('F001'), h).find((x) => x.key === 'work_orders')?.rows || [])) {
+    assert.ok(P.canViewWO(get('SELECT * FROM work_orders WHERE id = ?', Number(r.href.split('/').pop())), emp('F001')));
+  }
+});
+
+test('dashboard follow-ups: the auditor sees extracted files to review; warehouse sees stock alerts', () => {
+  const { followUps } = require('../src/inbox');
+  const aud = followUps(emp('DEMO-AUD'));
+  const pending = get("SELECT COUNT(*) n FROM extractions WHERE status = 'pending_review' AND created_by <> ?", emp('DEMO-AUD').id).n;
+  if (pending) assert.strictEqual(aud.find((f) => f.key === 'fu_extractions').n, pending);
+  run("INSERT INTO items (code, name_ar, kind, uom, quantity, min_qty) VALUES ('MAT-LOW-1', 'مادة ناقصة', 'material', 'pcs', 0, 5)");
+  const wh = followUps(emp('DEMO-WH'));
+  assert.ok(wh.some((f) => f.key === 'fu_stock_out' && f.href === '/materials?stock=out'));
+  assert.ok(!followUps(emp('F001')).some((f) => f.key.startsWith('fu_stock')));
+});

@@ -40,7 +40,7 @@
   <div class="flash <%= late ? 'flash-error' : 'flash-warning' %>" role="status"><%- ic('siren') %><div><%= t('due_at') %>: <b><%= fmt(wo.due_at) %></b> · <b class="countdown mono" data-due="<%= wo.due_at %>"></b></div></div>
 <% } %>
 <% if (pending && ['awaiting_authorization', 'pending_closure'].includes(wo.status)) { %>
-  <div class="flash flash-warning"><%- ic('hourglass') %><div><b><%= t('awaiting_approval_of') %> <%= t('step_' + pending.step) %></b><%= pending.exp_ar ? ' — ' + (lang === 'en' && pending.exp_en ? pending.exp_en : pending.exp_ar) : '' %> · <%= t('phase_' + pending.phase) %><% if (can.decide) { %> · <a href="#approvals"><%= t('your_decision') %> →</a><% } %></div></div>
+  <div class="flash flash-warning"><%- ic('hourglass') %><div><b><%= t('awaiting_approval_of') %> <%= t('step_' + pending.step) %></b><%= pending.exp_ar ? ' — ' + (lang === 'en' && pending.exp_en ? pending.exp_en : pending.exp_ar) : '' %> · <%= t('phase_' + pending.phase) %><% if (can.decide) { %> · <a href="#approvals"><%= t('your_decision') %> <%= arrow %></a><% } %></div></div>
 <% } %>
 <% if (wo.status === 'cancelled') { %><div class="flash flash-error"><%- ic('x-circle') %><div><%= t('cancel_reason') %>: <%= wo.cancel_reason %></div></div><% } %>
 
@@ -66,7 +66,7 @@
     <dt><%= t('asset') %></dt><dd><% if (asset) { %><span class="mono"><%= asset.code %></span> · <%= nm(asset) %><% if (asset.lat) { %> <a href="https://maps.google.com/?q=<%= asset.lat %>,<%= asset.lng %>" target="_blank" rel="noopener" aria-label="map"><%- ic('map') %></a><% } %><% } else { %>—<% } %></dd>
     <dt><%= t('voltage') %></dt><dd><%= wo.voltage_kv ? wo.voltage_kv + ' kV' : '—' %></dd>
     <dt><%= t('location') %></dt><dd><%= wo.location || '—' %></dd>
-    <dt><%= t('involves_travel_q') %></dt><dd><% if (wo.involves_travel === 'yes') { %><span class="pill <%= wo.distance_category === 'C' ? 'bad' : 'warn' %>"><%- ic('route') %><%= t('yes') %> · <%= t(wo.distance_category === 'C' ? 'band_over_200' : 'band_over_100') %></span> <%= wo.distance_km %> km <a class="small" href="/travel?year=<%= wo.planned_start.slice(0, 4) %>#employees"><%= t('travel_assignments') %> →</a><% } else { %><%= t('no') %><% } %></dd>
+    <dt><%= t('involves_travel_q') %></dt><dd><% if (wo.involves_travel === 'yes') { %><span class="pill <%= wo.distance_category === 'C' ? 'bad' : 'warn' %>"><%- ic('route') %><%= t('yes') %> · <%= t(wo.distance_category === 'C' ? 'band_over_200' : 'band_over_100') %></span> <%= wo.distance_km %> km <a class="small" href="/travel?year=<%= wo.planned_start.slice(0, 4) %>#employees"><%= t('travel_assignments') %> <%= arrow %></a><% } else { %><%= t('no') %><% } %></dd>
     <dt><%= t('planned_start') %></dt><dd><%= fmt(wo.planned_start) %></dd>
     <dt><%= t('planned_end') %></dt><dd><%= fmt(wo.planned_end) %></dd>
     <dt><%= t('actual_start') %></dt><dd><%= fmt(wo.actual_start) %></dd>
@@ -135,7 +135,7 @@
       <ol class="timeline" style="margin-top:14px">
         <% pastExt.forEach(x => { %><li class="dec-<%= x.status === 'approved' ? 'approved' : x.status === 'rejected' ? 'rejected' : 'superseded' %>"><span class="t-dot"><%- ic(x.status === 'approved' ? 'check' : 'x') %></span>
           <div class="t-head"><b class="mono" dir="ltr"><%= fmt(x.old_end) %> → <%= fmt(x.new_end) %></b><span class="pill dec-<%= x.status === 'approved' ? 'approved' : x.status === 'rejected' ? 'rejected' : 'superseded' %>"><%= t('ps_' + (x.status === 'cancelled' ? 'reversed' : x.status)) %></span></div>
-          <div class="t-meta"><%= x.reason %> · <%= lang === 'en' && x.req_en ? x.req_en : x.req_ar %><% if (x.dec_ar) { %> → <%= lang === 'en' && x.dec_en ? x.dec_en : x.dec_ar %><% } %> · <%= fmt(x.decided_at) %></div>
+          <div class="t-meta"><%= x.reason %> · <%= lang === 'en' && x.req_en ? x.req_en : x.req_ar %><% if (x.dec_ar) { %> <%= arrow %> <%= lang === 'en' && x.dec_en ? x.dec_en : x.dec_ar %><% } %> · <%= fmt(x.decided_at) %></div>
           <% if (x.decision_comment) { %><div class="comment"><%- ic('message') %><span><%= x.decision_comment %></span></div><% } %></li><% }) %>
       </ol><% } %>
     </div>
@@ -233,7 +233,7 @@
         <span class="handle" style="left:50%"><%- ic('transfer') %></span>
         <span class="tag tag-before"><%= t('before') %></span><span class="tag tag-after"><%= t('after') %></span>
         <input type="range" min="0" max="100" value="50" aria-label="<%= t('compare') %>">
-        <figcaption><%= x.before.caption || '' %> → <%= x.after.caption || '' %></figcaption>
+        <figcaption><%= x.before.caption || '' %> <%= arrow %> <%= x.after.caption || '' %></figcaption>
       </figure>
     <% }) %>
     </div>
@@ -254,7 +254,7 @@
 </section>
 
 <section class="card" id="items">
-  <div class="card-head"><h2><%- ic('boxes') %><%= t('materials_tools') %></h2><a class="small" href="/materials"><%= t('catalog') %> →</a></div>
+  <div class="card-head"><h2><%- ic('boxes') %><%= t('materials_tools') %></h2><a class="small" href="/materials"><%= t('catalog') %> <%= arrow %></a></div>
   <p class="muted small"><%= t('wo_items_detail_hint') %></p>
   <div class="table-wrap"><table class="tbl small">
     <thead><tr><th><%= t('code') %></th><th><%= t('item') %></th><th><%= t('item_kind') %></th><th class="num"><%= t('quantity') %></th><th class="num"><%= t('used') %></th><th class="num"><%= t('damaged') %></th><th><%= t('notes') %></th><th></th></tr></thead>
@@ -338,7 +338,7 @@
       <tr class="<%= errs.length ? 'row-bad' : '' %>">
         <td><b class="mono"><%= l.material_number %></b><%= l.line_no ? ' / ' + l.line_no : '' %></td><td><%= l.description || '' %><% if (l.install_location) { %><span class="cell-sub"><%- ic('pin') %> <%= l.install_location %></span><% } %></td>
         <td><%= lbl('source', l.source) %></td><td class="mono"><%= res ? res.reservation_number : '—' %></td><td><%= l.uom || '' %></td>
-        <td class="num"><%= l.reserved_qty %></td><td class="num"><%= l.issued_qty %></td><td class="num"><b><%= l.used_qty %></b></td><td class="num"><%= l.returned_qty %></td><td class="num"><%= l.damaged_qty %></td><td class="num"><%= l.transferred_qty %><%= l.transfer_wo_number ? ' → ' + l.transfer_wo_number : '' %></td><td class="num"><%= l.remaining_authorized_qty %></td>
+        <td class="num"><%= l.reserved_qty %></td><td class="num"><%= l.issued_qty %></td><td class="num"><b><%= l.used_qty %></b></td><td class="num"><%= l.returned_qty %></td><td class="num"><%= l.damaged_qty %></td><td class="num"><%= l.transferred_qty %><%= l.transfer_wo_number ? ' ' + arrow + ' ' + l.transfer_wo_number : '' %></td><td class="num"><%= l.remaining_authorized_qty %></td>
         <td><% if (errs.length) { %><span class="pill bad"><%- ic('alert') %><%= errs.join(', ') %></span><% } else { %><span class="pill ok"><%- ic('check') %></span><% } %></td>
         <td><% if (can.materials) { %><details><summary class="btn small ghost"><%- ic('pen') %><%= t('edit') %></summary>
           <form method="post" action="/wo/<%= wo.id %>/materials/<%= l.id %>" class="mini-grid">
@@ -429,14 +429,14 @@
 <section class="card" id="away">
   <div class="card-head"><h2><%- ic('calendar') %><%= t('away_during_wo') %></h2><span class="pill <%= away.people.length ? 'warn' : 'ok' %>"><%= away.people.length %></span></div>
   <p class="muted small"><%= t('away_hint') %> <span class="mono" dir="ltr"><%= away.from %> → <%= away.to %></span></p>
-  <% if (away.holidays.length) { %><div class="flash flash-info"><%- ic('star') %><div><b><%= t('holidays_during') %>:</b> <%= away.holidays.map(h => (lang === 'en' ? h.name_en : h.name_ar) + ' (' + h.start_date + (h.end_date !== h.start_date ? ' → ' + h.end_date : '') + ')').join(' · ') %></div></div><% } %>
+  <% if (away.holidays.length) { %><div class="flash flash-info"><%- ic('star') %><div><b><%= t('holidays_during') %>:</b> <%= away.holidays.map(h => (lang === 'en' ? h.name_en : h.name_ar) + ' (' + h.start_date + (h.end_date !== h.start_date ? ' ' + arrow + ' ' + h.end_date : '') + ')').join(' · ') %></div></div><% } %>
   <% if (!away.people.length) { %><div class="empty-inline"><%- ic('check-circle') %><%= t('nobody_away') %></div><% } else { %>
   <div class="away-grid">
     <% away.people.forEach(a => { %>
       <div class="away-card ev-<%= a.type %>">
         <span class="avatar" style="width:34px;height:34px;font-size:12px"><%- face(a) %></span>
         <span class="grow"><a class="cell-main" <%- empHref(a.employee_id) %>><%= nm(a) %></a>
-          <span class="cell-sub mono"><%= a.employee_no %></span><span class="dates"><%= a.start_date %> → <%= a.end_date %></span>
+          <span class="cell-sub mono"><%= a.employee_no %></span><span class="dates mono" dir="ltr"><%= a.start_date %> → <%= a.end_date %></span>
           <% if (a.location || a.notes) { %><span class="cell-sub"><%= [a.location, a.notes].filter(Boolean).join(' · ') %></span><% } %></span>
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
           <span class="ev-tag ev-<%= a.type %>"><%= t('lt_' + a.type) %></span>

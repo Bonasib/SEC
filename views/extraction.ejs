@@ -1,0 +1,105 @@
+<%- include('partials/header', { pageTitle: '#' + x.id + ' · ' + t('extract_title') }) %>
+<% const st = { pending_review: 'warn', exported: 'ok', partially_exported: 'warn', rejected: 'bad' };
+   const open = x.status === 'pending_review';
+   const counts = { approved: x.rows.filter(r => r.state === 'approved').length, rejected: x.rows.filter(r => r.state === 'rejected').length, errors: x.rows.filter(r => r.state !== 'rejected' && r.errors && r.errors.length).length };
+   const isImg = /^image\//.test(x.mime || ''), isPdf = x.mime === 'application/pdf'; %>
+<section class="page-head wo-head">
+  <div style="flex:1;min-width:260px">
+    <a class="small" href="/extract"><%- ic('arrow', 'ic-back') %> <%= t('extract_title') %></a>
+    <h1 style="margin-top:8px"><%= x.original_name %></h1>
+    <div class="tags">
+      <span class="wo-num">#<%= x.id %></span>
+      <span class="pill <%= st[x.status] %>"><%= t('xs_' + x.status) %></span>
+      <span class="pill"><%- ic('zap') %><%= t('rm_used_' + x.method) %></span>
+      <% if (x.entity) { %><span class="pill info"><%= t(ENTITIES[x.entity].label) %></span><% } %>
+      <span class="pill"><%- ic('user') %><%= nm(uploader) %> · <%= fmt(x.created_at) %></span>
+      <% if (reviewerRow) { %><span class="pill"><%- ic('shield') %><%= t('reviewed_by') %>: <%= nm(reviewerRow) %></span><% } %>
+    </div>
+  </div>
+  <div class="btns"><a class="btn" href="/extract/<%= x.id %>/file" target="_blank" rel="noopener"><%- ic('file') %><%= t('open_original') %></a></div>
+</section>
+
+<% x.warnings.forEach(w => { %><div class="flash flash-warning"><%- ic('alert') %><div class="pre"><%= tx(w) %></div></div><% }) %>
+<% if (x.status === 'rejected') { %><div class="flash flash-error"><%- ic('x-circle') %><div><b><%= t('xs_rejected') %>:</b> <%= x.review_note %></div></div><% } %>
+<% if (result) { %><div class="flash flash-success"><%- ic('check-circle') %><div><b><%= t('xs_' + x.status) %></b> — <%= t('inserted') %>: <%= result.inserted %> · <%= t('updated') %>: <%= result.updated %><%= result.failed ? ' · ✗ ' + result.failed : '' %><% if (x.import_batch_id) { %> · <a href="/data/import/batch/<%= x.import_batch_id %>"><%= t('import_history') %> #<%= x.import_batch_id %></a><% } %></div></div><% } %>
+<% if (open && self && !reviewer) { %><div class="flash flash-info"><%- ic('shield') %><div><%= t('awaiting_auditor') %></div></div><% } %>
+<% if (open && self && reviewer) { %><div class="flash flash-warning"><%- ic('shield') %><div><%= t('four_eyes') %></div></div><% } %>
+
+<div class="grid2">
+  <section class="card">
+    <h2><%- ic('image') %><%= t('original_file') %></h2>
+    <% if (isImg) { %><img class="x-preview" src="/extract/<%= x.id %>/file" alt="<%= x.original_name %>">
+    <% } else if (isPdf) { %><iframe class="x-preview" src="/extract/<%= x.id %>/file" title="<%= x.original_name %>"></iframe>
+    <% } else if (x.preview.table && x.preview.table.length) { %>
+      <div class="table-wrap x-preview-table"><table class="tbl small" data-nosort data-nofilter><tbody><% x.preview.table.forEach(r => { %><tr><% r.forEach(c => { %><td><%= c %></td><% }) %></tr><% }) %></tbody></table></div>
+    <% } else if (x.preview.text) { %><pre class="x-text"><%= x.preview.text %></pre><% } else { %><p class="muted"><%= t('no_preview') %></p><% } %>
+    <% if ((isImg || isPdf) && x.preview.text) { %><details style="margin-top:10px"><summary class="small muted"><%= t('read_text') %></summary><pre class="x-text"><%= x.preview.text %></pre></details><% } %>
+    <% if (x.preview.unmapped && x.preview.unmapped.length) { %><p class="small muted" style="margin-top:8px"><%= t('unmapped_columns') %>: <%= x.preview.unmapped.join('، ') %></p><% } %>
+  </section>
+  <section class="card">
+    <h2><%- ic('settings') %><%= t('extraction_setup') %></h2>
+    <div class="x-counts">
+      <div><b><%= x.rows.length %></b><small><%= t('rows') %></small></div>
+      <div class="ok"><b><%= counts.approved %></b><small><%= t('approved_rows') %></small></div>
+      <div class="warn"><b><%= counts.errors %></b><small><%= t('rows_with_errors') %></small></div>
+      <div class="bad"><b><%= counts.rejected %></b><small><%= t('rejected_rows') %></small></div>
+    </div>
+    <% if (open) { %>
+    <form method="post" action="/extract/<%= x.id %>" class="form-grid" style="margin-top:12px">
+      <input type="hidden" name="action" value="reextract">
+      <label><%= t('target_type') %><select name="entity"><option value="auto"><%= t('auto_detect') %></option><% TARGETS.forEach(e => { %><option value="<%= e %>" <%= x.entity === e ? 'selected' : '' %>><%= t(ENTITIES[e].label) %></option><% }) %></select></label>
+      <label><%= t('read_method') %><select name="method"><option value="auto"><%= t('rm_auto') %></option><option value="local"><%= t('rm_local') %></option><% if (aiOn) { %><option value="ai"><%= t('rm_ai') %></option><% } %></select></label>
+      <div class="form-actions"><button class="btn" data-confirm-click="<%= t('reextract_confirm') %>"><%- ic('transfer') %><%= t('reextract') %></button></div>
+    </form>
+    <% } %>
+    <p class="muted small" style="margin-top:10px"><%= t('review_hint') %></p>
+  </section>
+</div>
+
+<% if (x.entity) { %>
+<form method="post" action="/extract/<%= x.id %>" id="rows" class="card table-card">
+  <input type="hidden" name="entity" value="<%= x.entity %>"><% if (showAll) { %><input type="hidden" name="all" value="1"><% } %>
+  <div class="card-head"><h2><%- ic('sheet') %><%= t('extracted_rows') %> · <%= t(ENTITIES[x.entity].label) %></h2>
+    <a class="small" href="?<%= showAll ? '' : 'all=1' %>#rows"><%= showAll ? t('used_columns_only') : t('show_all_columns') %></a></div>
+  <div class="table-wrap x-grid"><table class="tbl small" data-nosort>
+    <thead><tr><th class="x-state"><%= t('decision') %></th><th>#</th><% visible.forEach(([k, ar, en, reqd]) => { %><th title="<%= lang === 'ar' ? ar : en %>"><%= (lang === 'ar' ? ar : en).split(/[:(]/)[0].trim() %><%= reqd ? ' *' : '' %><small class="th-sub"><%= k %></small></th><% }) %></tr></thead>
+    <tbody>
+    <% if (!x.rows.length) { %><tr><td colspan="<%= visible.length + 2 %>" class="empty"><%= t('no_rows_found') %></td></tr><% } %>
+    <% x.rows.forEach((r, i) => { const bad = r.state !== 'rejected' && r.errors && r.errors.length; %>
+      <tr class="x-row x-<%= r.state %> <%= bad ? 'row-bad' : '' %>">
+        <td class="x-state"><select name="rows[<%= i %>][__state]" <%= open ? '' : 'disabled' %> aria-label="<%= t('decision') %> <%= i + 1 %>">
+          <option value="pending"><%= t('xr_pending') %></option>
+          <% if (reviewer) { %><option value="approved" <%= r.state === 'approved' ? 'selected' : '' %>><%= t('xr_approved') %></option><% } %>
+          <option value="rejected" <%= r.state === 'rejected' ? 'selected' : '' %>><%= t('xr_rejected') %></option></select>
+          <% if (r.mode && !bad && r.state !== 'rejected') { %><span class="cell-sub"><%= t('xm_' + r.mode) %></span><% } %></td>
+        <td class="mono"><%= i + 1 %><% cols.filter(c => !visible.includes(c)).forEach(([k]) => { if (r.data[k]) { %><input type="hidden" name="rows[<%= i %>][<%= k %>]" value="<%= r.data[k] %>"><% } }) %></td>
+        <% visible.forEach(([k]) => { %><td><input name="rows[<%= i %>][<%= k %>]" value="<%= r.data[k] || '' %>" <%= open ? '' : 'readonly' %> aria-label="<%= k %> <%= i + 1 %>"></td><% }) %>
+      </tr>
+      <% if (bad) { %><tr class="x-err"><td></td><td colspan="<%= visible.length + 1 %>"><%- ic('alert') %> <%= r.errors.join(' · ') %></td></tr><% } %>
+    <% }) %>
+    </tbody>
+  </table></div>
+  <% if (open) { %>
+  <div class="x-actions">
+    <button class="btn" name="action" value="save"><%- ic('save') %><%= t('save_validate') %></button>
+    <button class="btn ghost" name="action" value="add_row"><%- ic('plus') %><%= t('add_row') %></button>
+    <% if (reviewer) { %>
+      <button class="btn" name="action" value="approve_valid"><%- ic('check') %><%= t('approve_all_valid') %></button>
+      <button class="btn primary" name="action" value="export" <%= self ? 'disabled' : '' %> data-confirm-click="<%= t('export_confirm') %>"><%- ic('send', 'ic-dir') %><%= t('export_to_system') %></button>
+    <% } %>
+  </div>
+  <% } %>
+</form>
+<% } %>
+
+<% if (open && reviewer) { %>
+<section class="card">
+  <h2><%- ic('x-circle') %><%= t('reject_extraction') %></h2>
+  <form method="post" action="/extract/<%= x.id %>" class="inline-form">
+    <input type="hidden" name="action" value="reject">
+    <input name="reason" required placeholder="<%= t('reason') %>" aria-label="<%= t('reason') %>" style="flex:1;min-width:200px">
+    <button class="btn danger"><%- ic('x') %><%= t('reject') %></button>
+  </form>
+</section>
+<% } %>
+<%- include('partials/footer') %>

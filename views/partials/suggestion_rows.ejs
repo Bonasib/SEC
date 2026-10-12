@@ -7,7 +7,7 @@
     <tr>
       <td><a <%- empHref(s.id) %> style="display:flex;align-items:center;gap:10px;color:inherit"><span class="avatar" style="width:30px;height:30px;font-size:12px"><%- face(s) %></span><span><span class="cell-main"><%= nm(s) %></span><span class="cell-sub mono"><%= s.employee_no %></span></span></a></td>
       <td class="mono"><%= s.section_code %></td>
-      <td><% s.reasons.forEach(r => { %><span class="pill <%= r === 'plan' || r === 'below' ? 'bad' : r.startsWith('rating') ? 'warn' : '' %>" style="margin:2px"><%= t('why_' + r) %></span><% }) %><% if (s.plan_id) { %><a class="small" href="/plans/<%= s.plan_id %>" style="display:block"><%= t('plan') %> →</a><% } %></td>
+      <td><% s.reasons.forEach(r => { %><span class="pill <%= r === 'plan' || r === 'below' ? 'bad' : r.startsWith('rating') ? 'warn' : '' %>" style="margin:2px"><%= t('why_' + r) %></span><% }) %><% if (s.plan_id) { %><a class="small" href="/plans/<%= s.plan_id %>" style="display:block"><%= t('plan') %> <%= arrow %></a><% } %></td>
       <td><div class="sug-courses">
         <% s.courses.forEach(c => { %><div class="sug-course">
           <span class="grow"><a href="/training/<%= c.id %>"><%= lang === 'en' ? c.title_en : c.title_ar %></a><span class="cell-sub mono"><%= c.start_date %> · <%= c.mode === 'remote' ? t('mode_remote') : (c.city || c.country || '') %></span></span>

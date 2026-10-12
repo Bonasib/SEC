@@ -16,6 +16,7 @@
   <select name="section" aria-label="<%= t('section') %>"><option value=""><%= t('section') %>: <%= t('all') %></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(query.section) === String(s.id) ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select>
   <select name="vtype" aria-label="<%= t('vehicle_type') %>"><option value=""><%= t('vehicle_type') %>: <%= t('all') %></option><% VEHICLE_TYPES.forEach(v => { %><option value="<%= v %>" <%= query.vtype === v ? 'selected' : '' %>><%= t('vt_' + v) %></option><% }) %></select>
   <select name="status" aria-label="<%= t('status') %>"><option value=""><%= t('status') %>: <%= t('all') %></option><% EQUIP_STATUS.forEach(v => { %><option value="<%= v %>" <%= query.status === v ? 'selected' : '' %>><%= t('es_' + v) %></option><% }) %></select>
+  <select name="docs" aria-label="<%= t('documents') %>"><option value=""><%= t('documents') %>: <%= t('all') %></option><option value="expiring" <%= query.docs === 'expiring' ? 'selected' : '' %>><%= t('docs_expiring') %></option></select>
   <select name="sort" aria-label="<%= t('sort_by') %>"><% [['code','fleet_no'],['plate','plate_number'],['type','vehicle_type'],['seats','seats'],['expiry','registration_expiry'],['section','section'],['year','model_year']].forEach(([k, l]) => { %><option value="<%= k %>" <%= (query.sort || 'code') === k ? 'selected' : '' %>><%= t('sort_by') %>: <%= t(l) %></option><% }) %></select>
   <select name="dir" aria-label="<%= t('sort_dir') %>"><option value="asc"><%= t('ascending') %></option><option value="desc" <%= query.dir === 'desc' ? 'selected' : '' %>><%= t('descending') %></option></select>
   <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button><a class="btn ghost" href="/fleet"><%= t('clear') %></a>
@@ -37,7 +38,7 @@
       <dt><%= t('completed_trips') %></dt><dd><%= q.trips %></dd>
     </dl>
     <% if (docFlags[q.id]) { %><a class="pill <%= docFlags[q.id] === 'expired' ? 'bad' : 'warn' %>" href="/fleet/<%= q.id %>#documents"><%- ic('file') %><%= t('doc_' + docFlags[q.id]) %></a><% } %>
-    <a class="small" href="/fleet/<%= q.id %>"><%- ic('file') %> <%= t('details') %> / <%= t('documents') %> →</a>
+    <a class="small" href="/fleet/<%= q.id %>"><%- ic('file') %> <%= t('details') %> / <%= t('documents') %> <%= arrow %></a>
     <% if (q.current) { %><div class="v-booking"><%- ic('clipboard') %><a class="wo-link" href="/wo/<%= q.current.id %>"><%= q.current.wo_number %></a> <span class="muted small"><%= t('to') %> <%= fmt(q.current.planned_end) %></span></div><% } %>
     <% if (q.next.length) { %><div class="v-next"><span class="muted small"><%= t('next_bookings') %>:</span><% q.next.forEach(n => { %><a class="pill" href="/wo/<%= n.id %>"><span class="mono"><%= n.wo_number %></span> · <%= fmt(n.planned_start, false) %></a><% }) %></div><% } %>
     <% if (canEdit) { %>

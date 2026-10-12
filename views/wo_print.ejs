@@ -28,8 +28,8 @@
 <% if (extensions.some(x => x.status === 'approved') || handovers.some(h => h.status === 'completed')) { %>
 <h2><%= t('schedule_changes') %></h2>
 <table class="tbl small"><tbody>
-<% extensions.filter(x => x.status === 'approved').forEach(x => { %><tr><th><%= t('extension') %></th><td class="mono"><%= fmt(x.old_end) %> → <%= fmt(x.new_end) %></td><td><%= x.reason %></td></tr><% }) %>
-<% handovers.filter(h => h.status === 'completed').forEach(h => { %><tr><th><%= t('handover') %></th><td><%= h.from_no %> → <%= h.to_no %> · <%= fmt(h.executed_at) %></td><td><%= h.reason %></td></tr><% }) %>
+<% extensions.filter(x => x.status === 'approved').forEach(x => { %><tr><th><%= t('extension') %></th><td><bdi><%= fmt(x.old_end) %></bdi> <%= arrow %> <bdi><%= fmt(x.new_end) %></bdi></td><td><%= x.reason %></td></tr><% }) %>
+<% handovers.filter(h => h.status === 'completed').forEach(h => { %><tr><th><%= t('handover') %></th><td><bdi><%= h.from_no %></bdi> <%= arrow %> <bdi><%= h.to_no %></bdi> · <%= fmt(h.executed_at) %></td><td><%= h.reason %></td></tr><% }) %>
 </tbody></table><% } %>
 <h2><%= t('participants') %></h2>
 <table class="tbl"><% participants.forEach(p => { %><tr><td><%= p.employee_no %></td><td><%= nm(p) %></td><td><%= p.job_title_en || '' %></td><td><%= p.p_role === 'leader' ? t('team_leader') : '' %></td></tr><% }) %></table>

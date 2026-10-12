@@ -55,13 +55,14 @@ router.get('/', (req, res) => {
   const top = req.user.role === 'employee' ? [] : board.rows.filter((r) => r.awarded).slice(0, 5);
   const me = board.rows.find((r) => r.id === req.user.id);
   const upcoming = require('../calendar').eventsBetween(todayRiyadh(), require('../calendar').addDays(todayRiyadh(), 14), { sectionId: req.user.section_id || null })
-    .filter((e) => e.kind !== 'work').slice(0, 8);
+    .filter((e) => e.kind !== 'work' && e.kind !== 'task').slice(0, 8);
   const WC = require('../wo_changes');
   const myExtensions = all(`SELECT x.*, w.wo_number, w.title, w.section_id, w.id wid FROM wo_extensions x JOIN work_orders w ON w.id = x.wo_id WHERE x.status = 'pending'`)
     .filter((x) => WC.isManagerOf({ section_id: x.section_id }, req.user));
   const myHandovers = all(`SELECT h.*, w.wo_number, w.title, w.id wid FROM wo_handovers h JOIN work_orders w ON w.id = h.wo_id
     WHERE h.status = 'scheduled' AND (h.to_employee_id = ? OR h.from_employee_id = ?) ORDER BY h.scheduled_at`, req.user.id, req.user.id);
-  res.render('dashboard', { myTasks, stars, dispatcher, myExtensions, myHandovers, top, me, opening: board.opening, upcoming, kpi, byStatus, byDistance, acting, myApprovals, myWork, critical, alerts, now, year });
+  const followUps = require('../inbox').followUps(req.user);
+  res.render('dashboard', { followUps, myTasks, stars, dispatcher, myExtensions, myHandovers, top, me, opening: board.opening, upcoming, kpi, byStatus, byDistance, acting, myApprovals, myWork, critical, alerts, now, year });
 });
 
 module.exports = router;

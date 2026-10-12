@@ -44,7 +44,7 @@ router.get('/audit', requireRole('admin', 'auditor'), (req, res) => {
   const cond = [], p = [];
   if (req.query.entity) { cond.push('a.entity = ?'); p.push(req.query.entity); }
   if (req.query.action) { cond.push('a.action = ?'); p.push(req.query.action); }
-  if (req.query.q) { cond.push('(a.entity_id LIKE ? OR e.employee_no LIKE ?)'); p.push(`%${req.query.q}%`, `%${req.query.q}%`); }
+  if (req.query.q) { cond.push('(skey(a.entity_id) LIKE skey(?) OR skey(e.employee_no) LIKE skey(?))'); p.push(`%${req.query.q}%`, `%${req.query.q}%`); }
   const rows = all(`SELECT a.*, e.employee_no, e.name_ar, e.name_en FROM audit_log a LEFT JOIN employees e ON e.id = a.employee_id
     ${cond.length ? 'WHERE ' + cond.join(' AND ') : ''} ORDER BY a.id DESC LIMIT 300`, ...p);
   res.render('audit', {

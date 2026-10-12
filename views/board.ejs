@@ -22,7 +22,7 @@
 
 <!-- ===== Honor board ===== -->
 <section class="card honor">
-  <div class="card-head"><h2><%- ic('star') %><%= t('honor_board') %></h2><a class="small" href="/points"><%= t('points') %> →</a></div>
+  <div class="card-head"><h2><%- ic('star') %><%= t('honor_board') %></h2><a class="small" href="/points"><%= t('points') %> <%= arrow %></a></div>
   <% if (!H.podium.length) { %>
     <p class="empty"><%- ic('star') %><%= t('honor_empty') %></p>
   <% } else { %>
@@ -33,7 +33,7 @@
       <span class="avatar xl"><%- face(e) %></span>
       <b class="pc-name"><%= nm(e) %></b>
       <small class="muted"><%= lang === 'ar' && e.job_title_ar ? e.job_title_ar : e.job_title_en || '' %><%= e.section_code ? ' · ' + e.section_code : '' %></small>
-      <span class="pc-score" data-count="<%= e.score %>"><%= e.score %></span><small class="muted"><%= t('score') %></small>
+      <span class="pc-score" data-count="<%= e.score %>"><%= e.score %></span><small class="muted"><%= t('rec_score') %></small>
       <span class="pc-chips">
         <span class="pill" title="<%= t('points') %>"><%- ic('star') %>+<%= e.pts %></span>
         <span class="pill" title="<%= t('bev_wo_closed') %>"><%- ic('check-circle') %><%= e.closed %></span>
@@ -89,7 +89,7 @@
 </section>
 
 <section class="card">
-  <div class="card-head"><h2><%- ic('calendar') %><%= t('upcoming_14') %></h2><a class="small" href="/calendar"><%= t('calendar') %> →</a></div>
+  <div class="card-head"><h2><%- ic('calendar') %><%= t('upcoming_14') %></h2><a class="small" href="/calendar"><%= t('calendar') %> <%= arrow %></a></div>
   <div class="cols3">
     <div><h3><%- ic('star') %> <%= t('holidays') %></h3><ul class="list"><% upcoming.holidays.forEach(h => { %><li><span class="mono"><%= h.start_date %></span><span class="grow"><%= lang === 'en' ? h.name_en : h.name_ar %></span></li><% }) %><% if (!upcoming.holidays.length) { %><li class="muted"><%= t('none') %></li><% } %></ul></div>
     <div><h3><%- ic('file') %> <%= t('courses') %></h3><ul class="list"><% upcoming.courses.forEach(c => { %><li><span class="mono"><%= c.start_date %></span><a class="grow" href="/training/<%= c.id %>"><%= lang === 'en' ? c.title_en : c.title_ar %></a></li><% }) %><% if (!upcoming.courses.length) { %><li class="muted"><%= t('none') %></li><% } %></ul></div>

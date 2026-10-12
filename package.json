@@ -16,10 +16,14 @@
     "test": "node --no-warnings --test test/*.test.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "ejs": "^7.0.1",
     "exceljs": "^4.4.0",
     "express": "^4.22.3",
+    "mammoth": "^1.13.0",
     "multer": "^1.4.4",
-    "nodemailer": "^10.1.0"
+    "nodemailer": "^10.1.0",
+    "pdfjs-dist": "^5.4.296",
+    "tesseract.js": "^7.0.0"
   }
 }
