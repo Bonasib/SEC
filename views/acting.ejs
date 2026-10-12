@@ -13,9 +13,9 @@
 <% if (canEdit) { %>
 <form method="post" action="/acting" class="card form-grid">
   <h2 class="span2"><%- ic('plus') %><%= t('add') %></h2>
-  <label><%= t('unit') %> *<select name="unit_id" required><option value=""></option><% units.forEach(u => { %><option value="<%= u.id %>"><%= u.code %> - <%= nm(u) %> (<%= u.level %>)</option><% }) %></select></label>
+  <label><%= t('unit') %> *<select name="unit_id" required><option value=""></option><% units.forEach(u => { %><option value="<%= u.id %>"><%= u.code %> - <%= nm(u) %> (<%= lbl('level', u.level) %>)</option><% }) %></select></label>
   <label><%= t('acting_employee') %> *<select name="acting_employee_id" required><option value=""></option><% employees.forEach(e => { %><option value="<%= e.id %>"><%= e.employee_no %> - <%= nm(e) %></option><% }) %></select></label>
-  <label><%= t('type') %><select name="assignment_type"><% ['temporary','leave','training','business_travel','delegation'].forEach(x => { %><option><%= x %></option><% }) %></select></label>
+  <label><%= t('type') %><select name="assignment_type"><% ['temporary','leave','training','business_travel','delegation'].forEach(x => { %><option value="<%= x %>"><%= lbl('acting_type', x) %></option><% }) %></select></label>
   <label><%= t('decision_no') %><input name="decision_no"></label>
   <label><%= t('start_at') %> *<input type="datetime-local" name="start_at" required></label>
   <label><%= t('end_at') %> *<input type="datetime-local" name="end_at" required></label>
@@ -27,13 +27,13 @@
   <thead><tr><th><%= t('unit') %></th><th><%= t('acting_employee') %></th><th><%= t('type') %></th><th><%= t('start_at') %></th><th><%= t('end_at') %></th><th><%= t('decision_no') %></th><th><%= t('status') %></th><th></th></tr></thead>
   <tbody>
   <% if (!rows.length) { %><tr><td colspan="8" class="empty"><%= t('no_records') %></td></tr><% } %>
-  <% rows.forEach(a => { %><tr><td><%= a.code %> - <%= lang === 'en' ? a.u_en : a.u_ar %></td><td><%= a.employee_no %> - <%= nm(a) %></td><td><%= a.assignment_type %></td><td data-sort-value="<%= a.start_at %>"><%= fmt(a.start_at) %></td><td data-sort-value="<%= a.end_at %>"><%= fmt(a.end_at) %></td><td><%= a.decision_no || '' %></td>
-    <td><span class="pill <%= a.state === 'active' ? 'ok' : a.state === 'scheduled' ? 'warn' : '' %>"><%= a.state %></span></td>
+  <% rows.forEach(a => { %><tr><td><%= a.code %> - <%= lang === 'en' ? a.u_en : a.u_ar %></td><td><%= a.employee_no %> - <%= nm(a) %></td><td><%= lbl('acting_type', a.assignment_type) %></td><td data-sort-value="<%= a.start_at %>"><%= fmt(a.start_at) %></td><td data-sort-value="<%= a.end_at %>"><%= fmt(a.end_at) %></td><td><%= a.decision_no || '' %></td>
+    <td><span class="pill <%= a.state === 'active' ? 'ok' : a.state === 'scheduled' ? 'warn' : '' %>"><%= lbl('acting_state', a.state) %></span></td>
     <td class="nowrap"><% if (canEdit && ['active','scheduled'].includes(a.state)) { %>
       <details><summary class="btn small ghost"><%- ic('pen') %><%= t('edit') %></summary>
         <form method="post" action="/acting/<%= a.id %>" class="mini-grid">
           <label><%= t('acting_employee') %><select name="acting_employee_id" required><% employees.forEach(e => { %><option value="<%= e.id %>" <%= a.acting_employee_id === e.id ? 'selected' : '' %>><%= e.employee_no %> - <%= nm(e) %></option><% }) %></select></label>
-          <label><%= t('type') %><select name="assignment_type"><% ['temporary','leave','training','business_travel','delegation'].forEach(x => { %><option <%= a.assignment_type === x ? 'selected' : '' %>><%= x %></option><% }) %></select></label>
+          <label><%= t('type') %><select name="assignment_type"><% ['temporary','leave','training','business_travel','delegation'].forEach(x => { %><option value="<%= x %>" <%= a.assignment_type === x ? 'selected' : '' %>><%= lbl('acting_type', x) %></option><% }) %></select></label>
           <label><%= t('start_at') %><input type="datetime-local" name="start_at" value="<%= localInput(a.start_at) %>" required></label>
           <label><%= t('end_at') %><input type="datetime-local" name="end_at" value="<%= localInput(a.end_at) %>" required></label>
           <label><%= t('decision_no') %><input name="decision_no" value="<%= a.decision_no || '' %>"></label>

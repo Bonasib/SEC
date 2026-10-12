@@ -5,6 +5,7 @@
 const { all, get, run, tx, setting } = require('./db');
 const { audit, HttpError, todayRiyadh, nowIso, fmt } = require('./util');
 const { notify, emailHtml, once } = require('./notify');
+const { both } = require('./i18n');
 
 const PRIORITIES = ['normal', 'high', 'urgent'];
 const STATUSES = ['open', 'done', 'cancelled'];
@@ -124,19 +125,29 @@ function agenda({ day, to, section, status, priority, assignee, q, sort, kinds }
 
 // One line per item, used for emails, notifications and the WhatsApp text
 function taskLine(t) {
-  const time = t.start_time ? `${t.start_time}${t.end_time ? '–' + t.end_time : ''}` : '—';
-  return { when: `${t.task_date !== undefined && t.multi ? t.task_date + ' ' : ''}${time}`, what: `${t.title}${t.location ? ' · ' + t.location : ''}${t.priority !== 'normal' ? ` [${t.priority}]` : ''}${t.wo_number ? ' · ' + t.wo_number : ''}${t.details ? '\n' + t.details : ''}` };
+  const time = t.start_time ? `${t.start_time}${t.end_time ? '–' + t.end_time : ''}` : 'طوال اليوم / All day';
+  return { when: `${t.task_date !== undefined && t.multi ? t.task_date + ' ' : ''}${time}`, what: `${t.title}${t.location ? ' · ' + t.location : ''}${t.priority !== 'normal' ? ` [${both('tp_' + t.priority)}]` : ''}${t.wo_number ? ' · ' + t.wo_number : ''}${t.details ? '\n' + t.details : ''}` };
 }
 function woLine(w) {
   const lead = w.people.find((p) => p.role === 'leader');
   return {
     when: `${w.wo_number} · ${riyadhTime(w.planned_start)}`,
-    what: `${w.title}${w.location ? ' · ' + w.location : ''}${w.priority !== 'normal' ? ` [${w.priority}]` : ''}${lead ? ` · قائد/Leader: ${lead.name_ar}` : ''}${w.vehicles.length ? ' · ' + w.vehicles.map((v) => v.plate_number || v.code).join(', ') : ''}`,
+    what: `${w.title}${w.location ? ' · ' + w.location : ''}${w.priority !== 'normal' ? ` [${both('pr_' + w.priority)}]` : ''}${lead ? ` · قائد/Leader: ${lead.name_ar}` : ''}${w.vehicles.length ? ' · ' + w.vehicles.map((v) => v.plate_number || v.code).join(', ') : ''}`,
   };
 }
 
+// Message template (WhatsApp / copy / mail): title, optional note, numbered items, closing line
 function plainText(day, lines, message) {
-  return [`المهام اليومية / Daily tasks — ${day}`, message || null, ...lines.map((l, i) => `${i + 1}. ${l.when} — ${l.what}`)].filter(Boolean).join('\n');
+  const items = lines.map((l, i) => {
+    const [first, ...rest] = l.what.split('\n');
+    return [`${i + 1}) *${l.when}*`, `   ${first}`, ...rest.map((r) => `   ${r}`)].join('\n');
+  });
+  return [
+    `*المهام اليومية | Daily tasks*`, `📅 ${day}`, '━━━━━━━━━━━━',
+    message ? `📝 ${message}\n━━━━━━━━━━━━` : null,
+    ...items,
+    '━━━━━━━━━━━━', `${lines.length} ${lines.length === 1 ? 'بند / item' : 'بنود / items'} · نقل الطاقة / Transmission WMS`,
+  ].filter(Boolean).join('\n');
 }
 
 function waLink(phone, text) {
@@ -194,13 +205,13 @@ function dispatch(opts, req, { automatic = false } = {}) {
   const built = buildMessages(opts);
   if (!built.messages.length) throw new HttpError(400, 'Nobody to send to: the selected items have no assigned employees / لا يوجد مستلمون');
   let emails = 0;
-  const title = `المهام اليومية ${built.label} / Daily tasks`;
+  const title = `${built.label} - المهام اليومية / Daily tasks`;
   for (const m of built.messages) {
     const details = m.lines.map((l) => [l.when, l.what]);
     const body = `${opts.message ? opts.message + '\n\n' : ''}${m.lines.length} ${m.lines.length === 1 ? 'مهمة / item' : 'مهام / items'}`;
     if (m.employee) {
       // In-app alert always; email when the employee has an address (even if alerts by email are off: this is an explicit send)
-      notify([m.employee.id], { type: 'daily_tasks', title, body: m.text, link: `/tasks?day=${opts.day || todayRiyadh()}`, email: false });
+      notify([m.employee.id], { type: 'daily_tasks', title, body: m.text.replace(/\*/g, ''), link: `/tasks?day=${opts.day || todayRiyadh()}`, email: false });
     }
     if (m.email) {
       run('INSERT INTO emails(to_email, to_name, subject, html) VALUES (?,?,?,?)', m.email, m.employee ? m.employee.name_ar : null, title,

@@ -427,3 +427,26 @@ test('daily tasks: WhatsApp links use the international number', () => {
   assert.match(TK.waLink('0551234567', 'hi'), /^https:\/\/wa\.me\/966551234567\?text=hi$/);
   assert.strictEqual(TK.waLink('', 'x'), null);
 });
+
+// ---------- coordination & board ----------
+test('closing or cancelling a work order settles its linked daily tasks; leave flags open tasks', () => {
+  const { wo } = W.createWorkOrder(base({ team_leader_id: emp('F013').id, planned_start: localToUtc(day(40) + 'T08:00'), planned_end: localToUtc(day(40) + 'T12:00') }), req('DEMO-H1'));
+  const tid = TK.save({ task_date: day(40), title: 'Linked', wo_number: wo.wo_number, assignee_ids: [emp('F013').id] }, req('DEMO-H1')).id;
+  W.cancelWorkOrder(wo, 'test', req('DEMO-H1'));
+  assert.strictEqual(get('SELECT status FROM tasks WHERE id = ?', tid).status, 'cancelled');
+  const t2 = TK.save({ task_date: day(41), title: 'Patrol', assignee_ids: [emp('F013').id] }, req('DEMO-H1')).id;
+  assert.strictEqual(require('../src/sync').onLeave(emp('F013').id, day(41), day(42)), 1);
+  assert.ok(get("SELECT 1 FROM notifications WHERE type = 'task_conflict' AND employee_id = ?", emp('DEMO-H1').id));
+  assert.ok(t2);
+});
+
+test('board: honor board ranks by recognition score and the feed respects permissions', () => {
+  const Bd = require('../src/board');
+  const data = Bd.build({ period: 'year' }, emp('DEMO-H1'));
+  assert.ok(data.honor.podium.length > 0);
+  for (let i = 1; i < data.honor.podium.length; i++) assert.ok(data.honor.podium[i - 1].score >= data.honor.podium[i].score);
+  assert.ok(data.events.some((e) => e.type === 'wo_created'));
+  const mine = Bd.events(data.p, emp('F013'));
+  assert.ok(!mine.some((e) => e.type === 'absence'), 'employees do not see others’ leave');
+  assert.strictEqual(data.summary.days.length, data.p.days);
+});

@@ -26,6 +26,6 @@
 </div>
 <section class="card"><h2><%- ic('clock') %><%= t('import_history') %></h2>
 <table class="tbl small"><tr><th>#</th><th><%= t('entity') %></th><th><%= t('file') %></th><th><%= t('status') %></th><th>Σ</th><th><%= t('valid_rows') %></th><th><%= t('invalid_rows') %></th><th><%= t('inserted') %></th><th><%= t('updated') %></th><th><%= t('employee') %></th><th><%= t('date') %></th></tr>
-<% batches.forEach(b => { %><tr><td><a class="wo-link" href="/data/import/batch/<%= b.id %>">#<%= b.id %></a></td><td><%= b.entity %></td><td><%= b.file_name %></td><td><span class="pill <%= b.status === 'committed' ? 'ok' : 'warn' %>"><%= b.status %></span></td><td><%= b.total %></td><td><%= b.valid %></td><td><%= b.invalid %></td><td><%= b.inserted %></td><td><%= b.updated %></td><td><%= nm(b) %></td><td><%= fmt(b.created_at) %></td></tr><% }) %>
+<% batches.forEach(b => { %><tr><td><a class="wo-link" href="/data/import/batch/<%= b.id %>">#<%= b.id %></a></td><td><%= t(b.entity) %></td><td><%= b.file_name %></td><td><span class="pill <%= b.status === 'committed' ? 'ok' : 'warn' %>"><%= lbl('batch', b.status) %></span></td><td><%= b.total %></td><td><%= b.valid %></td><td><%= b.invalid %></td><td><%= b.inserted %></td><td><%= b.updated %></td><td><%= nm(b) %></td><td><%= fmt(b.created_at) %></td></tr><% }) %>
 <% if (!batches.length) { %><tr><td colspan="11" class="muted"><%= t('no_records') %></td></tr><% } %></table></section>
 <%- include('partials/footer') %>

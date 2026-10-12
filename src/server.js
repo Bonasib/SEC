@@ -3,7 +3,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const express = require('express');
 const { get, run, all } = require('./db');
-const { makeT } = require('./i18n');
+const { makeT, makeLbl } = require('./i18n');
 const { fmt, verifyPassword, audit, HttpError, nowIso, utcToLocalInput } = require('./util');
 const { processEmailQueue, SMTP_ON } = require('./notify');
 const { runAlertChecks } = require('./alerts');
@@ -40,6 +40,10 @@ app.use((req, res, next) => {
   }
   const t = makeT(req.lang);
   res.locals.t = t;
+  res.locals.lbl = makeLbl(req.lang);
+  // Stored bilingual text ("عربي / English", line by line) shown in the reader's language
+  const { splitBilingual } = require('./notify');
+  res.locals.tx = (text) => String(text ?? '').split('\n').map((l) => { const b = splitBilingual(l); return (req.lang === 'en' ? b.en : b.ar) || b.ar || b.en; }).join('\n');
   res.locals.lang = req.lang;
   res.locals.dir = req.lang === 'ar' ? 'rtl' : 'ltr';
   res.locals.user = req.user;
@@ -102,6 +106,7 @@ app.post('/logout', (req, res) => {
 app.use((req, res, next) => (req.user ? next() : res.redirect('/login')));
 
 app.use(require('./routes/dashboard'));
+app.use(require('./routes/board'));
 app.use(require('./routes/workorders'));
 app.use(require('./routes/people'));
 app.use(require('./routes/registry'));

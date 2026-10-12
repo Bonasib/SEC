@@ -1,0 +1,102 @@
+<%- include('partials/header', { pageTitle: t('board') }) %>
+<% const P = p.period; const H = honor;
+   const qs = (o) => { const x = new URLSearchParams(Object.entries({ ...query, ...o }).filter(([k, v]) => v)); return '?' + x.toString(); };
+   const medal = ['gold', 'silver', 'bronze']; %>
+<div class="page-head">
+  <div><div class="eyebrow"><%- ic('star') %><%= t('grp_operations') %></div>
+    <h1><%= t('board') %></h1>
+    <p class="page-sub"><%= t('board_hint') %> · <span class="mono" dir="ltr"><%= p.from %> → <%= p.to %></span></p></div>
+  <div class="btns">
+    <div class="segmented" role="group" aria-label="<%= t('period') %>">
+      <% ['week','month','quarter','year'].forEach(k => { %><a class="seg <%= P === k ? 'on' : '' %>" href="<%= qs({ period: k, from: '', to: '' }) %>" <%= P === k ? 'aria-current=true' : '' %>><%= t('per_' + k) %></a><% }) %>
+    </div>
+  </div>
+</div>
+<form class="filters card" method="get">
+  <input type="hidden" name="period" value="custom">
+  <label class="inline"><%= t('from') %><input type="date" name="from" value="<%= p.from %>"></label>
+  <label class="inline"><%= t('to') %><input type="date" name="to" value="<%= p.to %>"></label>
+  <select name="section" aria-label="<%= t('section') %>"><option value=""><%= t('section') %>: <%= t('all') %></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(query.section) === String(s.id) ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select>
+  <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button><a class="btn ghost" href="/board"><%= t('clear') %></a>
+</form>
+
+<!-- ===== Honor board ===== -->
+<section class="card honor">
+  <div class="card-head"><h2><%- ic('star') %><%= t('honor_board') %></h2><a class="small" href="/points"><%= t('points') %> →</a></div>
+  <% if (!H.podium.length) { %>
+    <p class="empty"><%- ic('star') %><%= t('honor_empty') %></p>
+  <% } else { %>
+  <div class="podium">
+    <% [1, 0, 2].forEach(i => { const e = H.podium[i]; if (!e) return; %>
+    <a class="podium-card <%= medal[i] %> <%= i === 0 ? 'first' : '' %>" href="/employees/<%= e.id %>">
+      <span class="medal" aria-hidden="true"><%= i + 1 %></span>
+      <span class="avatar xl"><%= initials(e) %></span>
+      <b class="pc-name"><%= nm(e) %></b>
+      <small class="muted"><%= lang === 'ar' && e.job_title_ar ? e.job_title_ar : e.job_title_en || '' %><%= e.section_code ? ' · ' + e.section_code : '' %></small>
+      <span class="pc-score" data-count="<%= e.score %>"><%= e.score %></span><small class="muted"><%= t('score') %></small>
+      <span class="pc-chips">
+        <span class="pill" title="<%= t('points') %>"><%- ic('star') %>+<%= e.pts %></span>
+        <span class="pill" title="<%= t('bev_wo_closed') %>"><%- ic('check-circle') %><%= e.closed %></span>
+        <span class="pill" title="<%= t('bev_task_done') %>"><%- ic('tasks') %><%= e.tasks_done %></span>
+        <% if (e.courses) { %><span class="pill" title="<%= t('courses') %>"><%- ic('file') %><%= e.courses %></span><% } %>
+      </span>
+    </a>
+    <% }) %>
+  </div>
+  <% } %>
+  <div class="badges">
+    <% [['points','star','badge_points','pts'],['closer','check-circle','badge_closer','closed'],['helper','tasks','badge_helper','tasks_done'],['learner','file','badge_learner','courses']].forEach(([k, icon, label, field]) => { const e = H.badges[k]; %>
+      <div class="badge-card <%= e ? '' : 'none' %>">
+        <span class="kpi-icon"><%- ic(icon) %></span>
+        <span><small class="muted"><%= t(label) %></small>
+          <% if (e) { %><a href="/employees/<%= e.id %>"><b><%= nm(e) %></b></a><small class="muted"> · <%= e[field] %></small><% } else { %><b class="muted">—</b><% } %></span>
+      </div>
+    <% }) %>
+  </div>
+  <% if (H.runners.length || H.yearTop.length) { %>
+  <div class="grid2" style="margin-top:14px">
+    <div><h3><%= t('also_outstanding') %></h3>
+      <ol class="rank-list" start="4"><% H.runners.forEach(e => { %><li><a href="/employees/<%= e.id %>"><span class="avatar"><%= initials(e) %></span><span class="grow"><%= nm(e) %><small class="muted"> · <%= e.section_code || '' %></small></span><b><%= e.score %></b></a></li><% }) %>
+      <% if (!H.runners.length) { %><li class="muted"><%= t('none') %></li><% } %></ol></div>
+    <div><h3><%= t('year_ranking') %> <%= p.to.slice(0, 4) %></h3>
+      <ol class="rank-list"><% H.yearTop.forEach(e => { %><li><a href="/points/employee/<%= e.id %>"><span class="avatar"><%= initials(e) %></span><span class="grow"><%= nm(e) %></span><span class="rt rt-<%= e.rating %>"><%= t('rt_' + e.rating) %></span><b class="mono"><%= e.balance.toLocaleString('en') %></b></a></li><% }) %>
+      <% if (!H.yearTop.length) { %><li class="muted"><%= t('none') %></li><% } %></ol></div>
+  </div>
+  <% } %>
+</section>
+
+<!-- ===== Events summary (interactive) ===== -->
+<section class="card" id="events">
+  <div class="card-head"><h2><%- ic('dashboard') %><%= t('events_summary') %></h2><span class="pill"><%= events.length %></span></div>
+  <div class="ev-tiles" role="group" aria-label="<%= t('filter') %>" id="ev-tiles">
+    <button type="button" class="ev-tile on" data-type="" aria-pressed="true"><b><%= events.length %></b><span><%= t('all') %></span></button>
+    <% TYPES.forEach(k => { const n = summary.totals[k] || 0; %>
+      <button type="button" class="ev-tile bev-<%= k %> <%= n ? '' : 'zero' %>" data-type="<%= k %>" aria-pressed="false"><b><%= n %></b><span><%= t('bev_' + k) %></span></button>
+    <% }) %>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-legend"><span><i class="lg created"></i><%= t('bev_wo_created') %></span><span><i class="lg closed"></i><%= t('bev_wo_closed') %></span><span><i class="lg other"></i><%= t('other_events') %></span><small class="muted"><%= t('chart_hint') %></small></div>
+    <div id="ev-chart" class="ev-chart" role="img" aria-label="<%= t('events_summary') %>"></div>
+    <div id="ev-tip" class="ev-tip" hidden></div>
+  </div>
+  <div class="table-tools">
+    <label class="search-field"><%- ic('search') %><input type="search" id="ev-search" placeholder="<%= t('search') %>…" aria-label="<%= t('search') %>"></label>
+    <span id="ev-active" class="pill info" hidden></span>
+    <span id="ev-count" class="muted small" aria-live="polite"></span>
+  </div>
+  <div id="ev-feed" class="ev-feed"></div>
+  <div style="text-align:center;margin-top:10px"><button type="button" class="btn small" id="ev-more" hidden><%= t('show_more') %></button></div>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2><%- ic('calendar') %><%= t('upcoming_14') %></h2><a class="small" href="/calendar"><%= t('calendar') %> →</a></div>
+  <div class="cols3">
+    <div><h3><%- ic('star') %> <%= t('holidays') %></h3><ul class="list"><% upcoming.holidays.forEach(h => { %><li><span class="mono"><%= h.start_date %></span><span class="grow"><%= lang === 'en' ? h.name_en : h.name_ar %></span></li><% }) %><% if (!upcoming.holidays.length) { %><li class="muted"><%= t('none') %></li><% } %></ul></div>
+    <div><h3><%- ic('file') %> <%= t('courses') %></h3><ul class="list"><% upcoming.courses.forEach(c => { %><li><span class="mono"><%= c.start_date %></span><a class="grow" href="/training/<%= c.id %>"><%= lang === 'en' ? c.title_en : c.title_ar %></a></li><% }) %><% if (!upcoming.courses.length) { %><li class="muted"><%= t('none') %></li><% } %></ul></div>
+    <div><h3><%- ic('clipboard') %> <%= t('work_orders') %></h3><ul class="list"><% upcoming.wos.forEach(w => { %><li><a class="wo-link" href="/wo/<%= w.id %>"><%= w.wo_number %></a><span class="grow"><%= w.title %><span class="cell-sub"><%= fmt(w.planned_start) %></span></span></li><% }) %><% if (!upcoming.wos.length) { %><li class="muted"><%= t('none') %></li><% } %></ul></div>
+  </div>
+</section>
+
+<script type="application/json" id="board-data"><%- json %></script>
+<script src="/static/board.js" defer></script>
+<%- include('partials/footer') %>

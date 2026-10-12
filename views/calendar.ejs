@@ -129,7 +129,7 @@
               <label><%= t('to') %><input type="date" name="end_date" value="<%= h.end_date %>"></label>
               <label><%= t('name_ar') %><input name="name_ar" value="<%= h.name_ar %>" required></label>
               <label><%= t('name_en') %><input name="name_en" value="<%= h.name_en %>" required></label>
-              <label><%= t('type') %><select name="kind"><option value="public">public</option><option value="company" <%= h.kind === 'company' ? 'selected' : '' %>>company</option></select></label>
+              <label><%= t('type') %><select name="kind"><option value="public"><%= lbl('hk', 'public') %></option><option value="company" <%= h.kind === 'company' ? 'selected' : '' %>><%= lbl('hk', 'company') %></option></select></label>
               <label class="inline"><input type="checkbox" name="approximate" value="1" <%= h.approximate ? 'checked' : '' %>><%= t('approximate') %></label>
               <button class="btn small primary"><%- ic('save') %><%= t('save') %></button>
             </form></details>
@@ -143,7 +143,7 @@
         <label><%= t('to') %><input type="date" name="end_date"></label>
         <label><span><%= t('name_ar') %> <span class="req">*</span></span><input name="name_ar" required></label>
         <label><span><%= t('name_en') %> <span class="req">*</span></span><input name="name_en" required></label>
-        <label><%= t('type') %><select name="kind"><option value="public">public</option><option value="company">company</option></select></label>
+        <label><%= t('type') %><select name="kind"><option value="public"><%= lbl('hk', 'public') %></option><option value="company"><%= lbl('hk', 'company') %></option></select></label>
         <label class="inline"><input type="checkbox" name="approximate" value="1"><%= t('approximate') %></label>
         <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button><a class="btn ghost" href="/data#holidays"><%- ic('upload') %><%= t('import') %></a></div>
       </form>

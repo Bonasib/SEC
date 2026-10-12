@@ -11,7 +11,7 @@
 <section class="card"><h2><%- ic('mail') %><%= t('smtp_status') %></h2>
   <div class="flash <%= smtpOn ? 'flash-success' : 'flash-warning' %>"><%= smtpOn ? t('smtp_on') : t('smtp_off') %></div>
   <p class="small muted">SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE, MAIL_FROM, APP_URL</p>
-  <p><% queue.forEach(q => { %><span class="pill"><%= q.status %>: <%= q.n %></span> <% }) %></p>
+  <p><% queue.forEach(q => { %><span class="pill"><%= lbl('email', q.status) %>: <%= q.n %></span> <% }) %></p>
   <form method="post" action="/settings/test-email" class="inline-form"><input type="email" name="to" required placeholder="name@company.com" value="<%= user.email || '' %>"><button class="btn"><%= t('send_test') %></button></form>
 </section>
 <section class="card"><h2><%- ic('bell') %><%= t('notifications') %></h2>

@@ -26,6 +26,28 @@
   <%- K('kpi_available', Math.max(0, kpi.available), '/employees', 'ok', 'users') %>
   <%- K('kpi_expiring_eq', kpi.expiring_eq, '/equipment', 'warn', 'truck') %>
   <%- K('kpi_closed_month', kpi.closed_month, '/wo?status=closed', 'ok', 'check-circle') %>
+  <%- K('kpi_tasks_today', kpi.tasks_today, '/tasks', 'violet', 'tasks') %>
+  <% if (kpi.stock_low || hasPerm('materials.manage')) { %><%- K('stock_low', kpi.stock_low, '/materials?stock=low', 'crit', 'boxes') %><% } %>
+</div>
+
+<div class="grid2">
+  <section class="card">
+    <div class="card-head"><h2><%- ic('tasks') %><%= t('my_day') %></h2><a class="small" href="/tasks"><%= t('daily_tasks') %> →</a></div>
+    <% if (!myTasks.length) { %><p class="muted"><%= t('no_tasks_day') %></p><% } %>
+    <ul class="list">
+      <% myTasks.forEach(tk => { %>
+        <li class="<%= tk.status === 'done' ? 'muted' : '' %>"><span class="mono"><%= tk.start_time || '—' %></span>
+          <span class="grow"><span class="cell-main"><%= tk.title %></span><span class="cell-sub"><%= tk.location || '' %></span></span>
+          <% if (tk.status === 'open') { %><form method="post" action="/tasks/<%= tk.id %>/status"><button class="btn btn-sm" name="status" value="done"><%- ic('check') %><%= t('mark_done') %></button></form><% } else { %><span class="pill ok"><%- ic('check') %><%= t('task_done') %></span><% } %></li>
+      <% }) %>
+    </ul>
+    <% if (dispatcher) { %><p style="margin-top:10px"><a class="btn btn-sm" href="/tasks#send"><%- ic('send', 'ic-dir') %><%= t('send_all_btn') %></a></p><% } %>
+  </section>
+  <section class="card honor">
+    <div class="card-head"><h2><%- ic('star') %><%= t('honor_board') %> · <%= t('per_month') %></h2><a class="small" href="/board"><%= t('board') %> →</a></div>
+    <% if (!stars.length) { %><p class="muted"><%= t('honor_empty') %></p><% } %>
+    <ol class="rank-list"><% stars.forEach((e, i) => { %><li><a href="/employees/<%= e.id %>"><span class="medal-dot m<%= i %>"><%= i + 1 %></span><span class="avatar"><%= initials(e) %></span><span class="grow"><%= nm(e) %><small class="muted"> · <%= e.section_code || '' %></small></span><b><%= e.score %></b></a></li><% }) %></ol>
+  </section>
 </div>
 
 <div class="grid2">
@@ -110,7 +132,7 @@
     <% if (!alerts.length) { %><div class="empty-inline"><%- ic('bell') %><%= t('no_records') %></div><% } else { %>
     <ul class="alerts"><% alerts.slice(0, 6).forEach(n => { %>
       <li class="sev-<%= n.severity %> <%= n.read_at ? '' : 'unread' %>"><span class="sev"><%- ic(n.severity === 'critical' ? 'siren' : n.severity === 'warning' ? 'alert' : 'bell') %></span>
-        <span class="a-body"><a href="/notifications/<%= n.id %>"><%= n.title %></a><small><%= fmt(n.created_at) %></small></span></li>
+        <span class="a-body"><a href="/notifications/<%= n.id %>"><%= tx(n.title) %></a><small><%= fmt(n.created_at) %></small></span></li>
     <% }) %></ul><% } %>
   </section>
 </div>

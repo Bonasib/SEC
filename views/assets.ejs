@@ -2,14 +2,14 @@
 <div class="page-head"><h1 class="title-ic"><%- ic('tower') %><%= t('assets') %> <span class="result-count">(<%= rows.length %>)</span></h1><div class="btns"><a class="btn" href="/data/export/assets"><%- ic('sheet') %>Excel</a><a class="btn" href="/data/export/assets?format=csv"><%- ic('download') %>CSV</a><a class="btn" href="/data#assets"><%- ic('upload') %><%= t('import') %></a></div></div>
 <form class="filters card" method="get" role="search">
   <div class="search-field"><%- ic('search') %><input name="q" value="<%= query.q || '' %>" placeholder="<%= t('search') %>" aria-label="<%= t('search') %>"></div>
-  <select name="type"><option value=""><%= t('type') %>: <%= t('all') %></option><% ASSET_TYPES.forEach(x => { %><option <%= query.type === x ? 'selected' : '' %>><%= x %></option><% }) %></select>
+  <select name="type"><option value=""><%= t('type') %>: <%= t('all') %></option><% ASSET_TYPES.forEach(x => { %><option value="<%= x %>" <%= query.type === x ? 'selected' : '' %>><%= lbl('asset_type', x) %></option><% }) %></select>
   <select name="voltage"><option value=""><%= t('voltage') %></option><% [115, 230, 380].forEach(v => { %><option <%= String(query.voltage) === String(v) ? 'selected' : '' %>><%= v %></option><% }) %></select>
   <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button>
 </form>
 <% if (canEdit) { %>
 <details class="card collapsible"><summary><b class="inline-h" style="gap:8px;align-items:center"><%- ic('plus') %><%= t('add') %></b></summary><form method="post" action="/assets" class="form-grid">
   <label><%= t('code') %> *<input name="code" required></label>
-  <label><%= t('type') %> *<select name="type"><% ASSET_TYPES.forEach(x => { %><option><%= x %></option><% }) %></select></label>
+  <label><%= t('type') %> *<select name="type"><% ASSET_TYPES.forEach(x => { %><option value="<%= x %>"><%= lbl('asset_type', x) %></option><% }) %></select></label>
   <label><%= t('name_ar') %><input name="name_ar"></label><label><%= t('name_en') %><input name="name_en"></label>
   <label><%= t('voltage') %><select name="voltage_kv"><option></option><option>115</option><option>230</option><option>380</option></select></label>
   <label><%= t('line_code') %><input name="line_code"></label><label><%= t('region') %><input name="region"></label>
@@ -20,19 +20,19 @@
   <thead><tr><th><%= t('code') %></th><th><%= t('name') %></th><th><%= t('type') %></th><th class="num"><%= t('voltage') %></th><th><%= t('line_code') %></th><th><%= t('region') %></th><th><%= t('work_orders') %></th><th><%- ic('pin') %></th><% if (canEdit) { %><th></th><% } %></tr></thead>
   <tbody>
   <% if (!rows.length) { %><tr><td colspan="9" class="empty"><%- ic('tower') %><%= t('no_records') %></td></tr><% } %>
-  <% rows.forEach(a => { %><tr class="<%= a.status && a.status !== 'in_service' ? 'muted' : '' %>"><td><b class="mono"><%= a.code %></b></td><td><%= nm(a) %></td><td><%= a.type %></td><td class="num"><%= a.voltage_kv || '' %></td><td><%= a.line_code || '' %></td><td><%= a.region || '' %></td>
+  <% rows.forEach(a => { %><tr class="<%= a.status && a.status !== 'in_service' ? 'muted' : '' %>"><td><b class="mono"><%= a.code %></b></td><td><%= nm(a) %></td><td><%= lbl('asset_type', a.type) %></td><td class="num"><%= a.voltage_kv || '' %></td><td><%= a.line_code || '' %></td><td><%= a.region || '' %></td>
     <td data-sort-value="<%= a.wo_count %>"><% if (a.wo_count) { %><a href="/wo?asset=<%= a.id %>"><%= a.wo_count %></a><% if (a.wo_open) { %> <span class="pill warn"><%= a.wo_open %></span><% } %><% } %></td>
     <td><% if (a.lat) { %><a href="https://maps.google.com/?q=<%= a.lat %>,<%= a.lng %>" target="_blank" rel="noopener" aria-label="map"><%- ic('map') %></a><% } %></td>
     <% if (canEdit) { %><td><details><summary class="btn small ghost"><%- ic('pen') %><%= t('edit') %></summary>
       <form method="post" action="/assets/<%= a.id %>" class="mini-grid">
         <label><%= t('code') %><input name="code" value="<%= a.code %>" required dir="ltr"></label>
-        <label><%= t('type') %><select name="type"><% ASSET_TYPES.forEach(x => { %><option <%= a.type === x ? 'selected' : '' %>><%= x %></option><% }) %></select></label>
+        <label><%= t('type') %><select name="type"><% ASSET_TYPES.forEach(x => { %><option value="<%= x %>" <%= a.type === x ? 'selected' : '' %>><%= lbl('asset_type', x) %></option><% }) %></select></label>
         <label><%= t('name_ar') %><input name="name_ar" value="<%= a.name_ar || '' %>"></label>
         <label><%= t('name_en') %><input name="name_en" value="<%= a.name_en || '' %>"></label>
         <label><%= t('voltage') %><select name="voltage_kv"><option></option><% [115, 132, 230, 380].forEach(v => { %><option <%= a.voltage_kv === v ? 'selected' : '' %>><%= v %></option><% }) %></select></label>
         <label><%= t('line_code') %><input name="line_code" value="<%= a.line_code || '' %>"></label>
         <label><%= t('region') %><input name="region" value="<%= a.region || '' %>"></label>
-        <label><%= t('status') %><select name="status"><% ['in_service','out_of_service','retired'].forEach(x => { %><option <%= (a.status || 'in_service') === x ? 'selected' : '' %>><%= x %></option><% }) %></select></label>
+        <label><%= t('status') %><select name="status"><% ['in_service','out_of_service','retired'].forEach(x => { %><option value="<%= x %>" <%= (a.status || 'in_service') === x ? 'selected' : '' %>><%= lbl('asset_status', x) %></option><% }) %></select></label>
         <label>lat<input name="lat" value="<%= a.lat || '' %>"></label><label>lng<input name="lng" value="<%= a.lng || '' %>"></label>
         <button class="btn small primary"><%- ic('save') %><%= t('save') %></button>
       </form></details></td><% } %>

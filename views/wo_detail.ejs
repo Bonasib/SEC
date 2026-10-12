@@ -293,7 +293,7 @@
 
 <section class="card" id="materials">
   <div class="card-head"><h2><%- ic('package') %><%= t('materials') %></h2>
-    <span class="pill <%= rec.status === 'fully_reconciled' ? 'ok' : rec.status === 'none' ? '' : 'bad' %>"><%- ic(rec.status === 'fully_reconciled' ? 'check' : rec.status === 'none' ? 'package' : 'alert') %><%= t('reconciliation') %>: <%= rec.status %></span></div>
+    <span class="pill <%= rec.status === 'fully_reconciled' ? 'ok' : rec.status === 'none' ? '' : 'bad' %>"><%- ic(rec.status === 'fully_reconciled' ? 'check' : rec.status === 'none' ? 'package' : 'alert') %><%= t('reconciliation') %>: <%= lbl('recon', rec.status) %></span></div>
   <dl class="kv">
     <dt><%= t('materials_withdrawn') %></dt><dd><%= wo.materials_withdrawn ? t(wo.materials_withdrawn) : '—' %></dd>
     <dt><%= t('materials_used') %></dt><dd><%= wo.materials_used ? t(wo.materials_used) : '—' %></dd>
@@ -304,13 +304,13 @@
     <tbody>
     <% if (!reservations.length) { %><tr><td colspan="5" class="muted"><%= t('none') %></td></tr><% } %>
     <% reservations.forEach(r => { %>
-      <tr><td><span class="mono"><b><%= r.reservation_number %></b></span> <% if (r.is_primary) { %><span class="pill info"><%- ic('star') %></span><% } %></td><td><%= r.warehouse || '—' %> <%= r.storage_location || '' %></td><td><%= r.status %></td>
+      <tr><td><span class="mono"><b><%= r.reservation_number %></b></span> <% if (r.is_primary) { %><span class="pill info"><%- ic('star') %></span><% } %></td><td><%= r.warehouse || '—' %> <%= r.storage_location || '' %></td><td><%= lbl('reservation', r.status) %></td>
         <td><% if (r.verified) { %><span class="pill ok"><%- ic('check') %><%= fmt(r.issued_at) %></span><% } else { %><span class="pill warn"><%- ic('hourglass') %><%= t('not_verified') %></span><% } %></td>
         <td><% if (can.warehouse && !r.verified && ['open','in_progress'].includes(wo.status)) { %>
           <form method="post" action="/wo/<%= wo.id %>/reservations/<%= r.id %>/verify" class="inline-form">
             <input name="warehouse" placeholder="<%= t('warehouse') %>" value="<%= r.warehouse || '' %>" size="10" aria-label="<%= t('warehouse') %>">
-            <input name="storage_location" placeholder="bin" size="6" aria-label="bin">
-            <select name="status" aria-label="<%= t('status') %>"><option value="fully_issued">Fully issued</option><option value="partially_issued">Partially issued</option></select>
+            <input name="storage_location" placeholder="<%= t('bin') %>" size="6" aria-label="<%= t('bin') %>">
+            <select name="status" aria-label="<%= t('status') %>"><option value="fully_issued"><%= lbl('reservation', 'fully_issued') %></option><option value="partially_issued"><%= lbl('reservation', 'partially_issued') %></option></select>
             <button class="btn small primary"><%- ic('check') %><%= t('verify') %></button>
           </form><% } %></td></tr>
     <% }) %>
@@ -333,16 +333,16 @@
     <% rec.lines.forEach(l => { const errs = lineErrors(l); const res = reservations.find(r => r.id === l.reservation_id); %>
       <tr class="<%= errs.length ? 'row-bad' : '' %>">
         <td><b class="mono"><%= l.material_number %></b><%= l.line_no ? ' / ' + l.line_no : '' %></td><td><%= l.description || '' %><% if (l.install_location) { %><span class="cell-sub"><%- ic('pin') %> <%= l.install_location %></span><% } %></td>
-        <td><%= l.source %></td><td class="mono"><%= res ? res.reservation_number : '—' %></td><td><%= l.uom || '' %></td>
+        <td><%= lbl('source', l.source) %></td><td class="mono"><%= res ? res.reservation_number : '—' %></td><td><%= l.uom || '' %></td>
         <td class="num"><%= l.reserved_qty %></td><td class="num"><%= l.issued_qty %></td><td class="num"><b><%= l.used_qty %></b></td><td class="num"><%= l.returned_qty %></td><td class="num"><%= l.damaged_qty %></td><td class="num"><%= l.transferred_qty %><%= l.transfer_wo_number ? ' → ' + l.transfer_wo_number : '' %></td><td class="num"><%= l.remaining_authorized_qty %></td>
         <td><% if (errs.length) { %><span class="pill bad"><%- ic('alert') %><%= errs.join(', ') %></span><% } else { %><span class="pill ok"><%- ic('check') %></span><% } %></td>
         <td><% if (can.materials) { %><details><summary class="btn small ghost"><%- ic('pen') %><%= t('edit') %></summary>
           <form method="post" action="/wo/<%= wo.id %>/materials/<%= l.id %>" class="mini-grid">
-            <% ['issued_qty','used_qty','returned_qty','damaged_qty','transferred_qty','remaining_authorized_qty'].forEach(k => { %><label><%= k.replace('_qty','') %><input type="number" step="any" min="0" name="<%= k %>" value="<%= l[k] %>"></label><% }) %>
-            <label>transfer WO<input name="transfer_wo_number" value="<%= l.transfer_wo_number || '' %>"></label>
-            <label><%= t('damaged') %>: reason<input name="damage_reason" value="<%= l.damage_reason || '' %>"></label>
-            <label>install location<input name="install_location" value="<%= l.install_location || '' %>"></label>
-            <label><span><%= lang === 'ar' ? 'سبب التعديل' : 'Edit reason' %> <span class="req">*</span></span><input name="reason" required></label>
+            <% ['issued_qty','used_qty','returned_qty','damaged_qty','transferred_qty','remaining_authorized_qty'].forEach(k => { %><label><%= t(k.replace('_qty','').replace('remaining_authorized','remaining')) %><input type="number" step="any" min="0" name="<%= k %>" value="<%= l[k] %>"></label><% }) %>
+            <label><%= t('transfer_wo') %><input name="transfer_wo_number" value="<%= l.transfer_wo_number || '' %>"></label>
+            <label><%= t('damage_reason') %><input name="damage_reason" value="<%= l.damage_reason || '' %>"></label>
+            <label><%= t('install_location') %><input name="install_location" value="<%= l.install_location || '' %>"></label>
+            <label><span><%= t('edit_reason') %> <span class="req">*</span></span><input name="reason" required></label>
             <button class="btn small primary"><%- ic('save') %><%= t('save') %></button>
           </form></details><% } %></td>
       </tr>
@@ -357,15 +357,15 @@
       <label class="span2"><%= t('pick_from_catalog') %><select name="item_id" data-catalog-fill><option value=""></option><% itemOptions.forEach(i => { %><option value="<%= i.id %>" data-code="<%= i.code %>" data-name="<%= i.name_ar %>" data-uom="<%= i.uom %>"><%= i.code %> · <%= lang === 'en' && i.name_en ? i.name_en : i.name_ar %> (<%= t('ik_' + i.kind) %>)</option><% }) %></select></label>
       <label><span><%= t('material_number') %> <span class="req">*</span></span><input name="material_number" required dir="ltr"></label>
       <label><%= t('description') %><input name="description"></label>
-      <label><%= t('source') %><select name="source"><% MAT_SOURCES.forEach(s => { %><option><%= s %></option><% }) %></select></label>
+      <label><%= t('source') %><select name="source"><% MAT_SOURCES.forEach(s => { %><option value="<%= s %>"><%= lbl('source', s) %></option><% }) %></select></label>
       <label><%= t('reservation_number') %><select name="reservation_id"><option value=""></option><% reservations.forEach(r => { %><option value="<%= r.id %>"><%= r.reservation_number %></option><% }) %></select></label>
-      <label>line no.<input name="line_no"></label>
+      <label><%= t('line_no') %><input name="line_no"></label>
       <label><%= t('uom') %><input name="uom" list="uoms"><datalist id="uoms"><option>piece</option><option>meter</option><option>kg</option><option>liter</option><option>set</option></datalist></label>
       <% ['reserved_qty','issued_qty','used_qty','returned_qty','damaged_qty','transferred_qty','remaining_authorized_qty'].forEach(k => { %><label><%= t(k.replace('_qty','').replace('remaining_authorized','remaining')) %><input type="number" step="any" min="0" name="<%= k %>" value="0"></label><% }) %>
-      <label>transfer WO<input name="transfer_wo_number" placeholder="WO000000" dir="ltr"></label>
-      <label>batch<input name="batch"></label><label>serial<input name="serial"></label>
-      <label>install location<input name="install_location" placeholder="Tower 090 / phase B"></label>
-      <label>damage reason<input name="damage_reason"></label>
+      <label><%= t('transfer_wo') %><input name="transfer_wo_number" placeholder="WO000000" dir="ltr"></label>
+      <label><%= t('batch') %><input name="batch"></label><label><%= t('serial_no') %><input name="serial"></label>
+      <label><%= t('install_location') %><input name="install_location" placeholder="Tower 090 / phase B"></label>
+      <label><%= t('damage_reason') %><input name="damage_reason"></label>
       <div class="form-actions"><button class="btn primary"><%- ic('plus') %><%= t('add') %></button></div>
     </form>
   </details>

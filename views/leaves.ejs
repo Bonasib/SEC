@@ -18,7 +18,7 @@
   <tbody>
   <% if (!rows.length) { %><tr><td colspan="8" class="empty"><%= t('no_records') %></td></tr><% } %>
   <% const hrEdit = ['hr','admin'].includes(user.role);
-     rows.forEach(l => { %><tr class="<%= l.status === 'cancelled' ? 'muted' : '' %>"><td><a href="/employees/<%= l.employee_id %>"><%= l.employee_no %></a> <%= nm(l) %></td><td><span class="ev-tag ev-<%= l.type %>"><%= t('lt_' + l.type) %></span></td><td><%= l.mode ? t('mode_' + l.mode) : '' %><%= l.location ? (l.mode ? ' · ' : '') + l.location : '' %></td><td class="mono"><%= l.start_date %></td><td class="mono"><%= l.end_date %></td><td><%= l.status %></td><td><%= l.notes || '' %></td>
+     rows.forEach(l => { %><tr class="<%= l.status === 'cancelled' ? 'muted' : '' %>"><td><a href="/employees/<%= l.employee_id %>"><%= l.employee_no %></a> <%= nm(l) %></td><td><span class="ev-tag ev-<%= l.type %>"><%= t('lt_' + l.type) %></span></td><td><%= l.mode ? t('mode_' + l.mode) : '' %><%= l.location ? (l.mode ? ' · ' : '') + l.location : '' %></td><td class="mono"><%= l.start_date %></td><td class="mono"><%= l.end_date %></td><td><span class="pill <%= l.status === 'approved' ? 'ok' : l.status === 'cancelled' ? 'bad' : 'warn' %>"><%= lbl('leave_status', l.status) %></span></td><td><%= l.notes || '' %></td>
     <td class="nowrap"><% if (hrEdit && l.status !== 'cancelled') { %>
       <details><summary class="btn small ghost"><%- ic('pen') %><%= t('edit') %></summary>
         <form method="post" action="/leaves/<%= l.id %>" class="mini-grid">
@@ -27,7 +27,7 @@
           <label><%= t('from') %><input type="date" name="start_date" value="<%= l.start_date %>" required></label>
           <label><%= t('to') %><input type="date" name="end_date" value="<%= l.end_date %>" required></label>
           <label><%= t('location') %><input name="location" value="<%= l.location || '' %>"></label>
-          <label><%= t('status') %><select name="status"><% ['approved','pending'].forEach(x => { %><option <%= l.status === x ? 'selected' : '' %>><%= x %></option><% }) %></select></label>
+          <label><%= t('status') %><select name="status"><% ['approved','pending'].forEach(x => { %><option value="<%= x %>" <%= l.status === x ? 'selected' : '' %>><%= lbl('leave_status', x) %></option><% }) %></select></label>
           <label><%= t('notes') %><input name="notes" value="<%= l.notes || '' %>"></label>
           <button class="btn small primary"><%- ic('save') %><%= t('save') %></button>
         </form>

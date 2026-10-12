@@ -124,7 +124,7 @@ Exports are `.xlsx` or `.csv` (with a BOM so Excel shows Arabic correctly). The 
 
 | Group | Pages |
 |---|---|
-| **Operations** | Dashboard · Work Orders · New Work Order · Daily Tasks · Work Activity · Travel Assignments · Team Calendar · Alerts |
+| **Operations** | Dashboard · Recognition & Events Board · Work Orders · New Work Order · Daily Tasks · Work Activity · Travel Assignments · Team Calendar · Alerts |
 | **People** | Employees · Leave & Absences · Training Courses · Improvement Plans · Points & Ratings · Acting Assignments · Organization |
 | **Assets & Fleet** | Assets · Vehicle Fleet · Devices & equipment · Materials, tools & equipment |
 | **Administration** | Permissions · Import & Export · Email Outbox · Audit Log · Settings |
@@ -133,6 +133,23 @@ Everything is connected and updates in real time:
 - **Training registrations** create a training absence that shows on the calendar and blocks conflicting work.
 - **Closing a work order** awards points. Ratings then create improvement plans, and those plans drive the course suggestions.
 - **Extensions and handovers** re-check availability and notify everyone involved.
+
+## Recognition & events board (`/board`)
+
+- **Honor board:** a podium for the top 3 of the period, with medals and a recognition score. The score is the points earned in the period (closed work orders already earn points), plus 25 for each daily task done and 100 for each course completed. Four badges: most points, most work orders closed, most daily tasks done and most courses completed. The year's points ranking is shown alongside.
+- **Events summary:** clickable tiles filter by event type: work orders created, closed or cancelled, extensions, hand-overs, tasks done, leave, courses, holidays, points and stock movements. The day chart shows details on hover and filters the feed when a day is clicked. There is also a search box and a feed grouped by day with "show more".
+- **Period and section:** 7 days, this month, this quarter, this year or a custom range, filtered by section.
+- **Who sees what:** work orders follow the reader's permissions, and other people's leave appears only for those allowed to see every calendar.
+- **Dashboard:** "My day" lists the reader's own tasks with a one-click done button, next to this month's honor board.
+
+## Automatic coordination
+
+- **Work orders and daily tasks:** closing or cancelling a work order closes or cancels its linked daily tasks and tells the people assigned.
+- **Leave and daily tasks:** recording or editing approved leave warns the task creator about open daily tasks that need reassigning.
+- **Missed tasks:** open tasks from earlier days remind the creator and the people assigned, once.
+- **Low stock:** a work order that reserves catalog items checks the stock straight away.
+- **Weekly summary:** every Sunday morning (Riyadh time), managers and the administrator get the past week's summary and the outstanding employees by email and in-app alert.
+- **Consistent text:** every stored status or type is shown as a proper Arabic or English label. In-app alerts appear in the reader's language. Emails follow one template: header, severity, an Arabic line then an English line, details table, button and footer. WhatsApp and copied messages use a numbered layout, and Excel files have styled headers with filters, notes and zebra rows.
 
 ## Daily tasks (`/tasks`)
 

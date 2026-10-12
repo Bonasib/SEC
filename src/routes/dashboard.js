@@ -31,6 +31,12 @@ router.get('/', (req, res) => {
   const busy = n(`SELECT COUNT(DISTINCT p.employee_id) n FROM wo_participants p JOIN work_orders w ON w.id = p.wo_id WHERE w.status = 'in_progress'`);
   kpi.available = n("SELECT COUNT(*) n FROM employees WHERE status = 'active' AND role IN ('employee','team_leader')") - kpi.on_leave - busy;
 
+  const dispatcher = require('../tasks').canDispatch(req.user);
+  kpi.tasks_today = dispatcher ? n("SELECT COUNT(*) n FROM tasks WHERE task_date = ? AND status = 'open'", today)
+    : n("SELECT COUNT(*) n FROM tasks t JOIN task_assignees a ON a.task_id = t.id WHERE t.task_date = ? AND t.status = 'open' AND a.employee_id = ?", today, req.user.id);
+  kpi.stock_low = require('../items').list({ stock: 'low' }).length;
+  const myTasks = all(`SELECT t.* FROM tasks t JOIN task_assignees a ON a.task_id = t.id WHERE a.employee_id = ? AND t.task_date = ? AND t.status <> 'cancelled' ORDER BY IFNULL(t.start_time, '99')`, req.user.id, today);
+  const stars = require('../board').honor(require('../board').period({ period: 'month' })).podium;
   const unreconciled = all(`SELECT m.* FROM material_lines m JOIN work_orders w ON w.id = m.wo_id WHERE w.status IN ('in_progress','pending_closure')`).filter((l) => W.lineErrors(l).length).length;
   kpi.unreconciled = unreconciled;
 
@@ -55,7 +61,7 @@ router.get('/', (req, res) => {
     .filter((x) => WC.isManagerOf({ section_id: x.section_id }, req.user));
   const myHandovers = all(`SELECT h.*, w.wo_number, w.title, w.id wid FROM wo_handovers h JOIN work_orders w ON w.id = h.wo_id
     WHERE h.status = 'scheduled' AND (h.to_employee_id = ? OR h.from_employee_id = ?) ORDER BY h.scheduled_at`, req.user.id, req.user.id);
-  res.render('dashboard', { myExtensions, myHandovers, top, me, opening: board.opening, upcoming, kpi, byStatus, byDistance, acting, myApprovals, myWork, critical, alerts, now, year });
+  res.render('dashboard', { myTasks, stars, dispatcher, myExtensions, myHandovers, top, me, opening: board.opening, upcoming, kpi, byStatus, byDistance, acting, myApprovals, myWork, critical, alerts, now, year });
 });
 
 module.exports = router;

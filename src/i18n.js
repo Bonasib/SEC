@@ -602,6 +602,58 @@ const D = {
   enabled: ['مفعّل', 'Enabled'], disabled: ['غير مفعّل', 'Disabled'],
 
   newest: ['الأحدث', 'Newest'], availability: ['التوفر', 'Availability'],
+
+  // ----- value labels (lbl(group, value)) -----
+  lvl_company: ['الشركة', 'Company'], lvl_sector: ['القطاع', 'Sector'], lvl_region: ['المنطقة', 'Region'], lvl_department: ['الإدارة', 'Department'],
+  lvl_division: ['الدائرة', 'Division'], lvl_section: ['القسم', 'Section'], lvl_team: ['الفريق', 'Team'],
+  aty_temporary: ['تكليف مؤقت', 'Temporary'], aty_leave: ['بسبب إجازة', 'Leave cover'], aty_training: ['بسبب دورة', 'Training cover'],
+  aty_business_travel: ['انتداب', 'Business travel'], aty_delegation: ['تفويض', 'Delegation'],
+  ast_active: ['ساري', 'Active'], ast_scheduled: ['مجدول', 'Scheduled'], ast_expired: ['منتهي', 'Expired'], ast_cancelled: ['ملغى', 'Cancelled'],
+  asty_line: ['خط', 'Line'], asty_tower: ['برج', 'Tower'], asty_substation: ['محطة', 'Substation'], asty_cable: ['كابل', 'Cable'], asty_equipment: ['معدة', 'Equipment'], asty_facility: ['مرفق', 'Facility'],
+  ass_in_service: ['في الخدمة', 'In service'], ass_out_of_service: ['خارج الخدمة', 'Out of service'], ass_retired: ['مُكهّن', 'Retired'],
+  et_vehicle: ['مركبة', 'Vehicle'], et_thermal_camera: ['كاميرا حرارية', 'Thermal camera'], et_binoculars: ['منظار', 'Binoculars'], et_test_set: ['جهاز اختبار', 'Test set'],
+  et_fault_locator: ['محدد أعطال', 'Fault locator'], et_communications: ['اتصالات', 'Communications'], et_crane: ['رافعة', 'Crane'], et_tool: ['عدة', 'Tool'], et_other: ['أخرى', 'Other'],
+  ls_approved: ['معتمدة', 'Approved'], ls_pending: ['بانتظار الاعتماد', 'Pending'], ls_cancelled: ['ملغاة', 'Cancelled'],
+  emp_active: ['على رأس العمل', 'Active'], emp_inactive: ['غير نشط', 'Inactive'], emp_transferred: ['منقول', 'Transferred'], emp_retired: ['متقاعد', 'Retired'],
+  bs_preview: ['معاينة', 'Preview'], bs_committed: ['مُعتمد', 'Committed'], bs_cancelled: ['ملغى', 'Cancelled'],
+  ms_queued: ['في الانتظار', 'Queued'], ms_sent: ['أُرسل', 'Sent'], ms_failed: ['فشل', 'Failed'], ms_outbox: ['في الصندوق (بدون SMTP)', 'Outbox (no SMTP)'],
+  rc_none: ['لا توجد مواد', 'No materials'], rc_fully_reconciled: ['مطابقة', 'Reconciled'], rc_not_reconciled: ['غير مطابقة', 'Not reconciled'], rc_pending: ['قيد المطابقة', 'Pending'],
+  rs_submitted: ['مقدّم', 'Submitted'], rs_fully_issued: ['صُرف بالكامل', 'Fully issued'], rs_partially_issued: ['صُرف جزئيًا', 'Partially issued'], rs_cancelled: ['ملغى', 'Cancelled'],
+  src_warehouse: ['المستودع', 'Warehouse'], src_site_stock: ['مخزون الموقع', 'Site stock'], src_emergency_stock: ['مخزون الطوارئ', 'Emergency stock'], src_contractor: ['المقاول', 'Contractor'],
+  sev_info: ['معلومة', 'Info'], sev_warning: ['تحذير', 'Warning'], sev_critical: ['حرج', 'Critical'],
+  aa_create: ['إنشاء', 'Create'], aa_update: ['تعديل', 'Update'], aa_delete: ['حذف', 'Delete'], aa_cancel: ['إلغاء', 'Cancel'], aa_import: ['استيراد', 'Import'],
+  aa_login: ['تسجيل دخول', 'Sign in'], aa_login_failed: ['محاولة دخول فاشلة', 'Failed sign-in'], aa_approve: ['اعتماد', 'Approve'], aa_reject: ['رفض', 'Reject'],
+  aa_upload: ['رفع صورة', 'Upload'], aa_verify: ['تحقق', 'Verify'], aa_start: ['بدء', 'Start'], aa_submit: ['إرسال للاعتماد', 'Submit'], aa_grant: ['منح صلاحية', 'Grant'],
+  aa_revoke: ['سحب صلاحية', 'Revoke'], aa_dispatch: ['إرسال المهام', 'Send tasks'], aa_status: ['تغيير الحالة', 'Status change'], aa_password_change: ['تغيير كلمة المرور', 'Password change'],
+  aa_stock_receive: ['استلام مخزون', 'Stock receipt'], aa_stock_consume: ['استهلاك مخزون', 'Stock used'], aa_stock_damage: ['تالف مخزون', 'Stock damage'], aa_stock_adjust: ['تسوية مخزون', 'Stock adjustment'],
+  ent_work_order: ['أمر عمل', 'Work order'], ent_wo_photo: ['صورة', 'Photo'], ent_material_line: ['سطر مواد', 'Material line'], ent_material_reservation: ['حجز مستودع', 'Reservation'],
+  ent_wo_item: ['مواد أمر العمل', 'Work order items'], ent_item: ['صنف', 'Item'], ent_task: ['مهمة يومية', 'Daily task'], ent_daily_tasks: ['المهام اليومية', 'Daily tasks'],
+  ent_employee: ['موظف', 'Employee'], ent_leave: ['إجازة', 'Leave'], ent_holiday: ['إجازة رسمية', 'Holiday'], ent_acting_assignment: ['تكليف إداري', 'Acting assignment'],
+  ent_asset: ['أصل', 'Asset'], ent_equipment: ['معدة', 'Equipment'], ent_vehicle: ['مركبة', 'Vehicle'], ent_course: ['دورة', 'Course'], ent_permission: ['صلاحية', 'Permission'],
+  ent_settings: ['الإعدادات', 'Settings'], ent_session: ['جلسة', 'Session'], ent_points: ['نقاط', 'Points'], ent_plan: ['خطة تحسين', 'Improvement plan'],
+  acting_assignments: ['التكليفات الإدارية', 'Acting assignments'], point_requests: ['طلبات النقاط', 'Point requests'], course_attendees: ['حضور الدورات', 'Course attendees'],
+  improvement_plans: ['خطط التحسين', 'Improvement plans'], material_lines: ['أسطر المواد', 'Material lines'], items: ['المواد والعدد والمعدات', 'Materials, tools & equipment'],
+  hk_public: ['إجازة رسمية', 'Public holiday'], hk_company: ['إجازة الشركة', 'Company holiday'],
+  line_no: ['رقم السطر', 'Line no.'], batch: ['الدفعة', 'Batch'], serial_no: ['الرقم التسلسلي', 'Serial no.'], install_location: ['موقع التركيب', 'Installation location'],
+  damage_reason: ['سبب التلف', 'Damage reason'], transfer_wo: ['أمر العمل المحوَّل إليه', 'Transfer to WO'], bin: ['الرف', 'Bin'],
+
+  kpi_tasks_today: ['مهام اليوم المفتوحة', 'Open tasks today'], my_day: ['يومي', 'My day'],
+  // ----- board -----
+  board: ['لوحة التميز والأحداث', 'Recognition & events board'],
+  board_hint: ['المتميزون وملخص كل ما حدث في الفترة', 'Outstanding employees and a summary of everything that happened'],
+  period: ['الفترة', 'Period'], per_week: ['7 أيام', '7 days'], per_month: ['هذا الشهر', 'This month'], per_quarter: ['هذا الربع', 'This quarter'], per_year: ['هذا العام', 'This year'],
+  honor_board: ['لوحة الشرف', 'Honor board'], honor_empty: ['لا يوجد متميزون في هذه الفترة بعد', 'No outstanding employees in this period yet'],
+  score: ['درجة التميز', 'Recognition score'],
+  badge_points: ['الأعلى نقاطًا', 'Most points'], badge_closer: ['الأكثر إنجازًا لأوامر العمل', 'Most work orders closed'],
+  badge_helper: ['الأكثر إنجازًا للمهام اليومية', 'Most daily tasks done'], badge_learner: ['الأكثر تطويرًا لذاته', 'Most courses completed'],
+  also_outstanding: ['متميزون أيضًا', 'Also outstanding'], year_ranking: ['ترتيب النقاط لعام', 'Points ranking'],
+  events_summary: ['ملخص الأحداث', 'Events summary'], other_events: ['أحداث أخرى', 'Other events'],
+  chart_hint: ['اضغط على يوم لعرض أحداثه', 'Click a day to see its events'], show_more: ['عرض المزيد', 'Show more'],
+  upcoming_14: ['القادم خلال 14 يومًا', 'Coming up in the next 14 days'],
+  bev_wo_created: ['أوامر عمل جديدة', 'Work orders created'], bev_wo_closed: ['أوامر عمل مغلقة', 'Work orders closed'], bev_wo_cancelled: ['أوامر عمل ملغاة', 'Work orders cancelled'],
+  bev_extension: ['تمديدات معتمدة', 'Extensions approved'], bev_handover: ['تسليمات منفذة', 'Hand-overs done'], bev_task_done: ['مهام يومية منجزة', 'Daily tasks done'],
+  bev_absence: ['إجازات وغياب', 'Leave & absences'], bev_course: ['دورات تدريبية', 'Training courses'], bev_holiday: ['إجازات رسمية', 'Holidays'],
+  bev_points: ['نقاط مكتسبة', 'Points earned'], bev_stock: ['حركات المخزون', 'Stock movements'],
   // ----- editing -----
   edit_wo: ['تعديل أمر العمل', 'Edit work order'], edit_reason: ['سبب التعديل', 'Reason for the change'],
   edit_wo_hint: ['تُسجل كل التعديلات في السجل ويُبلَّغ الفريق تلقائيًا. لتغيير مواعيد أمر قيد التنفيذ استخدم طلب التمديد.', 'Every change is logged and the team is notified automatically. To move the dates of work in progress, use an extension request.'],
@@ -617,7 +669,23 @@ function makeT(lang) {
   };
 }
 
-// Bilingual string for emails and notifications ("عربي / English")
-const both = (key) => (D[key] ? `${D[key][0]} / ${D[key][1]}` : key);
+// Label for a stored value (status, type, kind...): dictionary entry or a readable fallback
+const PREFIX = {
+  level: 'lvl_', acting_type: 'aty_', acting_state: 'ast_', asset_type: 'asty_', asset_status: 'ass_', equip_type: 'et_', equip_status: 'es_', leave_type: 'lt_',
+  leave_status: 'ls_', emp_status: 'emp_', batch: 'bs_', email: 'ms_', recon: 'rc_', reservation: 'rs_', source: 'src_', severity: 'sev_', action: 'aa_', entity: 'ent_',
+  role: 'role_', wo_status: 'st_', wo_type: 'wt_', priority: 'pr_', kind: 'ik_', uom: 'uom_', vehicle: 'vt_', category: 'cat_', mode: 'mode_',
+};
+const humanize = (v) => String(v ?? '').replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+function makeLbl(lang) {
+  const i = lang === 'en' ? 1 : 0;
+  return (group, value) => {
+    if (value == null || value === '') return '—';
+    const k = (PREFIX[group] || group + '_') + value;
+    return D[k] ? D[k][i] : humanize(value);
+  };
+}
 
-module.exports = { makeT, both, D };
+// Bilingual string for emails and notifications ("عربي / English")
+const both = (key) => (D[key] ? (D[key][0] === D[key][1] ? D[key][0] : `${D[key][0]} / ${D[key][1]}`) : key);
+
+module.exports = { makeT, makeLbl, both, D };

@@ -169,7 +169,8 @@ router.post('/leaves', requireRole('hr', 'admin'), (req, res) => {
       body: `${b.type}: ${b.start_date} → ${b.end_date}`, link: `/wo/${w.id}`,
     });
   }
-  if (clashes.length) res.flash('warning', `Conflicts with: ${clashes.map((c) => c.wo_number).join(', ')}`);
+  const taskClashes = (b.status || 'approved') === 'approved' ? require('../sync').onLeave(Number(b.employee_id), b.start_date, b.end_date) : 0;
+  if (clashes.length || taskClashes) res.flash('warning', [clashes.length ? `Conflicts with: ${clashes.map((c) => c.wo_number).join(', ')}` : '', taskClashes ? `${taskClashes} daily task(s) need reassigning / مهام يومية تحتاج إعادة إسناد` : ''].filter(Boolean).join('\n'));
   res.redirect('/leaves');
 });
 
@@ -194,7 +195,9 @@ router.post('/leaves/:id(\\d+)', requireRole('hr', 'admin'), (req, res) => {
       body: `${after.type}: ${after.start_date} → ${after.end_date}`, link: `/wo/${w.id}`,
     });
   }
-  res.flash(clashes.length ? 'warning' : 'success', clashes.length ? `Conflicts with: ${clashes.map((c) => c.wo_number).join(', ')}` : res.locals.t('saved'));
+  const taskClashes = after.status === 'approved' ? require('../sync').onLeave(l.employee_id, after.start_date, after.end_date) : 0;
+  const warn = [clashes.length ? `Conflicts with: ${clashes.map((c) => c.wo_number).join(', ')}` : '', taskClashes ? `${taskClashes} daily task(s) need reassigning / مهام يومية تحتاج إعادة إسناد` : ''].filter(Boolean).join('\n');
+  res.flash(warn ? 'warning' : 'success', warn || res.locals.t('saved'));
   res.redirect('/leaves');
 });
 

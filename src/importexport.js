@@ -11,34 +11,61 @@ function columnsFor(entity, forExport) {
   return def.columns;
 }
 
-function styleHeader(ws) {
-  const row = ws.getRow(1);
-  row.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-  row.fill = HEADER_FILL;
+const BORDER = { style: 'thin', color: { argb: 'FFD5DDE8' } };
+
+// Shared look for every sheet: branded header, frozen first row, filters, borders, zebra rows, sensible widths
+function styleSheet(ws, { required = [], notes = {} } = {}) {
+  const head = ws.getRow(1);
+  head.height = 24;
+  head.eachCell((c, i) => {
+    c.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    c.fill = required.includes(i) ? { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC53030' } } : HEADER_FILL;
+    c.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    c.border = { top: BORDER, left: BORDER, bottom: BORDER, right: BORDER };
+    if (notes[c.value]) c.note = notes[c.value];
+  });
   ws.views = [{ state: 'frozen', ySplit: 1 }];
+  if (ws.columnCount) ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: ws.columnCount } };
+  ws.eachRow((row, n) => {
+    if (n === 1) return;
+    row.eachCell({ includeEmpty: true }, (c) => {
+      c.border = { bottom: BORDER, left: BORDER, right: BORDER };
+      c.alignment = { vertical: 'top', wrapText: true };
+      if (n % 2 === 0) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F8FC' } };
+    });
+  });
+  ws.columns.forEach((col) => {
+    let w = String(col.header || '').length + 4;
+    col.eachCell?.({ includeEmpty: false }, (c, n) => { if (n > 1) w = Math.max(w, Math.min(50, String(c.value ?? '').length + 2)); });
+    col.width = Math.max(12, Math.min(50, w));
+  });
 }
 
 function addSheet(wb, entity, rows, forExport) {
   const cols = forExport && rows.length ? Object.keys(rows[0]).map((k) => [k]) : columnsFor(entity, forExport);
-  const ws = wb.addWorksheet(entity);
-  ws.columns = cols.map(([k]) => ({ header: k, key: k, width: Math.min(40, Math.max(12, k.length + 4)) }));
+  const ws = wb.addWorksheet(entity.slice(0, 31));
+  ws.columns = cols.map(([k]) => ({ header: k, key: k }));
   rows.forEach((r) => ws.addRow(r));
-  styleHeader(ws);
+  const def = ENTITIES[entity];
+  const notes = Object.fromEntries((def?.columns || []).map(([k, ar, en]) => [k, `${ar}\n${en}`]));
+  const required = forExport ? [] : (def?.columns || []).map((c, i) => (c[3] ? i + 1 : 0)).filter(Boolean);
+  styleSheet(ws, { required, notes });
   return ws;
 }
 
-// Template: data sheet with the exact headers + an instructions sheet in both languages
+// Template: data sheet with the exact headers (hover a header for its meaning) + a bilingual instructions sheet
 async function templateWorkbook(entity) {
   const def = ENTITIES[entity];
   const wb = new ExcelJS.Workbook();
-  const ws = addSheet(wb, entity, [], false);
-  def.columns.forEach(([k, , , req], i) => { if (req) ws.getRow(1).getCell(i + 1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC53030' } }; });
-  const help = wb.addWorksheet('instructions');
-  help.columns = [{ header: 'column', key: 'k', width: 26 }, { header: 'إلزامي / Required', key: 'r', width: 16 }, { header: 'الوصف', key: 'ar', width: 60 }, { header: 'Description', key: 'en', width: 60 }];
+  wb.creator = 'SEC Transmission WMS';
+  addSheet(wb, entity, [], false);
+  const help = wb.addWorksheet('instructions', { views: [{ rightToLeft: false }] });
+  help.columns = [{ header: 'column', key: 'k' }, { header: 'إلزامي / Required', key: 'r' }, { header: 'الوصف', key: 'ar' }, { header: 'Description', key: 'en' }];
   def.columns.forEach(([k, ar, en, req]) => help.addRow({ k, r: req ? 'نعم / Yes' : '', ar, en }));
   help.addRow({});
-  help.addRow({ k: 'notes', ar: 'التواريخ بصيغة YYYY-MM-DD والأوقات بتوقيت الرياض YYYY-MM-DD HH:MM. لا تغيّر أسماء الأعمدة في الصف الأول.', en: 'Dates as YYYY-MM-DD, times in Riyadh time as YYYY-MM-DD HH:MM. Do not rename the header row.' });
-  styleHeader(help);
+  help.addRow({ k: 'notes', ar: 'التواريخ بصيغة YYYY-MM-DD والأوقات بتوقيت الرياض YYYY-MM-DD HH:MM. لا تغيّر أسماء الأعمدة في الصف الأول. الأعمدة الحمراء إلزامية.', en: 'Dates as YYYY-MM-DD, times in Riyadh time as YYYY-MM-DD HH:MM. Do not rename the header row. Red columns are required.' });
+  styleSheet(help);
+  help.getColumn('ar').alignment = { horizontal: 'right', wrapText: true, vertical: 'top' };
   return wb;
 }
 

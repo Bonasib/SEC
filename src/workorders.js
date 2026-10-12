@@ -171,6 +171,7 @@ function createWorkOrder(data, req, { importedNumber } = {}) {
 
   // ----- alerts -----
   if (category !== 'A') require('./travel').checkAlerts(Number(year), participantIds);
+  if (itemLines.length) require('./items').lowStockCheck(itemLines.map((l) => l.item_id));
   const link = `/wo/${wo.id}`;
   const details = woDetails(wo);
   notify(participantIds, {
@@ -418,6 +419,7 @@ function decide(wo, decision, comment, req) {
   });
 
   const fresh = get('SELECT * FROM work_orders WHERE id = ?', wo.id);
+  if (finalStatus === 'cancelled') require('./sync').onWorkOrderStatus(fresh, 'cancelled', req);
   if (decision === 'rejected') {
     notify([...participants, wo.created_by], {
       type: 'approval_rejected', severity: 'warning',
@@ -426,6 +428,7 @@ function decide(wo, decision, comment, req) {
   } else if (finalStatus === 'closed') {
     require('./points').awardClosure(fresh, participants, req.user.id);
     require('./items').settle(fresh, req);
+    require('./sync').onWorkOrderStatus(fresh, 'closed', req);
     const o = JSON.parse(wo.officials_json || '{}');
     notify([...participants, o.section_head?.employee_id], { type: 'wo_closed', title: `${wo.wo_number} - تم إغلاق أمر العمل / Work order closed`, body: wo.title, link, details: woDetails(fresh) });
   } else if (finalStatus === 'open') {
@@ -534,6 +537,7 @@ function cancelWorkOrder(wo, reason, req) {
     audit(req, 'cancel', 'work_order', wo.wo_number, { status: wo.status }, { status: 'cancelled' }, reason);
   });
   notify(participantIds(wo.id), { type: 'wo_cancelled', severity: 'warning', title: `${wo.wo_number} - تم إلغاء أمر العمل / Work order cancelled`, body: reason, link: `/wo/${wo.id}` });
+  require('./sync').onWorkOrderStatus(wo, 'cancelled', req);
 }
 
 module.exports = {
