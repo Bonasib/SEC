@@ -1,0 +1,19 @@
+<%- include('partials/header', { pageTitle: t('item_transactions') }) %>
+<% const qs = new URLSearchParams(Object.entries(query).filter(([k, v]) => v && k !== 'format')).toString(); %>
+<div class="page-head">
+  <div><div class="eyebrow"><a href="/materials"><%- ic('arrow', 'ic-back') %> <%= t('materials_tools') %></a></div>
+    <h1><%= t('item_transactions') %> <span class="result-count">(<%= total %>)</span></h1>
+    <p class="page-sub"><%= t('transactions_hint') %></p></div>
+  <div class="btns"><a class="btn" href="?<%= qs %>&format=xlsx"><%- ic('sheet') %>Excel</a><a class="btn" href="?<%= qs %>&format=csv"><%- ic('download') %>CSV</a></div>
+</div>
+<form class="filters card" method="get">
+  <select name="item" aria-label="<%= t('item') %>"><option value=""><%= t('item') %>: <%= t('all') %></option><% items.forEach(i => { %><option value="<%= i.id %>" <%= String(query.item) === String(i.id) ? 'selected' : '' %>><%= i.code %> · <%= lang === 'en' && i.name_en ? i.name_en : i.name_ar %></option><% }) %></select>
+  <select name="kind" aria-label="<%= t('transaction_type') %>"><option value=""><%= t('transaction_type') %>: <%= t('all') %></option><% TX_KINDS.forEach(k => { %><option value="<%= k %>" <%= query.kind === k ? 'selected' : '' %>><%= t('txg_' + k) %></option><% }) %></select>
+  <input name="wo" value="<%= query.wo || '' %>" placeholder="WO000000" dir="ltr" aria-label="<%= t('wo_number') %>">
+  <label class="inline"><%= t('from') %><input type="date" name="from" value="<%= query.from || '' %>"></label>
+  <label class="inline"><%= t('to') %><input type="date" name="to" value="<%= query.to || '' %>"></label>
+  <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button><a class="btn ghost" href="/materials/transactions"><%= t('clear') %></a>
+</form>
+<div class="card table-card"><%- include('partials/tx_table', { rows, showItem: true }) %></div>
+<% if (total > rows.length) { %><p class="muted small"><%= t('showing_first') %> <%= rows.length %> — Excel</p><% } %>
+<%- include('partials/footer') %>

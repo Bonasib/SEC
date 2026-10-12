@@ -1,9 +1,9 @@
 <%- include('partials/header', { pageTitle: t('plan') }) %>
 <section class="page-head wo-head">
   <div style="display:flex;gap:16px;align-items:center;flex:1;min-width:260px">
-    <span class="avatar" style="width:56px;height:56px;font-size:20px"><%= initials(plan) %></span>
+    <span class="avatar" style="width:56px;height:56px;font-size:20px"><%- face(plan) %></span>
     <div><a class="small" href="/plans"><%- ic('arrow', 'ic-back') %> <%= t('plans') %></a>
-      <h1 style="margin:6px 0"><%= t('plan') %> · <a href="/employees/<%= plan.employee_id %>" style="color:inherit"><%= nm(plan) %></a></h1>
+      <h1 style="margin:6px 0"><%= t('plan') %> · <a <%- empHref(plan.employee_id) %> style="color:inherit"><%= nm(plan) %></a></h1>
       <div class="tags"><span class="wo-num"><%= plan.employee_no %></span><span class="pill"><%= plan.section_code %></span>
         <span class="pill <%= { active: 'warn', transfer_recommended: 'bad', improved: 'ok', transferred: 'info', closed: '' }[plan.status] %>"><%= t('pl_' + plan.status) %></span>
         <span class="pill"><%= t('plan_started') %> <%= plan.start_year %></span></div></div>

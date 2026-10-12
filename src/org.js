@@ -26,9 +26,17 @@ function holderAt(unitId, atIso) {
   return { employee_id: e.id, employee_no: e.employee_no, name_ar: e.name_ar, name_en: e.name_en, acting: false, unit_code: unit.code };
 }
 
-// Snapshot of section head, division, department and sector managers at a moment.
+// Foremen (ملاحظ) of a section: active employees with the foreman role in that section
+const foremenOf = (sectionId) => (sectionId ? all("SELECT id FROM employees WHERE role = 'foreman' AND status = 'active' AND section_id = ? ORDER BY employee_no", sectionId).map((r) => r.id) : []);
+
+// Snapshot of the foreman, section head, division, department and sector managers at a moment.
 function officialsAt(sectionId, atIso) {
   const out = {};
+  const fm = foremenOf(sectionId)[0];
+  if (fm) {
+    const e = get('SELECT id, employee_no, name_ar, name_en FROM employees WHERE id = ?', fm);
+    out.foreman = { employee_id: e.id, employee_no: e.employee_no, name_ar: e.name_ar, name_en: e.name_en, acting: false };
+  }
   let unit = sectionId ? get('SELECT * FROM org_units WHERE id = ?', sectionId) : null;
   while (unit) {
     const pos = POSITION_BY_LEVEL[unit.level];
@@ -47,4 +55,4 @@ function unitPath(unitId) {
 
 const sections = () => all("SELECT * FROM org_units WHERE level = 'section' ORDER BY code");
 
-module.exports = { holderAt, officialsAt, unitPath, sections, POSITION_BY_LEVEL };
+module.exports = { holderAt, officialsAt, foremenOf, unitPath, sections, POSITION_BY_LEVEL };

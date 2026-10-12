@@ -6,7 +6,7 @@ const { nowIso, audit, HttpError, todayRiyadh } = require('./util');
 const { notify, idsByRole } = require('./notify');
 const { officialsAt } = require('./org');
 
-const REQUESTERS = ['team_leader', 'section_head', 'division_manager', 'department_manager', 'sector_head', 'safety', 'hr'];
+const REQUESTERS = ['team_leader', 'foreman', 'section_head', 'division_manager', 'department_manager', 'sector_head', 'safety', 'hr'];
 const APPROVERS = ['division_manager', 'department_manager', 'sector_head', 'hr'];
 const RATINGS = ['excellent', 'very_good', 'good', 'satisfactory', 'acceptable'];
 const SAFETY_ATTENDANCE_CAP = 600;

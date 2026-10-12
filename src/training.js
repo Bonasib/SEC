@@ -144,7 +144,7 @@ function suggestions({ limit = 40 } = {}) {
   const plans = Object.fromEntries(all("SELECT employee_id, id FROM improvement_plans WHERE status IN ('active','transfer_recommended')").map((r) => [r.employee_id, r.id]));
   const emps = all(`SELECT e.id, e.employee_no, e.name_ar, e.name_en, e.job_title_en, s.code section_code,
       (SELECT MAX(c.end_date) FROM course_attendees a JOIN courses c ON c.id = a.course_id WHERE a.employee_id = e.id AND a.attendance = 'attended') last_course
-    FROM employees e LEFT JOIN org_units s ON s.id = e.section_id WHERE e.status = 'active' AND e.role IN ('employee','team_leader') ORDER BY e.employee_no`);
+    FROM employees e LEFT JOIN org_units s ON s.id = e.section_id WHERE e.status = 'active' AND e.role IN ('employee','team_leader','foreman') ORDER BY e.employee_no`);
   const out = [];
   for (const e of emps) {
     const b = board[e.id];

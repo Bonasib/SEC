@@ -15,7 +15,7 @@ const WC = require('../wo_changes');
 const Items = require('../items');
 
 const router = express.Router();
-const UPLOAD_DIR = process.env.UPLOAD_DIR || (process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'uploads') : path.join(__dirname, '..', '..', 'uploads'));
+const { UPLOAD_DIR } = require('../files');
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -90,8 +90,9 @@ router.post('/wo', requireRole(...WO_CREATORS), (req, res, next) => {
   const b = req.body;
   const data = woDataFromBody(b);
   try {
-    const { wo, warnings } = W.createWorkOrder(data, req);
-    res.flash(warnings.length ? 'warning' : 'success', `${wo.wo_number} ✓` + (warnings.length ? '\n' + warnings.join('\n') : ''));
+    const { wo, warnings, notes } = W.createWorkOrder(data, req);
+    const lines = [...notes, ...warnings].map((x) => res.locals.tx(x));
+    res.flash(warnings.length ? 'warning' : 'success', `${wo.wo_number} ✓` + (lines.length ? '\n' + lines.join('\n') : ''));
     res.redirect(`/wo/${wo.id}`);
   } catch (e) {
     if (e.status !== 400) return next(e);
@@ -138,6 +139,7 @@ router.get('/wo/:id', (req, res) => {
   const approvals = all(`SELECT a.*, e.name_ar, e.name_en, e.employee_no, x.name_ar exp_ar, x.name_en exp_en FROM wo_approvals a
     LEFT JOIN employees e ON e.id = a.decided_by LEFT JOIN employees x ON x.id = a.expected_employee_id WHERE a.wo_id = ? ORDER BY a.id`, wo.id);
   const pending = W.pendingApproval(wo.id);
+  if (pending?.expected_employee_id) Object.assign(pending, (({ name_ar, name_en }) => ({ exp_ar: name_ar, exp_en: name_en }))(get('SELECT name_ar, name_en FROM employees WHERE id = ?', pending.expected_employee_id) || {}));
   const rec = W.reconciliation(wo.id);
   const history = all(`SELECT a.*, e.employee_no, e.name_ar, e.name_en FROM audit_log a LEFT JOIN employees e ON e.id = a.employee_id
     WHERE a.entity IN ('work_order','wo_photo','material_line','material_reservation') AND (a.entity_id = ? OR a.entity_id LIKE ?) ORDER BY a.id DESC LIMIT 100`, wo.wo_number, wo.wo_number + ':%');
@@ -153,9 +155,10 @@ router.get('/wo/:id', (req, res) => {
     checklist: W.closureChecklist(wo), history, RESULTS, MAT_SOURCES, away: W.teamAway(wo),
     crew: W.crewSummary(wo.id), extensions: WC.extensionsOf(wo.id), handovers: WC.handoversOf(wo.id), isManager: WC.isManagerOf(wo, req.user),
     canHistory: require('../access').can(req.user, 'wo.view_history', wo.section_id) === true,
-    handoverCandidates: all("SELECT e.id, e.employee_no, e.name_ar, e.name_en, s.code section_code FROM employees e LEFT JOIN org_units s ON s.id = e.section_id WHERE e.status = 'active' AND e.role IN ('employee','team_leader','section_head') ORDER BY (e.section_id = ?) DESC, e.employee_no", wo.section_id),
+    handoverCandidates: all("SELECT e.id, e.employee_no, e.name_ar, e.name_en, s.code section_code FROM employees e LEFT JOIN org_units s ON s.id = e.section_id WHERE e.status = 'active' AND e.role IN ('employee','team_leader','foreman','section_head') ORDER BY (e.section_id = ?) DESC, e.employee_no", wo.section_id),
     vehicles: all("SELECT q.* FROM wo_equipment x JOIN equipment q ON q.id = x.equipment_id WHERE x.wo_id = ? AND q.type = 'vehicle'", wo.id),
     woItems: Items.ofWo(wo.id), itemOptions: Items.pickerOptions(wo.id),
+    documents: require('../documents').list('work_order', wo.id), docRights: require('../documents').rights('work_order', wo, req.user), DOC_TYPES: require('../documents').TYPES.work_order,
     tasks: all('SELECT * FROM tasks WHERE wo_id = ? ORDER BY task_date, start_time', wo.id),
     can: {
       work: canWorkOnWO(wo, req.user) && wo.status === 'in_progress',

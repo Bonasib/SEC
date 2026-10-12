@@ -5,6 +5,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'wms-test-'));
 process.env.DB_PATH = path.join(tmp, 'test.db');
+process.env.UPLOAD_DIR = path.join(tmp, 'uploads');
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -13,6 +14,9 @@ require('../src/seed').seed();
 const W = require('../src/workorders');
 const { runAlertChecks } = require('../src/alerts');
 const { localToUtc, todayRiyadh, distanceCategory } = require('../src/util');
+
+// Most rules below are about other behaviour; pre-execution approval is tested on its own (it is on by default)
+require('../src/db').setSetting('wo_creation_approval', '0');
 
 const emp = (no) => get('SELECT * FROM employees WHERE employee_no = ?', no);
 const unit = (code) => get('SELECT * FROM org_units WHERE code = ?', code);
@@ -87,7 +91,10 @@ test('closure requires photos, description and reconciled materials; approvals c
   w = get('SELECT * FROM work_orders WHERE id = ?', w.id);
   assert.strictEqual(w.status, 'pending_closure');
   assert.throws(() => W.decide(w, 'approved', '', req('F004')), /not the approver/);
-  W.decide(w, 'approved', '', req('DEMO-H1'));
+  assert.throws(() => W.decide(w, 'approved', '', req('DEMO-H1')), /not the approver/, 'the foreman signs before the head of section');
+  W.decide(w, 'approved', '', req('DEMO-FM-H1'));
+  W.decide(get('SELECT * FROM work_orders WHERE id = ?', w.id), 'approved', '', req('DEMO-H1'));
+  assert.strictEqual(get('SELECT status FROM work_orders WHERE id = ?', w.id).status, 'pending_closure', 'division manager still to sign');
   W.decide(get('SELECT * FROM work_orders WHERE id = ?', w.id), 'approved', '', req('DEMO-DV1'));
   assert.strictEqual(get('SELECT status FROM work_orders WHERE id = ?', w.id).status, 'closed');
 });
@@ -449,4 +456,70 @@ test('board: honor board ranks by recognition score and the feed respects permis
   const mine = Bd.events(data.p, emp('F013'));
   assert.ok(!mine.some((e) => e.type === 'absence'), 'employees do not see others’ leave');
   assert.strictEqual(data.summary.days.length, data.p.days);
+});
+
+// ---------- approval chain ----------
+test('a new work order needs foreman -> head of section -> division manager before work; the creator signs their own step', () => {
+  const { setSetting } = require('../src/db');
+  setSetting('wo_creation_approval', '1');
+  try {
+    const { wo, notes } = W.createWorkOrder(base({ team_leader_id: emp('F013').id, planned_start: localToUtc(day(50) + 'T08:00'), planned_end: localToUtc(day(50) + 'T12:00') }), req('DEMO-H1'));
+    assert.strictEqual(wo.status, 'awaiting_authorization');
+    assert.ok(notes[0].includes('Foreman'));
+    const steps = all("SELECT step, decision FROM wo_approvals WHERE wo_id = ? ORDER BY seq", wo.id);
+    assert.deepStrictEqual(steps.map((x) => x.step), ['foreman', 'section_head', 'division_manager']);
+    assert.strictEqual(steps[1].decision, 'approved', 'creator (head of section) signed automatically');
+    assert.throws(() => W.startWork(wo, req('F013')), /open/);
+    assert.throws(() => W.decide(wo, 'approved', '', req('DEMO-DV1')), /not the approver/, 'order is enforced');
+    assert.ok(get("SELECT 1 FROM notifications WHERE type = 'approval_request' AND employee_id = ? AND title LIKE ?", emp('DEMO-FM-H1').id, wo.wo_number + '%'));
+    W.decide(wo, 'approved', '', req('DEMO-FM-H1'));
+    W.decide(get('SELECT * FROM work_orders WHERE id = ?', wo.id), 'approved', '', req('DEMO-DV1'));
+    assert.strictEqual(get('SELECT status FROM work_orders WHERE id = ?', wo.id).status, 'open');
+    // Rejection cancels the work order and needs a comment
+    const w2 = W.createWorkOrder(base({ team_leader_id: emp('F013').id, planned_start: localToUtc(day(51) + 'T08:00'), planned_end: localToUtc(day(51) + 'T12:00') }), req('DEMO-H1')).wo;
+    assert.throws(() => W.decide(w2, 'rejected', '', req('DEMO-FM-H1')), /comment/);
+    W.decide(w2, 'rejected', 'Not needed', req('DEMO-FM-H1'));
+    assert.strictEqual(get('SELECT status FROM work_orders WHERE id = ?', w2.id).status, 'cancelled');
+    // Critical cases start immediately (setting) and the chain is informed
+    const w3 = W.createWorkOrder(base({ priority: 'C1', team_leader_id: emp('F013').id, planned_start: localToUtc(day(52) + 'T08:00'), planned_end: localToUtc(day(52) + 'T12:00') }), req('DEMO-H1')).wo;
+    assert.strictEqual(w3.status, 'open');
+  } finally { setSetting('wo_creation_approval', '0'); }
+});
+
+// ---------- documents & inventory orders ----------
+test('documents: employee files are private; vehicle files need fleet rights; expiry alerts fire once', () => {
+  const Dc = require('../src/documents');
+  const fs = require('node:fs'), pth = require('node:path');
+  const file = () => { const f = pth.join(require('../src/files').UPLOAD_DIR, 'docs', 'test-' + Math.random().toString(36).slice(2) + '.pdf'); fs.mkdirSync(pth.dirname(f), { recursive: true }); fs.writeFileSync(f, '%PDF-1.4'); return { path: f, originalname: 'card.pdf', mimetype: 'application/pdf', size: 8 }; };
+  Dc.add('employee', emp('F013').id, [file()], { doc_type: 'driving_license', expiry_date: day(-1) }, req('F013'));
+  const d = get("SELECT * FROM documents WHERE entity = 'employee' AND entity_id = ? ORDER BY id DESC", emp('F013').id);
+  assert.ok(Dc.find(d.id, emp('F013'), false));
+  assert.ok(Dc.find(d.id, emp('DEMO-HR'), false));
+  assert.throws(() => Dc.find(d.id, emp('F020'), false), /Forbidden/);
+  assert.throws(() => Dc.add('employee', emp('F013').id, [file()], {}, req('F020')), /Forbidden/);
+  const veh = get("SELECT id FROM equipment WHERE type = 'vehicle' LIMIT 1").id;
+  assert.throws(() => Dc.add('vehicle', veh, [file()], { doc_type: 'insurance' }, req('F001')), /Forbidden/);
+  Dc.add('vehicle', veh, [file()], { doc_type: 'insurance', expiry_date: day(5) }, req('DEMO-SAF'));
+  Dc.checkExpiry();
+  assert.strictEqual(Dc.checkExpiry(), 0, 'not repeated');
+  assert.ok(get("SELECT 1 FROM notifications WHERE type = 'document_expiry' AND employee_id = ?", emp('F013').id), 'employee told about the expired licence');
+});
+
+test('inventory: supplier orders raise "on order", receipts add stock, transactions list every movement', () => {
+  const it = itemOf('MAT-COND-ACSR');
+  const before = I.withStock(it);
+  const oid = I.createOrder(it.id, { qty: 100, order_no: 'PO-T-1' }, req('DEMO-WH'));
+  assert.strictEqual(I.withStock(itemOf('MAT-COND-ACSR')).on_order, before.on_order + 100);
+  I.receiveOrder(oid, 40, req('DEMO-WH'));
+  let now = I.withStock(itemOf('MAT-COND-ACSR'));
+  assert.strictEqual(now.quantity, before.quantity + 40);
+  assert.strictEqual(now.on_order, before.on_order + 60);
+  assert.throws(() => I.receiveOrder(oid, 61, req('DEMO-WH')), /between/);
+  I.receiveOrder(oid, undefined, req('DEMO-WH'));
+  now = I.withStock(itemOf('MAT-COND-ACSR'));
+  assert.strictEqual(now.on_order, before.on_order);
+  assert.strictEqual(get('SELECT status FROM item_orders WHERE id = ?', oid).status, 'received');
+  const kinds = new Set(I.transactions({ item: it.id }).map((x) => x.kind));
+  assert.ok(kinds.has('receive') && kinds.has('order_received'));
+  assert.deepStrictEqual(I.parseLines({ item_ids: [String(it.id), '9999'], item_qtys: ['5', ''] }), [{ item_id: it.id, qty: 5 }], 'empty picker rows are ignored');
 });

@@ -28,9 +28,9 @@
   <% } else { %>
   <div class="podium">
     <% [1, 0, 2].forEach(i => { const e = H.podium[i]; if (!e) return; %>
-    <a class="podium-card <%= medal[i] %> <%= i === 0 ? 'first' : '' %>" href="/employees/<%= e.id %>">
+    <a class="podium-card <%= medal[i] %> <%= i === 0 ? 'first' : '' %>" <%- empHref(e.id) %>>
       <span class="medal" aria-hidden="true"><%= i + 1 %></span>
-      <span class="avatar xl"><%= initials(e) %></span>
+      <span class="avatar xl"><%- face(e) %></span>
       <b class="pc-name"><%= nm(e) %></b>
       <small class="muted"><%= lang === 'ar' && e.job_title_ar ? e.job_title_ar : e.job_title_en || '' %><%= e.section_code ? ' · ' + e.section_code : '' %></small>
       <span class="pc-score" data-count="<%= e.score %>"><%= e.score %></span><small class="muted"><%= t('score') %></small>
@@ -49,17 +49,17 @@
       <div class="badge-card <%= e ? '' : 'none' %>">
         <span class="kpi-icon"><%- ic(icon) %></span>
         <span><small class="muted"><%= t(label) %></small>
-          <% if (e) { %><a href="/employees/<%= e.id %>"><b><%= nm(e) %></b></a><small class="muted"> · <%= e[field] %></small><% } else { %><b class="muted">—</b><% } %></span>
+          <% if (e) { %><a <%- empHref(e.id) %>><b><%= nm(e) %></b></a><small class="muted"> · <%= e[field] %></small><% } else { %><b class="muted">—</b><% } %></span>
       </div>
     <% }) %>
   </div>
   <% if (H.runners.length || H.yearTop.length) { %>
   <div class="grid2" style="margin-top:14px">
     <div><h3><%= t('also_outstanding') %></h3>
-      <ol class="rank-list" start="4"><% H.runners.forEach(e => { %><li><a href="/employees/<%= e.id %>"><span class="avatar"><%= initials(e) %></span><span class="grow"><%= nm(e) %><small class="muted"> · <%= e.section_code || '' %></small></span><b><%= e.score %></b></a></li><% }) %>
+      <ol class="rank-list" start="4"><% H.runners.forEach(e => { %><li><a <%- empHref(e.id) %>><span class="avatar"><%- face(e) %></span><span class="grow"><%= nm(e) %><small class="muted"> · <%= e.section_code || '' %></small></span><b><%= e.score %></b></a></li><% }) %>
       <% if (!H.runners.length) { %><li class="muted"><%= t('none') %></li><% } %></ol></div>
     <div><h3><%= t('year_ranking') %> <%= p.to.slice(0, 4) %></h3>
-      <ol class="rank-list"><% H.yearTop.forEach(e => { %><li><a href="/points/employee/<%= e.id %>"><span class="avatar"><%= initials(e) %></span><span class="grow"><%= nm(e) %></span><span class="rt rt-<%= e.rating %>"><%= t('rt_' + e.rating) %></span><b class="mono"><%= e.balance.toLocaleString('en') %></b></a></li><% }) %>
+      <ol class="rank-list"><% H.yearTop.forEach(e => { %><li><a <%- ptsHref(e.id) %>><span class="avatar"><%- face(e) %></span><span class="grow"><%= nm(e) %></span><span class="rt rt-<%= e.rating %>"><%= t('rt_' + e.rating) %></span><b class="mono"><%= e.balance.toLocaleString('en') %></b></a></li><% }) %>
       <% if (!H.yearTop.length) { %><li class="muted"><%= t('none') %></li><% } %></ol></div>
   </div>
   <% } %>

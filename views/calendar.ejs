@@ -17,7 +17,7 @@
 %>
 <div class="page-head">
   <div><div class="eyebrow"><%- ic('calendar') %><%= sectionId ? (sections.find(s => s.id === sectionId) || {}).code + ' · ' + nm(sections.find(s => s.id === sectionId)) : t('all') %> · <%= teamSize %> <%= t('employees_count') %></div>
-    <h1 class="title-ic"><%= t('calendar') %> <span class="result-count"><%= year %></span></h1></div>
+    <h1><%= t('calendar') %> <span class="result-count"><%= year %></span></h1></div>
   <div class="btns">
     <div class="segmented" role="group" aria-label="<%= t('view') %>">
       <a class="seg <%= view === 'year' ? 'on' : '' %>" href="<%= qs({ view: 'year', year }) %>"><%= t('year_view') %></a>

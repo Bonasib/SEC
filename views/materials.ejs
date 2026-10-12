@@ -4,7 +4,7 @@
 <div class="page-head">
   <div><div class="eyebrow"><%- ic('boxes') %><%= t('grp_assets') %></div><h1><%= t('materials_tools') %> <span class="result-count">(<%= rows.length %>)</span></h1>
   <p class="page-sub"><%= t('materials_hint') %></p></div>
-  <div class="btns"><a class="btn" href="/data/export/items"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#items"><%- ic('upload') %><%= t('import') %></a><% if (canEdit) { %><a class="btn primary" href="#add-item"><%- ic('plus') %><%= t('add_item') %></a><% } %></div>
+  <div class="btns"><a class="btn" href="/materials/transactions"><%- ic('transfer') %><%= t('item_transactions') %></a><a class="btn" href="/data/export/items"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#items"><%- ic('upload') %><%= t('import') %></a><% if (canEdit) { %><a class="btn primary" href="#add-item"><%- ic('plus') %><%= t('add_item') %></a><% } %></div>
 </div>
 <div class="kpis">
   <a class="kpi" href="/materials"><span class="kpi-icon"><%- ic('boxes') %></span><span class="kpi-body"><b><%= stats.total %></b><span class="kpi-label"><%= t('items_total') %></span></span></a>
@@ -12,14 +12,16 @@
   <a class="kpi violet" href="?kind=tool"><span class="kpi-icon"><%- ic('wrench') %></span><span class="kpi-body"><b><%= stats.tool %></b><span class="kpi-label"><%= t('ik_tool_pl') %></span></span></a>
   <a class="kpi" href="?kind=equipment"><span class="kpi-icon"><%- ic('zap') %></span><span class="kpi-body"><b><%= stats.equipment %></b><span class="kpi-label"><%= t('ik_equipment_pl') %></span></span></a>
   <a class="kpi warn <%= stats.low ? '' : 'zero' %>" href="?stock=low"><span class="kpi-icon"><%- ic('alert') %></span><span class="kpi-body"><b><%= stats.low %></b><span class="kpi-label"><%= t('stock_low') %></span></span></a>
+  <a class="kpi violet <%= stats.ordered ? '' : 'zero' %>" href="?stock=ordered"><span class="kpi-icon"><%- ic('truck') %></span><span class="kpi-body"><b><%= stats.ordered %></b><span class="kpi-label"><%= t('items_on_order') %></span></span></a>
+  <a class="kpi <%= stats.reserved ? '' : 'zero' %>" href="?stock=reserved"><span class="kpi-icon"><%- ic('clipboard') %></span><span class="kpi-body"><b><%= stats.reserved %></b><span class="kpi-label"><%= t('items_reserved') %></span></span></a>
   <a class="kpi crit <%= stats.out ? '' : 'zero' %>" href="?stock=out"><span class="kpi-icon"><%- ic('x-circle') %></span><span class="kpi-body"><b><%= stats.out %></b><span class="kpi-label"><%= t('stock_out') %></span></span></a>
 </div>
 <form class="filters card" method="get" role="search">
-  <div class="search-field"><%- ic('search') %><input name="q" value="<%= query.q || '' %>" placeholder="<%= t('code') %> / <%= t('name') %> / <%= t('location') %>" aria-label="<%= t('search') %>"></div>
+  <div class="search-field"><%- ic('search') %><input name="q" value="<%= query.q || '' %>" placeholder="<%= t('code') %> / <%= t('inventory_no') %> / <%= t('name') %> / <%= t('location') %>" aria-label="<%= t('search') %>"></div>
   <select name="kind" aria-label="<%= t('item_kind') %>"><option value=""><%= t('item_kind') %>: <%= t('all') %></option><% KINDS.forEach(k => { %><option value="<%= k %>" <%= query.kind === k ? 'selected' : '' %>><%= t('ik_' + k) %></option><% }) %></select>
   <select name="category" aria-label="<%= t('category') %>"><option value=""><%= t('category') %>: <%= t('all') %></option><% categories.forEach(c => { %><option <%= query.category === c ? 'selected' : '' %>><%= c %></option><% }) %></select>
   <select name="section" aria-label="<%= t('section') %>"><option value=""><%= t('section') %>: <%= t('all') %></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= String(query.section) === String(s.id) ? 'selected' : '' %>><%= s.code %></option><% }) %></select>
-  <select name="stock" aria-label="<%= t('stock') %>"><option value=""><%= t('stock') %>: <%= t('all') %></option><option value="low" <%= query.stock === 'low' ? 'selected' : '' %>><%= t('stock_low') %></option><option value="out" <%= query.stock === 'out' ? 'selected' : '' %>><%= t('stock_out') %></option></select>
+  <select name="stock" aria-label="<%= t('stock') %>"><option value=""><%= t('stock') %>: <%= t('all') %></option><option value="low" <%= query.stock === 'low' ? 'selected' : '' %>><%= t('stock_low') %></option><option value="out" <%= query.stock === 'out' ? 'selected' : '' %>><%= t('stock_out') %></option><option value="ordered" <%= query.stock === 'ordered' ? 'selected' : '' %>><%= t('items_on_order') %></option><option value="reserved" <%= query.stock === 'reserved' ? 'selected' : '' %>><%= t('items_reserved') %></option></select>
   <select name="status" aria-label="<%= t('status') %>"><option value=""><%= t('active') %></option><option value="inactive" <%= query.status === 'inactive' ? 'selected' : '' %>><%= t('inactive') %></option></select>
   <select name="sort" aria-label="<%= t('sort_by') %>"><% [['code','code'],['name','name'],['kind','item_kind'],['category','category'],['quantity','on_hand'],['available','available'],['location','location'],['updated','last_movement']].forEach(([k, l]) => { %><option value="<%= k %>" <%= (query.sort || 'code') === k ? 'selected' : '' %>><%= t('sort_by') %>: <%= t(l) %></option><% }) %></select>
   <select name="dir" aria-label="<%= t('sort_dir') %>"><option value="asc"><%= t('ascending') %></option><option value="desc" <%= query.dir === 'desc' ? 'selected' : '' %>><%= t('descending') %></option></select>
@@ -28,13 +30,13 @@
 <div class="card table-card">
 <div class="table-wrap"><table class="tbl" data-server-sort>
   <thead><tr>
-    <th><a href="<%= sortLink('code') %>"><%= t('code') %><%= arrow('code') %></a></th>
-    <th><a href="<%= sortLink('name') %>"><%= t('name') %><%= arrow('name') %></a></th>
+    <th><a href="<%= sortLink('code') %>"><%= t('item') %><%= arrow('code') %></a></th>
     <th><a href="<%= sortLink('kind') %>"><%= t('item_kind') %><%= arrow('kind') %></a></th>
     <th><a href="<%= sortLink('category') %>"><%= t('category') %><%= arrow('category') %></a></th>
     <th class="num"><a href="<%= sortLink('quantity') %>"><%= t('on_hand') %><%= arrow('quantity') %></a></th>
     <th class="num"><%= t('reserved') %></th>
     <th class="num"><a href="<%= sortLink('available') %>"><%= t('available') %><%= arrow('available') %></a></th>
+    <th class="num"><%= t('on_order') %></th>
     <th><a href="<%= sortLink('location') %>"><%= t('location') %><%= arrow('location') %></a></th>
     <th><%= t('work_orders') %></th>
   </tr></thead>
@@ -42,13 +44,13 @@
   <% if (!rows.length) { %><tr><td colspan="9" class="empty"><%- ic('boxes') %><%= t('no_records') %></td></tr><% } %>
   <% rows.forEach(i => { %>
     <tr class="<%= i.out ? 'row-bad' : i.low ? 'row-warn' : '' %>">
-      <td><a class="wo-link" href="/materials/<%= i.id %>"><%= i.code %></a></td>
-      <td><a class="cell-main" href="/materials/<%= i.id %>" style="color:inherit"><%= lang === 'en' && i.name_en ? i.name_en : i.name_ar %></a><% if (lang === 'ar' && i.name_en) { %><span class="cell-sub" dir="ltr"><%= i.name_en %></span><% } %></td>
-      <td><span class="pill ik-<%= i.kind %>"><%- ic(i.kind === 'material' ? 'package' : i.kind === 'tool' ? 'wrench' : 'zap') %><%= t('ik_' + i.kind) %></span></td>
+      <td><a class="item-cell" href="/materials/<%= i.id %>" style="color:inherit"><%- thumb(i) %><span><span class="cell-main"><%= lang === 'en' && i.name_en ? i.name_en : i.name_ar %></span><span class="cell-sub"><b class="mono wo-link"><%= i.code %></b><%= i.inventory_no ? ' · #' + i.inventory_no : '' %></span></span></a></td>
+      <td><span class="pill ik-<%= i.kind %>"><%= t('ik_' + i.kind) %></span></td>
       <td><%= i.category || '—' %></td>
       <td class="num"><b><%= i.quantity %></b> <small class="muted"><%= t('uom_' + i.uom) %></small></td>
       <td class="num"><%= i.reserved || '—' %></td>
       <td class="num"><span class="pill <%= i.out ? 'bad' : i.low ? 'warn' : 'ok' %>"><%= i.available %></span><% if (i.min_qty) { %><span class="cell-sub"><%= t('min_qty') %> <%= i.min_qty %></span><% } %></td>
+      <td class="num"><%= i.on_order || '—' %><% if (i.suggest) { %><span class="cell-sub warn-text"><%= t('suggested') %> <%= i.suggest %></span><% } %></td>
       <td><%= i.location || '—' %><% if (i.section_code) { %><span class="cell-sub mono"><%= i.section_code %></span><% } %></td>
       <td><%= i.active_wos ? i.active_wos : '—' %></td>
     </tr>

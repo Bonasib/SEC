@@ -47,6 +47,7 @@ function seed() {
     setManager('DIV-SUB', emp('DEMO-DV2', 'مدير دائرة المحطات (تجريبي)', 'Substations Division Manager (demo)', 'division_manager', null, 'Division Manager'));
     setManager('DIV-FAC', emp('DEMO-DV3', 'مدير دائرة المرافق (تجريبي)', 'Facilities Division Manager (demo)', 'division_manager', null, 'Division Manager'));
     for (const [code, ar, en] of SECTIONS) setManager(code, emp(`DEMO-${code}`, `رئيس قسم ${ar} (تجريبي)`, `${en} Section Head (demo)`, 'section_head', code, 'Section Head'));
+    for (const [code, ar, en] of SECTIONS) emp(`DEMO-FM-${code}`, `ملاحظ قسم ${ar} (تجريبي)`, `${en} Foreman (demo)`, 'foreman', code, 'Foreman');
     emp('DEMO-HR', 'الموارد البشرية (تجريبي)', 'HR Officer (demo)', 'hr', null, 'HR Officer');
     emp('DEMO-SAF', 'مسؤول السلامة (تجريبي)', 'Safety Officer (demo)', 'safety', null, 'Safety Officer');
     emp('DEMO-WH', 'أمين المستودع (تجريبي)', 'Warehouse Keeper (demo)', 'warehouse', null, 'Warehouse Keeper');
@@ -264,9 +265,12 @@ function seedStockAndTasks() {
     ['EQ-GEN-5KVA', 'equipment', 'مولد كهربائي متنقل 5 ك.ف.أ (عينة)', 'Portable generator 5 kVA (sample)', 'Power', 'piece', 2, 1, 'Yard C', null],
     ['EQ-IR-TESTER', 'equipment', 'جهاز قياس العزل (عينة)', 'Insulation resistance tester (sample)', 'Test equipment', 'piece', 3, 1, 'Lab', 'H3'],
   ];
-  for (const [code, kind, ar, en, cat, uom, qty, min, loc, s] of items) {
-    I.save({ code, kind, name_ar: ar, name_en: en, category: cat, uom, quantity: qty, min_qty: min, location: loc, section_id: sec(s) }, req);
-  }
+  items.forEach(([code, kind, ar, en, cat, uom, qty, min, loc, s], n) => {
+    I.save({ code, kind, name_ar: ar, name_en: en, category: cat, uom, quantity: qty, min_qty: min, location: loc, section_id: sec(s),
+      inventory_no: String(4000100 + n * 7), reorder_qty: min * 2, supplier: kind === 'material' ? 'Sample supplier A' : 'Sample supplier B' }, req);
+  });
+  // A supplier order on its way for a low item
+  I.createOrder(get("SELECT id FROM items WHERE code = 'MAT-INS-132'").id, { qty: 20, order_no: 'PO-SAMPLE-001', supplier: 'Sample supplier A', expected_date: todayRiyadh() }, req);
   // Two sample open work orders for today that use catalog items
   const W = require('./workorders');
   const head0 = get("SELECT * FROM employees WHERE employee_no = 'DEMO-H1'");
@@ -284,6 +288,16 @@ function seedStockAndTasks() {
   };
   mk('استبدال سلسلة عوازل على البرج 090 (عينة)', '07:00', '14:00', ['F010', 'F011', 'F012'], [['MAT-INS-380', 6], ['MAT-CLMP-01', 12], ['TL-HOTSTICK', 2], ['EQ-EARTH-KIT', 2]]);
   mk('شد مسامير قواعد الأبراج 100-110 (عينة)', '08:00', '15:00', ['F006', 'F007', 'F008'], [['MAT-BOLT-M16', 20], ['TL-TORQ-01', 1], ['TL-HARNESS', 4]]);
+  // The first sample work order goes through the whole pre-execution chain; the second waits for the foreman
+  const first = get("SELECT * FROM work_orders WHERE status = 'awaiting_authorization' ORDER BY id LIMIT 1");
+  if (first) {
+    const as = (no) => ({ user: get('SELECT * FROM employees WHERE employee_no = ?', no), ip: 'seed', get: () => 'seed' });
+    for (const no of ['DEMO-FM-H1', 'DEMO-H1', 'DEMO-DV1']) {
+      const step = W.pendingApproval(first.id);
+      if (!step) break;
+      try { W.decide(get('SELECT * FROM work_orders WHERE id = ?', first.id), 'approved', 'موافق (عينة) / Approved (sample)', as(no)); } catch (e) { /* not this person's step */ }
+    }
+  }
   I.lowStockCheck();
 
   const T = require('./tasks');

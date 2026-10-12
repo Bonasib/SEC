@@ -1,17 +1,19 @@
 <%- include('partials/header', { pageTitle: mode === 'new' ? t('add_employee') : t('edit_employee') }) %>
 <div class="page-head">
   <div><div class="eyebrow"><a href="/employees"><%- ic('arrow', 'ic-back') %> <%= t('employees') %></a></div>
-    <h1 class="title-ic"><%- ic(mode === 'new' ? 'plus' : 'pen') %><%= mode === 'new' ? t('add_employee') : t('edit_employee') + ' · ' + (e.employee_no || '') %></h1>
+    <h1><%= mode === 'new' ? t('add_employee') : t('edit_employee') + ' · ' + (e.employee_no || '') %></h1>
     <p class="page-sub"><%= t('employee_form_hint') %></p></div>
 </div>
 <% if (errors.length) { %><div class="flash flash-error" role="alert"><%- ic('x-circle') %><div><b><%= t('errors') %>:</b><br><%= errors.join('\n') %></div></div><% } %>
-<form method="post" action="<%= mode === 'new' ? '/employees' : '/employees/' + e.id %>" class="card form-grid" novalidate>
+<form method="post" action="<%= mode === 'new' ? '/employees' : '/employees/' + e.id %>" class="card form-grid" enctype="multipart/form-data" novalidate>
   <% if (mode === 'edit') { %><input type="hidden" name="full_edit" value="1"><% } %>
   <div class="form-section" style="border:0;padding-top:0;margin-top:0"><h3><%- ic('user') %><%= t('identity') %></h3></div>
   <label><span><%= t('employee_no') %> <span class="req">*</span></span><input name="employee_no" required value="<%= e.employee_no || '' %>" dir="ltr" placeholder="F071" autocomplete="off"></label>
   <label><%= t('national_id') %><input name="national_id" value="<%= e.national_id || '' %>" dir="ltr" autocomplete="off"></label>
   <label><span><%= t('name_ar') %> <span class="req">*</span></span><input name="name_ar" required value="<%= e.name_ar || '' %>" dir="rtl"></label>
   <label><%= t('name_en') %><input name="name_en" value="<%= e.name_en || '' %>" dir="ltr"></label>
+  <label class="span2"><%= t('personal_photo') %> <small class="muted">(<%= t('optional') %>)</small>
+    <span class="photo-edit"><span class="avatar xxl" id="photo-preview"><%- e.id ? face(e) : '' %></span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" data-preview="photo-preview"></span></label>
   <label><%= t('nationality') %><input name="nationality" list="nats" value="<%= e.nationality || '' %>"><datalist id="nats"><% ['Saudi','Egyptian','Pakistani','Indian','Sudanese','Bangladeshi','Jordanian','Filipino'].forEach(n => { %><option><%= n %></option><% }) %></datalist></label>
 
   <div class="form-section"><h3><%- ic('mail') %><%= t('contact') %></h3><p class="muted small"><%= t('email_used_for') %></p></div>

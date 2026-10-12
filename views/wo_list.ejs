@@ -4,7 +4,7 @@
   <div class="btns">
     <a class="btn" href="/data/export/work_orders?<%= qs %>"><%- ic('sheet') %>Excel</a>
     <a class="btn" href="/data/export/work_orders?format=csv&<%= qs %>"><%- ic('download') %>CSV</a>
-    <% if (['team_leader','section_head','division_manager','department_manager','sector_head','admin'].includes(user.role)) { %><a class="btn primary" href="/wo/new"><%- ic('plus') %><%= t('new_wo') %></a><% } %>
+    <% if (['team_leader','foreman','section_head','division_manager','department_manager','sector_head','admin'].includes(user.role)) { %><a class="btn primary" href="/wo/new"><%- ic('plus') %><%= t('new_wo') %></a><% } %>
   </div>
 </div>
 <form class="filters card" method="get" role="search">

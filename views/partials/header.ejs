@@ -7,7 +7,7 @@
 <body>
 <%- include('icons') %>
 <a class="skip-link" href="#main"><%= t('skip_to_content') %></a>
-<% const r = user.role; const mgr = ['team_leader','section_head','division_manager','department_manager','sector_head'];
+<% const r = user.role; const mgr = ['team_leader','foreman','section_head','division_manager','department_manager','sector_head'];
    const canCreate = [...mgr, 'admin'].includes(r);
    const isActive = (href) => path === href || (href !== '/' && path.startsWith(href + '/') && path !== '/wo/new');
    const L = (href, key, icon, show = true, badge = 0) => show ? `<a href="${href}" class="nav-link${isActive(href) ? ' active' : ''}"${isActive(href) ? ' aria-current="page"' : ''}>${ic(icon)}<span>${t(key)}</span>${badge ? `<span class="nav-badge">${badge}</span>` : ''}</a>` : ''; %>
@@ -63,11 +63,11 @@
       <button class="icon-btn" type="button" data-theme-toggle aria-label="<%= t('theme_dark') %> / <%= t('theme_light') %>" title="<%= t('theme_dark') %> / <%= t('theme_light') %>"><%- ic('moon', 'only-light') %><%- ic('sun', 'only-dark') %></button>
       <a class="icon-btn lang-btn" href="/lang/<%= lang === 'ar' ? 'en' : 'ar' %>" title="<%= t('language') %>" lang="<%= lang === 'ar' ? 'en' : 'ar' %>"><%- ic('globe') %><span><%= lang === 'ar' ? 'EN' : 'ع' %></span></a>
       <a class="icon-btn bell" href="/notifications" aria-label="<%= t('notifications') %>"><%- ic('bell') %><span id="unread" class="count <%= unread ? '' : 'hidden' %>" aria-live="polite"><%= unread %></span></a>
-      <a class="user-chip" href="/employees/<%= user.id %>">
-        <span class="avatar" aria-hidden="true"><%= initials(user) %></span>
+      <a class="user-chip" <%- empHref(user.id) %>>
+        <span class="avatar" aria-hidden="true"><%- face(user) %></span>
         <span class="user-meta"><b><%= nm(user) %></b><small><%= t('role_' + user.role) %></small></span>
       </a>
       <form method="post" action="/logout"><button class="icon-btn" aria-label="<%= t('logout') %>" title="<%= t('logout') %>"><%- ic('logout', 'flip-rtl') %></button></form>
     </header>
     <main class="content" id="main" tabindex="-1">
-<% if (flash) { %><div class="flash flash-<%= flash.type %>" role="<%= flash.type === 'error' ? 'alert' : 'status' %>"><%- ic(flash.type === 'error' ? 'x-circle' : flash.type === 'warning' ? 'alert' : 'check-circle') %><div><%= flash.msg %></div></div><% } %>
+<% if (flash) { %><div class="flash flash-<%= flash.type %>" role="<%= flash.type === 'error' ? 'alert' : 'status' %>"><%- ic(flash.type === 'error' ? 'x-circle' : flash.type === 'warning' ? 'alert' : 'check-circle') %><div class="pre"><%= tx(flash.msg) %></div></div><% } %>

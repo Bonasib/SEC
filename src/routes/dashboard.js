@@ -29,7 +29,7 @@ router.get('/', (req, res) => {
     expiring_eq: n(`SELECT COUNT(*) n FROM equipment WHERE expiry_date <= ? OR calibration_due <= ?`, horizon, horizon),
   };
   const busy = n(`SELECT COUNT(DISTINCT p.employee_id) n FROM wo_participants p JOIN work_orders w ON w.id = p.wo_id WHERE w.status = 'in_progress'`);
-  kpi.available = n("SELECT COUNT(*) n FROM employees WHERE status = 'active' AND role IN ('employee','team_leader')") - kpi.on_leave - busy;
+  kpi.available = n("SELECT COUNT(*) n FROM employees WHERE status = 'active' AND role IN ('employee','team_leader','foreman')") - kpi.on_leave - busy;
 
   const dispatcher = require('../tasks').canDispatch(req.user);
   kpi.tasks_today = dispatcher ? n("SELECT COUNT(*) n FROM tasks WHERE task_date = ? AND status = 'open'", today)

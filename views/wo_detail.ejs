@@ -39,6 +39,9 @@
 <% if (isCritical && wo.due_at && !wo.arrival_at && ['open','in_progress'].includes(wo.status)) { const late = new Date(wo.due_at) < new Date(); %>
   <div class="flash <%= late ? 'flash-error' : 'flash-warning' %>" role="status"><%- ic('siren') %><div><%= t('due_at') %>: <b><%= fmt(wo.due_at) %></b> · <b class="countdown mono" data-due="<%= wo.due_at %>"></b></div></div>
 <% } %>
+<% if (pending && ['awaiting_authorization', 'pending_closure'].includes(wo.status)) { %>
+  <div class="flash flash-warning"><%- ic('hourglass') %><div><b><%= t('awaiting_approval_of') %> <%= t('step_' + pending.step) %></b><%= pending.exp_ar ? ' — ' + (lang === 'en' && pending.exp_en ? pending.exp_en : pending.exp_ar) : '' %> · <%= t('phase_' + pending.phase) %><% if (can.decide) { %> · <a href="#approvals"><%= t('your_decision') %> →</a><% } %></div></div>
+<% } %>
 <% if (wo.status === 'cancelled') { %><div class="flash flash-error"><%- ic('x-circle') %><div><%= t('cancel_reason') %>: <%= wo.cancel_reason %></div></div><% } %>
 
 <nav class="section-nav" aria-label="<%= t('details') %>">
@@ -48,6 +51,7 @@
   <a href="#photos"><%- ic('camera') %><%= t('photos') %> <span class="pill"><%= photos.length %></span></a>
   <a href="#items"><%- ic('boxes') %><%= t('materials_tools') %> <span class="pill"><%= woItems.length %></span></a>
   <a href="#materials"><%- ic('package') %><%= t('warehouse_reservation') %></a>
+  <a href="#documents"><%- ic('file') %><%= t('documents') %> <span class="pill"><%= documents.length %></span></a>
   <a href="#closure"><%- ic('check-circle') %><%= t('closure_checklist') %> <span class="pill <%= okCount === checklist.length ? 'ok' : 'warn' %>"><%= okCount %>/<%= checklist.length %></span></a>
   <a href="#approvals"><%- ic('pen') %><%= t('approvals') %></a>
   <a href="#away"><%- ic('calendar') %><%= lang === 'ar' ? 'الغائبون' : 'Away' %> <span class="pill <%= away.people.length ? 'warn' : '' %>"><%= away.people.length %></span></a>
@@ -77,13 +81,13 @@
   <h2><%- ic('users') %><%= t('officials') %></h2>
   <p class="muted small"><%= lang === 'ar' ? 'لقطة ثابتة للمسؤولين المكلفين وقت إنشاء أمر العمل (لا تتغير بتغير المدير لاحقًا).' : 'Fixed snapshot of the officials in charge when the work order was created (does not change if managers change later).' %></p>
   <table class="tbl small kv-table"><tbody>
-    <% ['section_head','division_manager','department_manager','sector_head'].forEach(k => { const o = officials[k]; %>
+    <% ['foreman','section_head','division_manager','department_manager','sector_head'].forEach(k => { const o = officials[k]; if (k === 'foreman' && !o) return; %>
       <tr><th><%= t('step_' + k) %></th><td><%= o && o.employee_no ? nm(o) : '—' %> <% if (o && o.acting) { %><span class="pill warn"><%= t('acting_label') %></span><% } %></td></tr>
     <% }) %>
   </tbody></table>
   <h3><%= t('participants') %> (<%= participants.length %>)</h3>
   <ul class="people"><% participants.forEach(p => { %>
-    <li><span class="avatar"><%= initials(p) %></span><span style="flex:1;min-width:0"><a href="/employees/<%= p.id %>"><b><%= nm(p) %></b></a><span class="cell-sub"><span class="mono"><%= p.employee_no %></span> · <%= p.job_title_en || '' %></span></span><% if (p.p_role === 'leader') { %><span class="pill info"><%= t('team_leader') %></span><% } %></li>
+    <li><span class="avatar"><%- face(p) %></span><span style="flex:1;min-width:0"><a <%- empHref(p.id) %>><b><%= nm(p) %></b></a><span class="cell-sub"><span class="mono"><%= p.employee_no %></span> · <%= p.job_title_en || '' %></span></span><% if (p.p_role === 'leader') { %><span class="pill info"><%= t('team_leader') %></span><% } %></li>
   <% }) %></ul>
   <h3><%= t('crew_fleet') %></h3>
   <div class="crew-panel">
@@ -258,8 +262,8 @@
     <% if (!woItems.length) { %><tr><td colspan="8" class="muted"><%= t('none') %></td></tr><% } %>
     <% woItems.forEach(x => { %>
       <tr>
-        <td><a class="mono" href="/materials/<%= x.item_id %>"><b><%= x.code %></b></a></td>
-        <td><%= lang === 'en' && x.name_en ? x.name_en : x.name_ar %></td>
+        <td><a class="mono" href="/materials/<%= x.item_id %>"><b><%= x.code %></b></a><% if (x.inventory_no) { %><span class="cell-sub mono"># <%= x.inventory_no %></span><% } %></td>
+        <td><span class="item-cell" style="min-width:180px"><%- thumb(x, 'sm') %><span><%= lang === 'en' && x.name_en ? x.name_en : x.name_ar %></span></span></td>
         <td><span class="pill ik-<%= x.kind %>"><%= t('ik_' + x.kind) %></span></td>
         <td class="num"><b><%= x.qty %></b> <small class="muted"><%= t('uom_' + x.uom) %></small></td>
         <td class="num"><%= x.kind === 'material' ? (x.used_qty ?? '—') : '—' %></td>
@@ -372,11 +376,13 @@
   <% } %>
 </section>
 
+<%- include('partials/documents', { kind: 'wo', id: wo.id, documents, rights: docRights, types: DOC_TYPES, hint: t('wo_docs_hint') }) %>
+
 <div class="grid2">
 <section class="card" id="closure">
   <div class="card-head"><h2><%- ic('check-circle') %><%= t('closure_checklist') %></h2><span class="pill <%= okCount === checklist.length ? 'ok' : 'warn' %>"><%= okCount %>/<%= checklist.length %></span></div>
   <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="<%= checklist.length %>" aria-valuenow="<%= okCount %>"><span style="width:<%= Math.round(okCount / checklist.length * 100) %>%"></span></div>
-  <ul class="checklist"><% checklist.forEach(i => { %><li class="<%= i.ok ? 'ok' : 'bad' %>"><%- ic(i.ok ? 'check-circle' : 'x-circle') %><span><%= i.label %></span></li><% }) %></ul>
+  <ul class="checklist"><% checklist.forEach(i => { %><li class="<%= i.ok ? 'ok' : 'bad' %>"><%- ic(i.ok ? 'check-circle' : 'x-circle') %><span><%= tx(i.label) %></span></li><% }) %></ul>
   <% if (can.work) { %>
     <form method="post" action="/wo/<%= wo.id %>/submit"><button class="btn primary" style="width:100%" <%= checklist.every(i => i.ok) ? '' : 'disabled' %>><%- ic('send', 'ic-dir') %><%= t('submit_closure') %></button></form>
   <% } %>
@@ -389,21 +395,28 @@
 </section>
 <section class="card" id="approvals">
   <h2><%- ic('pen') %><%= t('approvals') %></h2>
+  <p class="muted small"><%= t('approval_chain_hint') %></p>
   <% if (!approvals.length) { %><div class="empty-inline"><%- ic('hourglass') %><%= t('none') %></div><% } %>
+  <% ['authorization', 'closure'].forEach(ph => { const list = approvals.filter(a => a.phase === ph); if (!list.length) return; %>
+  <h3 class="phase-h"><%= t('phase_' + ph) %></h3>
+  <ol class="chain">
+    <% list.forEach(a => { %><li class="dec-<%= a.decision %>"><span class="t-dot"><%- ic(a.decision === 'approved' ? 'check' : a.decision === 'rejected' ? 'x' : a.decision === 'pending' ? 'hourglass' : 'skip') %></span><span><b><%= t('step_' + a.step) %></b><small><%= t('dec_' + a.decision) %></small></span></li><% }) %>
+  </ol>
   <ol class="timeline">
-  <% approvals.forEach(a => { %>
+  <% list.forEach(a => { %>
     <li class="dec-<%= a.decision %>">
       <span class="t-dot"><%- ic(a.decision === 'approved' ? 'check' : a.decision === 'rejected' ? 'x' : a.decision === 'pending' ? 'hourglass' : 'skip') %></span>
-      <div class="t-head"><b><%= t('step_' + a.step) %></b><span class="pill dec-<%= a.decision %>"><%= t('dec_' + a.decision) %></span><small class="muted"><%= t('phase_' + a.phase) %></small></div>
-      <% if (a.decided_by) { %><div class="t-meta"><%= nm(a) %> <% if (a.acting) { %><span class="pill warn"><%= t('acting_label') %></span><% } %> · <%= fmt(a.decided_at) %><% if (a.verification_code) { %> · <span class="mono"><%- ic('shield') %> <%= a.verification_code %></span><% } %></div><% } else if (a.decision === 'pending') { %><div class="t-meta"><%= a.exp_ar ? (lang === 'en' && a.exp_en ? a.exp_en : a.exp_ar) : '' %></div><% } %>
-      <% if (a.comment) { %><div class="comment"><%- ic('message') %><span class="pre"><%= a.comment %></span></div><% } %>
+      <div class="t-head"><b><%= t('step_' + a.step) %></b><span class="pill dec-<%= a.decision %>"><%= t('dec_' + a.decision) %></span></div>
+      <% if (a.decided_by) { %><div class="t-meta"><%= nm(a) %> <% if (a.acting) { %><span class="pill warn"><%= t('acting_label') %></span><% } %> · <%= fmt(a.decided_at) %><% if (a.verification_code) { %> · <span class="mono"><%- ic('shield') %> <%= a.verification_code %></span><% } %></div><% } else if (a.decision === 'pending') { %><div class="t-meta"><%= a.exp_ar ? (lang === 'en' && a.exp_en ? a.exp_en : a.exp_ar) : t('any_holder') %></div><% } %>
+      <% if (a.comment) { %><div class="comment"><%- ic('message') %><span class="pre"><%= tx(a.comment) %></span></div><% } %>
     </li>
   <% }) %>
   </ol>
+  <% }) %>
   <% if (can.decide) { %>
   <form method="post" action="/wo/<%= wo.id %>/decide" class="decide">
-    <b><%= t('step_' + pending.step) %></b>
-    <label><%= t('comment') %><textarea name="comment" rows="2"></textarea></label>
+    <b><%= t('your_decision') %>: <%= t('step_' + pending.step) %> · <%= t('phase_' + pending.phase) %></b>
+    <label><%= t('comment') %><textarea name="comment" rows="2" placeholder="<%= t('reject_needs_comment') %>"></textarea></label>
     <div class="btns">
       <button class="btn success" name="decision" value="approved"><%- ic('check') %><%= t('approve') %></button>
       <button class="btn danger" name="decision" value="rejected"><%- ic('x') %><%= t('reject') %></button>
@@ -421,8 +434,8 @@
   <div class="away-grid">
     <% away.people.forEach(a => { %>
       <div class="away-card ev-<%= a.type %>">
-        <span class="avatar" style="width:34px;height:34px;font-size:12px"><%= initials(a) %></span>
-        <span class="grow"><a class="cell-main" href="/employees/<%= a.employee_id %>"><%= nm(a) %></a>
+        <span class="avatar" style="width:34px;height:34px;font-size:12px"><%- face(a) %></span>
+        <span class="grow"><a class="cell-main" <%- empHref(a.employee_id) %>><%= nm(a) %></a>
           <span class="cell-sub mono"><%= a.employee_no %></span><span class="dates"><%= a.start_date %> → <%= a.end_date %></span>
           <% if (a.location || a.notes) { %><span class="cell-sub"><%= [a.location, a.notes].filter(Boolean).join(' · ') %></span><% } %></span>
         <span style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">

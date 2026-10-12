@@ -76,7 +76,7 @@
         <% if (manager) { %><td><input type="checkbox" name="task_ids" value="<%= tk.id %>" <%= tk.status === 'open' ? 'checked' : 'disabled' %> aria-label="<%= tk.title %>"></td><% } %>
         <td class="nowrap mono" data-sort-value="<%= tk.task_date %> <%= tk.start_time || '99' %>"><%= to ? tk.task_date + ' ' : '' %><%= tk.start_time || '—' %><%= tk.end_time ? '–' + tk.end_time : '' %></td>
         <td style="min-width:220px"><span class="cell-main"><%= tk.title %></span><span class="cell-sub"><%= tk.location || '' %><%= tk.wo_number ? ' · ' : '' %><% if (tk.wo_number) { %><a class="mono" href="/wo/<%= tk.wo_id %>"><%= tk.wo_number %></a><% } %></span><% if (tk.details) { %><span class="cell-sub pre"><%= tk.details %></span><% } %></td>
-        <td><div class="avatar-stack"><% tk.people.slice(0, 5).forEach(p => { %><a class="avatar" href="/employees/<%= p.id %>" title="<%= p.employee_no %> <%= nm(p) %>"><%= initials(p) %></a><% }) %><% if (tk.people.length > 5) { %><span class="avatar more">+<%= tk.people.length - 5 %></span><% } %></div><span class="cell-sub"><%= tk.people.map(p => nm(p)).join('، ') %></span></td>
+        <td><div class="avatar-stack"><% tk.people.slice(0, 5).forEach(p => { %><a class="avatar" <%- empHref(p.id) %> title="<%= p.employee_no %> <%= nm(p) %>"><%- face(p) %></a><% }) %><% if (tk.people.length > 5) { %><span class="avatar more">+<%= tk.people.length - 5 %></span><% } %></div><span class="cell-sub"><%= tk.people.map(p => nm(p)).join('، ') %></span></td>
         <td data-sort-value="<%= { urgent: 0, high: 1, normal: 2 }[tk.priority] %>"><span class="pill <%= tk.priority === 'urgent' ? 'bad' : tk.priority === 'high' ? 'warn' : '' %>"><%= t('tp_' + tk.priority) %></span></td>
         <td class="mono"><%= tk.section_code || '—' %></td>
         <td><span class="pill <%= tk.status === 'done' ? 'ok' : tk.status === 'cancelled' ? 'bad' : 'info' %>"><%= t('task_' + tk.status) %></span></td>
@@ -101,7 +101,7 @@
         <% if (manager) { %><td><input type="checkbox" name="wo_ids" value="<%= w.id %>" checked aria-label="<%= w.wo_number %>"></td><% } %>
         <td><a class="wo-link" href="/wo/<%= w.id %>"><%= w.wo_number %></a></td>
         <td><span class="cell-main"><%= w.title %></span><span class="cell-sub"><%= w.location || '' %><%= w.vehicles.length ? ' · ' + w.vehicles.map(v => v.plate_number || v.code).join(', ') : '' %></span></td>
-        <td><div class="avatar-stack"><% w.people.slice(0, 5).forEach(p => { %><a class="avatar <%= p.role === 'leader' ? 'av-ok' : '' %>" href="/employees/<%= p.id %>" title="<%= p.employee_no %> <%= nm(p) %>"><%= initials(p) %></a><% }) %><% if (w.people.length > 5) { %><span class="avatar more">+<%= w.people.length - 5 %></span><% } %></div></td>
+        <td><div class="avatar-stack"><% w.people.slice(0, 5).forEach(p => { %><a class="avatar <%= p.role === 'leader' ? 'av-ok' : '' %>" <%- empHref(p.id) %> title="<%= p.employee_no %> <%= nm(p) %>"><%- face(p) %></a><% }) %><% if (w.people.length > 5) { %><span class="avatar more">+<%= w.people.length - 5 %></span><% } %></div></td>
         <td class="nowrap" data-sort-value="<%= w.planned_start %>"><%= fmt(w.planned_start) %></td>
         <td class="nowrap" data-sort-value="<%= w.planned_end %>"><%= fmt(w.planned_end) %></td>
         <td><span class="pill pr-<%= w.priority %>"><%= w.priority === 'normal' ? t('pr_normal') : w.priority %></span></td>

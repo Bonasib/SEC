@@ -1,6 +1,6 @@
 <%- include('partials/header', { pageTitle: t('fleet') }) %>
 <div class="page-head">
-  <div><div class="eyebrow"><%- ic('truck') %><%= t('grp_assets') %></div><h1 class="title-ic"><%= t('fleet') %> <span class="result-count">(<%= stats.total %>)</span></h1></div>
+  <div><div class="eyebrow"><%- ic('truck') %><%= t('grp_assets') %></div><h1><%= t('fleet') %> <span class="result-count">(<%= stats.total %>)</span></h1></div>
   <div class="btns"><a class="btn" href="/data/export/equipment"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#equipment"><%- ic('upload') %><%= t('import') %></a><a class="btn" href="/equipment"><%- ic('wrench') %><%= t('devices') %></a></div>
 </div>
 <div class="kpis">
@@ -25,7 +25,7 @@
   <% rows.forEach(q => { %>
   <article class="card vehicle-card <%= q.flag === 'expired' || q.status !== 'available' ? 'is-off' : '' %>">
     <header>
-      <span class="plate" dir="ltr"><%= q.plate_number || '—' %></span>
+      <a class="plate" dir="ltr" href="/fleet/<%= q.id %>"><%= q.plate_number || '—' %></a>
       <% if (q.current) { %><span class="pill violet-pill"><%- ic('route') %><%= t('in_use_now') %></span><% } else if (q.flag === 'expired') { %><span class="pill bad"><%- ic('alert') %><%= t('registration_expired') %></span><% } else if (q.status !== 'available') { %><span class="pill warn"><%= t('es_' + q.status) %></span><% } else { %><span class="pill ok"><%- ic('check') %><%= t('available_now') %></span><% } %>
     </header>
     <div class="v-main"><span class="v-icon"><%- ic('truck') %></span><div><b><%= t('vt_' + (q.vehicle_type || 'other')) %></b><div class="muted small"><%= q.make_model || q.name %><%= q.model_year ? ' · ' + q.model_year : '' %></div></div></div>
@@ -36,6 +36,8 @@
       <dt><%= t('registration_expiry') %></dt><dd class="<%= q.flag === 'expired' ? 'bad' : q.flag === 'soon' ? 'warn-text' : '' %>"><%= q.expiry_date || '—' %></dd>
       <dt><%= t('completed_trips') %></dt><dd><%= q.trips %></dd>
     </dl>
+    <% if (docFlags[q.id]) { %><a class="pill <%= docFlags[q.id] === 'expired' ? 'bad' : 'warn' %>" href="/fleet/<%= q.id %>#documents"><%- ic('file') %><%= t('doc_' + docFlags[q.id]) %></a><% } %>
+    <a class="small" href="/fleet/<%= q.id %>"><%- ic('file') %> <%= t('details') %> / <%= t('documents') %> →</a>
     <% if (q.current) { %><div class="v-booking"><%- ic('clipboard') %><a class="wo-link" href="/wo/<%= q.current.id %>"><%= q.current.wo_number %></a> <span class="muted small"><%= t('to') %> <%= fmt(q.current.planned_end) %></span></div><% } %>
     <% if (q.next.length) { %><div class="v-next"><span class="muted small"><%= t('next_bookings') %>:</span><% q.next.forEach(n => { %><a class="pill" href="/wo/<%= n.id %>"><span class="mono"><%= n.wo_number %></span> · <%= fmt(n.planned_start, false) %></a><% }) %></div><% } %>
     <% if (canEdit) { %>

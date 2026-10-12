@@ -1,5 +1,5 @@
 <%- include('partials/header', { pageTitle: t('outbox') }) %>
-<h1 class="title-ic"><%- ic('mail') %><%= t('outbox') %></h1>
+<div class="page-head"><div><div class="eyebrow"><%- ic('mail') %><%= t('grp_admin') %></div><h1><%= t('outbox') %></h1></div></div>
 <div class="flash <%= smtpOn ? 'flash-success' : 'flash-warning' %>"><%= t('smtp_status') %>: <%= smtpOn ? t('smtp_on') : t('smtp_off') %></div>
 <div class="card table-card"><div class="table-wrap"><table class="tbl small">
   <tr><th>#</th><th><%= t('to_email') %></th><th><%= t('subject') %></th><th><%= t('status') %></th><th><%= t('created_at') %></th><th><%= t('sent_at') %></th></tr>

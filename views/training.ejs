@@ -2,7 +2,7 @@
 <% const fmtPlace = (c) => c.mode === 'remote' ? t('mode_remote') : [c.city, c.country].filter(Boolean).join(' · ');
    const groups = scope ? [scope] : ['international', 'local']; %>
 <div class="page-head">
-  <div><div class="eyebrow"><%- ic('user-check') %><%= t('grp_people') %></div><h1 class="title-ic"><%= t('training') %> <span class="result-count"><%= year %></span></h1></div>
+  <div><div class="eyebrow"><%- ic('user-check') %><%= t('grp_people') %></div><h1><%= t('training') %> <span class="result-count"><%= year %></span></h1></div>
   <form class="btns" method="get">
     <div class="segmented" role="group">
       <a class="seg <%= !scope ? 'on' : '' %>" href="?year=<%= year %>"><%= t('all') %></a>
@@ -46,7 +46,7 @@
         <td class="nowrap mono"><%= c.start_date %><span class="cell-sub"><%= c.end_date %></span></td>
         <td class="num"><%= Math.round((Date.parse(c.end_date) - Date.parse(c.start_date)) / 864e5) + 1 %></td>
         <td><span class="small"><%= t('cat_' + c.category) %></span></td>
-        <td><div class="avatar-stack"><% att.slice(0, 5).forEach(a => { %><a class="avatar <%= a.attendance === 'attended' ? 'av-ok' : a.attendance === 'absent' ? 'av-bad' : '' %>" href="/employees/<%= a.employee_id %>" title="<%= a.employee_no %> <%= nm(a) %> · <%= t('att_' + a.attendance) %>"><%= initials(a) %></a><% }) %><% if (att.length > 5) { %><span class="avatar more">+<%= att.length - 5 %></span><% } %></div>
+        <td><div class="avatar-stack"><% att.slice(0, 5).forEach(a => { %><a class="avatar <%= a.attendance === 'attended' ? 'av-ok' : a.attendance === 'absent' ? 'av-bad' : '' %>" <%- empHref(a.employee_id) %> title="<%= a.employee_no %> <%= nm(a) %> · <%= t('att_' + a.attendance) %>"><%- face(a) %></a><% }) %><% if (att.length > 5) { %><span class="avatar more">+<%= att.length - 5 %></span><% } %></div>
           <span class="cell-sub"><%= c.enrolled %><%= c.capacity ? ' / ' + c.capacity : '' %> · <%= t('attended') %> <%= c.attended %> · <%= t('passed') %> <%= c.passed %></span></td>
         <td><span class="pill <%= c.status === 'completed' ? 'ok' : c.status === 'cancelled' ? 'bad' : upcoming ? 'info' : 'warn' %>"><%= c.status === 'planned' && !upcoming ? t('cs_running') : t('cs_' + c.status) %></span></td>
       </tr>

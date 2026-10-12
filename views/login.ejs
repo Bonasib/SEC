@@ -27,7 +27,7 @@
       <button class="btn primary" style="min-height:46px"><%= t('login') %><%- ic('arrow', 'ic-dir') %></button>
       <% if (isDemo) { %><details class="demo-accounts" open><summary><%- ic('users') %> Demo accounts / حسابات تجريبية</summary>
         <table class="tbl small">
-          <% [['admin','role_admin'],['DEMO-H1','role_section_head'],['DEMO-DV1','role_division_manager'],['DEMO-DM','role_department_manager'],['DEMO-SH','role_sector_head'],['F010','role_team_leader'],['F001','role_employee'],['DEMO-WH','role_warehouse'],['DEMO-HR','role_hr']].forEach(([u, r]) => { %>
+          <% [['admin','role_admin'],['DEMO-H1','role_section_head'],['DEMO-DV1','role_division_manager'],['DEMO-DM','role_department_manager'],['DEMO-SH','role_sector_head'],['DEMO-FM-H1','role_foreman'],['F010','role_team_leader'],['F001','role_employee'],['DEMO-WH','role_warehouse'],['DEMO-HR','role_hr']].forEach(([u, r]) => { %>
             <tr><td><button type="button" class="link" data-demo="<%= u %>"><%= u %></button></td><td><%= t(r) %></td></tr>
           <% }) %>
         </table>

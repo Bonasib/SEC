@@ -134,6 +134,33 @@ Everything is connected and updates in real time:
 - **Closing a work order** awards points. Ratings then create improvement plans, and those plans drive the course suggestions.
 - **Extensions and handovers** re-check availability and notify everyone involved.
 
+## Approvals: foreman → head of section → division manager
+
+- **Before work starts:** a new work order waits for the foreman of its section, then the head of section, then the division manager. It opens for work after the last approval. When the travel limit is exceeded, the department manager and sector head approve after them.
+- **On completion:** the team leader submits the work order, then the foreman, head of section and division manager approve before it closes.
+- **Order and acting managers:** each step can only be signed in order. The person creating or submitting the work order signs their own step automatically. Acting managers can sign for the manager they replace, and any foreman of the section can sign the foreman step.
+- **Notifications:** each approver is notified in turn, with reminders while they haven't decided. A rejection needs a comment. Rejecting before work cancels the work order; rejecting at closure sends it back to the team.
+- **Work order page:** the approvals card shows both chains step by step, and a banner says whose approval is awaited.
+- **Settings:** pre-execution approval can be switched off. Critical cases (C1–C4) start immediately by default, and the chain is informed.
+- **Foreman role:** a new role, "Foreman" (ملاحظ). The sample data has a `DEMO-FM-<section>` account for each section.
+
+## Photos and documents (all optional)
+
+- **Employee photo:** uploaded from the employee page or the add/edit form. It replaces the initials everywhere (lists, work orders, boards, dashboards).
+- **Work order documents:** work permits, drawings, method statements, risk assessments, test reports, contractor documents and hand-over reports. Uploading one notifies the team.
+- **Vehicle documents** (on the vehicle page, opened from a fleet card): registration, insurance, periodic inspection, operating card and maintenance records.
+- **Employee documents:** employee card, national ID or Iqama, driving licence, certificates and medical reports. Only the employee, HR and the employee's section managers can see them.
+- **Document details:** each document can have a number, issue date and expiry date. Before and after expiry, the people concerned are alerted, and an expired document is highlighted in red.
+- **Files:** PDF, images, Word and Excel, up to 25 MB each. Files are stored under `DATA_DIR/uploads`. Deleting a document keeps an audit record.
+
+## Inventory
+
+- **Each item has:** a picture, an inventory (SAP) number, a supplier and a reorder quantity, plus on-hand, reserved, available and on-order quantities.
+- **Supplier orders:** an order raises the on-order quantity. Receiving it (fully or in part) adds stock with a receipt movement. Low stock suggests an order quantity and alerts the warehouse.
+- **Item summary:** received and used this year, monthly average, months of cover, damage and number of work orders.
+- **Transactions** (`/materials/transactions`): one list of receipts, usage on work orders, damage, adjustments, reservations (reserved, released or settled) and supplier orders. It can be filtered and exported to Excel or CSV.
+- **In the work order:** the inventory picker lists every item with its picture, inventory number and available, reserved and on-order quantities. You search or filter by kind and type the quantity. The quantity is reserved straight away and deducted when the work order closes.
+
 ## Recognition & events board (`/board`)
 
 - **Honor board:** a podium for the top 3 of the period, with medals and a recognition score. The score is the points earned in the period (closed work orders already earn points), plus 25 for each daily task done and 100 for each course completed. Four badges: most points, most work orders closed, most daily tasks done and most courses completed. The year's points ranking is shown alongside.

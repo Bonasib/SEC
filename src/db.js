@@ -475,6 +475,45 @@ CREATE TABLE IF NOT EXISTS task_dispatches (
   sent_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
+-- Purchase / replenishment orders for catalog items (quantity ordered, not yet received)
+CREATE TABLE IF NOT EXISTS item_orders (
+  id INTEGER PRIMARY KEY,
+  item_id INTEGER NOT NULL REFERENCES items(id),
+  order_no TEXT,
+  supplier TEXT,
+  qty REAL NOT NULL,
+  received_qty REAL NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','received','cancelled')),
+  expected_date TEXT,
+  notes TEXT,
+  created_by INTEGER REFERENCES employees(id),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  closed_at TEXT
+);
+
+-- Attached documents (work orders, vehicles, employees): optional, with an optional expiry date
+CREATE TABLE IF NOT EXISTS documents (
+  id INTEGER PRIMARY KEY,
+  entity TEXT NOT NULL CHECK (entity IN ('work_order','vehicle','employee')),
+  entity_id INTEGER NOT NULL,
+  doc_type TEXT NOT NULL DEFAULT 'other',
+  title TEXT,
+  doc_no TEXT,
+  issue_date TEXT,
+  expiry_date TEXT,
+  file_name TEXT NOT NULL,
+  original_name TEXT,
+  mime TEXT,
+  size INTEGER,
+  sha256 TEXT,
+  notes TEXT,
+  uploaded_by INTEGER REFERENCES employees(id),
+  uploaded_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  deleted_at TEXT,
+  deleted_by INTEGER REFERENCES employees(id)
+);
+CREATE INDEX IF NOT EXISTS idx_docs_entity ON documents(entity, entity_id);
+
 CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY,
   employee_id INTEGER NOT NULL REFERENCES employees(id),
@@ -554,7 +593,8 @@ for (const [table, col, def] of [
   ['equipment', 'plate_number', 'TEXT'], ['equipment', 'vehicle_type', 'TEXT'], ['equipment', 'make_model', 'TEXT'],
   ['equipment', 'seats', 'INTEGER'], ['equipment', 'section_id', 'INTEGER'], ['equipment', 'model_year', 'INTEGER'],
   ['employees', 'national_id', 'TEXT'], ['employees', 'notes', 'TEXT'], ['work_orders', 'involves_travel', 'TEXT'],
-  ['material_lines', 'item_id', 'INTEGER'],
+  ['material_lines', 'item_id', 'INTEGER'], ['employees', 'photo', 'TEXT'],
+  ['items', 'photo', 'TEXT'], ['items', 'inventory_no', 'TEXT'], ['items', 'reorder_qty', 'REAL'], ['items', 'supplier', 'TEXT'],
 ]) {
   if (!db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
 }
@@ -591,6 +631,8 @@ const DEFAULT_SETTINGS = {
   missing_photo_hours: '4',
   wo_sequence_warn_at: '990000',
   daily_dispatch_time: '',
+  wo_creation_approval: '1',
+  critical_skip_creation_approval: '1',
 };
 
 function setting(key) {

@@ -7,9 +7,21 @@ const { requireRole, MANAGERS } = require('../perm');
 const { ROLES, LEAVE_TYPES, MODE_TYPES, MODES } = require('../entities');
 const { notify } = require('../notify');
 const W = require('../workorders');
+const F = require('../files');
+const Docs = require('../documents');
+
+// Optional personal photo: the employee or whoever manages employees may change it
+function setPhoto(empId, file, req) {
+  const old = get('SELECT employee_no, photo FROM employees WHERE id = ?', empId);
+  run('UPDATE employees SET photo = ? WHERE id = ?', file ? F.rel(file.path) : null, empId);
+  if (old.photo) F.remove(old.photo);
+  require('../avatars').reset();
+  audit(req, file ? 'update' : 'delete', 'employee_photo', old.employee_no, { photo: !!old.photo }, { photo: !!file });
+}
+const canPhoto = (req, empId) => req.user.id === empId || canManagePeople(req.user);
 
 const router = express.Router();
-const PEOPLE_VIEW = ['hr', 'admin', 'auditor', 'team_leader', 'safety', ...MANAGERS];
+const { PEOPLE_VIEW } = require('../perm');
 
 router.get('/employees', requireRole(...PEOPLE_VIEW), (req, res) => {
   const cond = [], p = [];
@@ -50,6 +62,9 @@ router.get('/employees/:id(\\d+)', (req, res) => {
     leaves: all('SELECT * FROM leaves WHERE employee_id = ? ORDER BY start_date DESC LIMIT 20', e.id),
     wos: all('SELECT w.* FROM wo_participants p JOIN work_orders w ON w.id = p.wo_id WHERE p.employee_id = ? ORDER BY w.id DESC LIMIT 30', e.id),
     canEdit: canManagePeople(req.user), self: e.id === req.user.id, pts: require('../points').standing(e.id),
+    canPhoto: canPhoto(req, e.id), docs: Docs.rights('employee', e, req.user), documents: Docs.rights('employee', e, req.user).view ? Docs.list('employee', e.id) : [],
+    DOC_TYPES: Docs.TYPES.employee,
+    tasks: all("SELECT t.* FROM tasks t JOIN task_assignees a ON a.task_id = t.id WHERE a.employee_id = ? AND t.task_date >= date('now', '-7 days') AND t.status <> 'cancelled' ORDER BY t.task_date DESC, t.start_time LIMIT 15", e.id),
   });
 });
 
@@ -88,16 +103,17 @@ router.get('/employees/new', (req, res) => {
   res.render('employee_form', formData({ e: { status: 'active', role: 'employee', email_notifications: 1 }, mode: 'new', errors: [] }));
 });
 
-router.post('/employees', (req, res) => {
-  if (!canManagePeople(req.user)) throw new HttpError(403, res.locals.t('forbidden'));
+router.post('/employees', F.imageUpload.single('photo'), (req, res) => {
+  if (!canManagePeople(req.user)) { F.cleanup(req); throw new HttpError(403, res.locals.t('forbidden')); }
   const { d, errors } = employeeFromBody(req.body);
   const pw = req.body.password || '';
   if (pw && pw.length < 8) errors.push('Password must be at least 8 characters / 8 أحرف على الأقل');
-  if (errors.length) return res.status(400).render('employee_form', formData({ e: { ...req.body, ...d }, mode: 'new', errors }));
+  if (errors.length) { F.cleanup(req); return res.status(400).render('employee_form', formData({ e: { ...req.body, ...d }, mode: 'new', errors })); }
   const r = run(`INSERT INTO employees(employee_no, name_ar, name_en, email, phone, national_id, nationality, section_id, job_title_ar, job_title_en, grade, hire_date,
     employment_type, shift, role, status, email_notifications, notes, password_hash) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, ...Object.values(d), pw ? hashPassword(pw) : null);
   const id = Number(r.lastInsertRowid);
   audit(req, 'create', 'employee', d.employee_no, null, d);
+  if (req.file) setPhoto(id, req.file, req);
   // Welcome message: the new employee receives their login ID (the password is handed over by HR, never emailed)
   notify([id], {
     type: 'welcome', title: 'مرحبًا بك في نظام نقل الطاقة / Welcome to the Transmission WMS',
@@ -117,9 +133,33 @@ router.get('/employees/:id/edit', (req, res) => {
   res.render('employee_form', formData({ e, mode: 'edit', errors: [] }));
 });
 
-router.post('/employees/:id', (req, res) => {
+router.get('/employees/:id(\\d+)/photo', (req, res) => {
+  const e = get('SELECT photo FROM employees WHERE id = ?', Number(req.params.id));
+  if (!e?.photo) throw new HttpError(404, 'Not found');
+  F.send(res, e.photo, null);
+});
+router.post('/employees/:id(\\d+)/photo', F.imageUpload.single('photo'), (req, res) => {
+  const id = Number(req.params.id);
+  if (!canPhoto(req, id)) { F.cleanup(req); throw new HttpError(403, res.locals.t('forbidden')); }
+  if (!req.file) throw new HttpError(400, 'Choose an image (JPG, PNG, WEBP) / اختر صورة');
+  setPhoto(id, req.file, req);
+  res.flash('success', res.locals.t('saved'));
+  res.redirect(`/employees/${id}`);
+});
+router.post('/employees/:id(\\d+)/photo/delete', (req, res) => {
+  const id = Number(req.params.id);
+  if (!canPhoto(req, id)) throw new HttpError(403, res.locals.t('forbidden'));
+  setPhoto(id, null, req);
+  res.redirect(`/employees/${id}`);
+});
+
+router.post('/employees/:id', F.imageUpload.single('photo'), (req, res) => {
   const e = get('SELECT * FROM employees WHERE id = ?', Number(req.params.id));
-  if (!e) throw new HttpError(404, 'Not found');
+  if (!e) { F.cleanup(req); throw new HttpError(404, 'Not found'); }
+  if (req.file) {
+    if (!canPhoto(req, e.id)) { F.cleanup(req); throw new HttpError(403, res.locals.t('forbidden')); }
+    setPhoto(e.id, req.file, req);
+  }
   const b = req.body;
   const self = e.id === req.user.id;
   const manager = canManagePeople(req.user);

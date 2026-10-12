@@ -4,7 +4,9 @@ const { HttpError, nowIso } = require('./util');
 const { officialsAt } = require('./org');
 
 const MANAGERS = ['section_head', 'division_manager', 'department_manager', 'sector_head'];
-const WO_CREATORS = ['team_leader', ...MANAGERS, 'admin'];
+const WO_CREATORS = ['team_leader', 'foreman', ...MANAGERS, 'admin'];
+// Roles that may open the employee directory and other people's profiles
+const PEOPLE_VIEW = ['hr', 'admin', 'auditor', 'team_leader', 'foreman', 'safety', ...MANAGERS];
 
 const requireRole = (...roles) => (req, res, next) =>
   roles.includes(req.user.role) ? next() : next(new HttpError(403, res.locals.t('forbidden')));
@@ -29,4 +31,4 @@ function canManageWO(wo, user) {
   return MANAGERS.some((k) => o[k]?.employee_id === user.id);
 }
 
-module.exports = { requireRole, canViewWO, canWorkOnWO, canManageWO, isParticipant, WO_CREATORS, MANAGERS };
+module.exports = { requireRole, canViewWO, canWorkOnWO, canManageWO, isParticipant, WO_CREATORS, MANAGERS, PEOPLE_VIEW };

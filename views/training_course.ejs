@@ -27,7 +27,7 @@
     <% if (!attendees.length) { %><tr><td colspan="7" class="empty"><%- ic('users') %><%= t('no_records') %></td></tr><% } %>
     <% attendees.forEach(a => { %>
       <tr class="<%= a.attendance === 'cancelled' ? 'muted' : '' %>">
-        <td><a href="/employees/<%= a.employee_id %>" style="display:flex;align-items:center;gap:10px;color:inherit"><span class="avatar" style="width:30px;height:30px;font-size:12px"><%= initials(a) %></span><span><span class="cell-main"><%= nm(a) %></span><span class="cell-sub mono"><%= a.employee_no %> · <%= a.job_title_en || '' %></span></span></a></td>
+        <td><a <%- empHref(a.employee_id) %> style="display:flex;align-items:center;gap:10px;color:inherit"><span class="avatar" style="width:30px;height:30px;font-size:12px"><%- face(a) %></span><span><span class="cell-main"><%= nm(a) %></span><span class="cell-sub mono"><%= a.employee_no %> · <%= a.job_title_en || '' %></span></span></a></td>
         <td class="mono"><%= a.section_code %></td>
         <td><%= t('ar_' + a.role) %></td>
         <td><span class="pill <%= a.attendance === 'attended' ? 'ok' : a.attendance === 'absent' ? 'bad' : a.attendance === 'cancelled' ? '' : 'info' %>"><%= t('att_' + a.attendance) %></span></td>
@@ -61,8 +61,8 @@
 <section class="card">
   <h2><%- ic('route') %><%= t('suggested_for_course') %></h2>
   <div class="away-grid">
-    <% suggested.forEach(s => { %><div class="away-card ev-training"><span class="avatar" style="width:34px;height:34px;font-size:12px"><%= initials(s) %></span>
-      <span class="grow"><a class="cell-main" href="/employees/<%= s.id %>"><%= nm(s) %></a><span class="cell-sub mono"><%= s.employee_no %> · <%= s.section_code %></span><span class="cell-sub"><%= s.reasons.map(r => t('why_' + r)).join(' · ') %></span></span>
+    <% suggested.forEach(s => { %><div class="away-card ev-training"><span class="avatar" style="width:34px;height:34px;font-size:12px"><%- face(s) %></span>
+      <span class="grow"><a class="cell-main" <%- empHref(s.id) %>><%= nm(s) %></a><span class="cell-sub mono"><%= s.employee_no %> · <%= s.section_code %></span><span class="cell-sub"><%= s.reasons.map(r => t('why_' + r)).join(' · ') %></span></span>
       <% if (canManage) { %><form method="post" action="/training/<%= c.id %>/register" style="margin:0"><input type="hidden" name="employee_ids" value="<%= s.id %>"><button class="btn small"><%- ic('plus') %><%= t('register') %></button></form><% } %></div><% }) %>
   </div>
 </section>

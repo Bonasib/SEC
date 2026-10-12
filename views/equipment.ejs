@@ -1,6 +1,6 @@
-<%- include('partials/header', { pageTitle: t('equipment') }) %>
-<div class="page-head"><h1 class="title-ic"><%- ic('truck') %><%= t('equipment') %></h1><div class="btns"><a class="btn" href="/data/export/equipment"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#equipment"><%- ic('upload') %><%= t('import') %></a></div></div>
-<p class="muted"><%= lang === 'ar' ? 'لا يمكن إسناد معدة منتهية الصلاحية أو تحت الصيانة أو محجوزة لمهمة أخرى في نفس الفترة.' : 'Expired, under-maintenance or already-booked equipment cannot be assigned.' %></p>
+<%- include('partials/header', { pageTitle: t('devices') }) %>
+<div class="page-head"><div><div class="eyebrow"><%- ic('wrench') %><%= t('grp_assets') %></div><h1><%= t('devices') %> <span class="result-count">(<%= rows.length %>)</span></h1><p class="page-sub"><%= t('devices_hint') %></p></div><div class="btns"><a class="btn" href="/fleet"><%- ic('truck') %><%= t('fleet') %></a><a class="btn" href="/data/export/equipment"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#equipment"><%- ic('upload') %><%= t('import') %></a></div></div>
+
 <% if (canEdit) { %>
 <details class="card collapsible"><summary><b class="inline-h" style="gap:8px;align-items:center"><%- ic('plus') %><%= t('add') %></b></summary><form method="post" action="/equipment" class="form-grid">
   <label><%= t('code') %> *<input name="code" required></label>

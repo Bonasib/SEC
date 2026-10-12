@@ -8,7 +8,7 @@ const P = require('../points');
 const { exportWorkbook } = require('../importexport');
 
 const router = express.Router();
-const VIEW_ALL = ['hr', 'admin', 'auditor', 'safety', 'section_head', 'division_manager', 'department_manager', 'sector_head', 'team_leader'];
+const VIEW_ALL = ['hr', 'admin', 'auditor', 'safety', 'section_head', 'division_manager', 'department_manager', 'sector_head', 'foreman', 'team_leader'];
 const viewAll = (user) => require('../access').can(user, 'points.view_all') === true;
 const toArr = (v) => (v == null ? [] : Array.isArray(v) ? v : [v]);
 

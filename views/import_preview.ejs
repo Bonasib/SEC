@@ -1,5 +1,5 @@
 <%- include('partials/header', { pageTitle: t('import_preview') }) %>
-<div class="page-head"><h1 class="title-ic"><%- ic('upload') %><%= t('import_preview') %>: <span><%= t(b.entity) %></span></h1><a class="btn ghost" href="/data"><%- ic('arrow', 'ic-back') %><%= t('back') %></a></div>
+<div class="page-head"><div><div class="eyebrow"><%- ic('upload') %><%= t('grp_admin') %></div><h1><%= t('import_preview') %>: <span><%= t(b.entity) %></span></h1></div><a class="btn ghost" href="/data"><%- ic('arrow', 'ic-back') %><%= t('back') %></a></div>
 <div class="kpis">
   <div class="kpi"><span class="kpi-icon"><%- ic('sheet') %></span><span class="kpi-body"><b><%= b.total %></b><span class="kpi-label">Σ</span></span></div>
   <div class="kpi ok"><span class="kpi-icon"><%- ic('check-circle') %></span><span class="kpi-body"><b><%= b.valid %></b><span class="kpi-label"><%= t('valid_rows') %></span></span></div>

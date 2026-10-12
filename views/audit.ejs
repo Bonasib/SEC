@@ -1,5 +1,5 @@
 <%- include('partials/header', { pageTitle: t('audit') }) %>
-<div class="page-head"><h1 class="title-ic"><%- ic('shield') %><%= t('audit') %></h1></div>
+<div class="page-head"><div><div class="eyebrow"><%- ic('shield') %><%= t('grp_admin') %></div><h1><%= t('audit') %></h1></div></div>
 <p class="muted"><%= lang === 'ar' ? 'سجل غير قابل للتعديل أو الحذف (محمي على مستوى قاعدة البيانات).' : 'Append-only: updates and deletes are blocked at the database level.' %></p>
 <form class="filters card" method="get">
   <input name="q" value="<%= query.q || '' %>" placeholder="WO / ID">

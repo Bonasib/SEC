@@ -35,7 +35,7 @@ router.get('/plans/:id(\\d+)', (req, res) => {
     courses: all(`SELECT c.*, a.attendance, a.result FROM course_attendees a JOIN courses c ON c.id = a.course_id WHERE a.employee_id = ? AND c.start_date >= ? ORDER BY c.start_date`, plan.employee_id, `${plan.start_year}-01-01`),
     suggested: sug ? sug.courses : [],
     sections: sections().filter((s) => s.id !== plan.section_id),
-    coaches: all("SELECT id, employee_no, name_ar, name_en FROM employees WHERE status = 'active' AND role IN ('section_head','team_leader','division_manager') ORDER BY employee_no"),
+    coaches: all("SELECT id, employee_no, name_ar, name_en FROM employees WHERE status = 'active' AND role IN ('section_head','foreman','team_leader','division_manager') ORDER BY employee_no"),
     canDecide: PL.DECIDERS.includes(req.user.role), canEdit: PL.DECIDERS.includes(req.user.role) || plan.coach_id === req.user.id || req.user.role === 'admin',
   });
 });

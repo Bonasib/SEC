@@ -56,9 +56,19 @@ app.use((req, res, next) => {
   res.locals.nm = (o) => (o ? enName(o) || o.name_ar : '—');
   res.locals.smtpOn = SMTP_ON;
   res.locals.isDemo = isDemo();
+  // Links to profiles / point statements only where the reader may open them (no dead 403 links)
+  const peopleView = !!req.user && require('./perm').PEOPLE_VIEW.includes(req.user.role);
+  res.locals.canPeople = peopleView;
+  res.locals.empHref = (id) => (req.user && (peopleView || Number(id) === req.user.id) ? `href="/employees/${Number(id)}"` : '');
+  res.locals.ptsHref = (id, q = '') => (req.user && (Number(id) === req.user.id || require('./access').can(req.user, 'points.view_all') === true) ? `href="/points/employee/${Number(id)}${q}"` : '');
   res.locals.hasPerm = (perm, sectionId) => (req.user ? require('./access').can(req.user, perm, sectionId) : false);
   res.locals.ic = (name, cls = '') => `<svg class="ic ${cls}" aria-hidden="true" focusable="false"><use href="#i-${name}"/></svg>`;
   res.locals.initials = (o) => String((o && (enName(o) || o.name_ar)) || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('');
+  res.locals.face = require('./avatars').makeFace(res.locals.initials);
+  // Item picture (or an icon by kind) for the inventory lists and the work order picker
+  res.locals.thumb = (i, cls = '') => (i && i.photo
+    ? `<span class="thumb ${cls}"><img src="/materials/${i.item_id || i.id}/photo?v=${encodeURIComponent(String(i.photo).split('/').pop().slice(0, 8))}" alt="" loading="lazy"></span>`
+    : `<span class="thumb ik-${i?.kind || 'material'} ${cls}" aria-hidden="true">${res.locals.ic(i?.kind === 'tool' ? 'wrench' : i?.kind === 'equipment' ? 'zap' : 'package')}</span>`);
   res.locals.unread = req.user ? get('SELECT COUNT(*) n FROM notifications WHERE employee_id = ? AND read_at IS NULL', req.user.id).n : 0;
   res.locals.flash = c.flash ? JSON.parse(c.flash) : null;
   if (c.flash) res.append('Set-Cookie', `flash=; Max-Age=0; ${cookieOpts}`);
@@ -111,6 +121,7 @@ app.use(require('./routes/workorders'));
 app.use(require('./routes/people'));
 app.use(require('./routes/registry'));
 app.use(require('./routes/materials'));
+app.use(require('./routes/documents'));
 app.use(require('./routes/tasks'));
 app.use(require('./routes/data'));
 app.use(require('./routes/calendar'));

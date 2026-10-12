@@ -140,6 +140,15 @@ function createWorkOrder(data, req, { importedNumber } = {}) {
   const dueAt = sla ? new Date(Date.now() + sla * 3600e3).toISOString() : null;
   const split = splitWarning({ assetId: data.asset_id, location: data.location, plannedStart: data.planned_start, participantIds });
 
+  // Pre-execution approval chain: foreman -> head of section -> division manager (+ department manager and
+  // sector head when the travel limit is exceeded). Critical cases may start immediately (setting).
+  const importing = !!(importedNumber || req?.importing);
+  const critSkip = isCritical({ priority: data.priority, type: data.type }) && setting('critical_skip_creation_approval') === '1';
+  const steps = [];
+  if (!importing && setting('wo_creation_approval') === '1' && !critSkip) steps.push(...creationChain(officials));
+  if (needsSector) steps.push('department_manager', 'sector_head');
+  const creatorId = req?.user?.id ?? null;
+
   const wo = tx(() => {
     const woNumber = importedNumber ? reserveImportedNumber(importedNumber) : nextWoNumber();
     const r = run(
@@ -151,7 +160,7 @@ function createWorkOrder(data, req, { importedNumber } = {}) {
       data.asset_id || null, data.voltage_kv || null, data.location || null, Number(data.section_id),
       Number(data.distance_km) || 0, category, needsSector ? 1 : 0, data.selection_reason || null,
       data.planned_start, data.planned_end, dueAt, data.overnight ? 1 : 0, data.travel_hours || null,
-      needsSector ? 'awaiting_authorization' : 'open', Number(data.team_leader_id), JSON.stringify(officials),
+      steps.length ? 'awaiting_authorization' : 'open', Number(data.team_leader_id), JSON.stringify(officials),
       data.materials_withdrawn, split, req?.user?.id ?? null, created, importedNumber ? 1 : 0, travel.involves_travel);
     const id = Number(r.lastInsertRowid);
     for (const pid of participantIds) run('INSERT INTO wo_participants(wo_id, employee_id, role) VALUES (?,?,?)', id, pid, pid === Number(data.team_leader_id) ? 'leader' : 'member');
@@ -160,10 +169,9 @@ function createWorkOrder(data, req, { importedNumber } = {}) {
     if (data.reservation_number) {
       run('INSERT INTO material_reservations(wo_id, reservation_number, warehouse, received_by) VALUES (?,?,?,?)', id, data.reservation_number, data.warehouse || null, Number(data.team_leader_id));
     }
-    if (needsSector) {
-      run("INSERT INTO wo_approvals(wo_id, phase, step, seq, expected_employee_id) VALUES (?, 'authorization', 'department_manager', 1, ?)", id, officials.department_manager?.employee_id ?? null);
-      run("INSERT INTO wo_approvals(wo_id, phase, step, seq, expected_employee_id) VALUES (?, 'authorization', 'sector_head', 2, ?)", id, officials.sector_head?.employee_id ?? null);
-    }
+    insertSteps(id, 'authorization', steps, officials, { team_leader_id: Number(data.team_leader_id) }, creatorId);
+    // Every step already signed (the creator holds them all): the work order is authorized
+    if (steps.length && !get("SELECT 1 FROM wo_approvals WHERE wo_id = ? AND decision = 'pending'", id)) run("UPDATE work_orders SET status = 'open' WHERE id = ?", id);
     const w = get('SELECT * FROM work_orders WHERE id = ?', id);
     audit(req, importedNumber || req?.importing ? 'import' : 'create', 'work_order', w.wo_number, null, { ...w, participants: participantIds, equipment: equipmentIds, items: itemLines, distance_counts: counts });
     return w;
@@ -189,12 +197,13 @@ function createWorkOrder(data, req, { importedNumber } = {}) {
       body: `${wo.title}\nالاستجابة مطلوبة قبل / Response due: ${fmt(wo.due_at, 'en')}`, link, details,
     });
   }
-  if (needsSector) {
-    notify([officials.department_manager?.employee_id], {
-      type: 'approval_request', severity: 'warning',
-      title: `${wo.wo_number} - مطلوب مراجعة: تجاوز ${threshold} مهمة / Review required: over ${threshold} assignments`,
-      body: over.map((o) => `${o.employee_no} ${o.name_ar}: ${o.count + 1}`).join('\n') + (wo.selection_reason ? `\n${wo.selection_reason}` : ''),
-      link, details,
+  const firstStep = pendingApproval(wo.id);
+  if (firstStep) {
+    notifyApprover(wo, firstStep, needsSector ? `تجاوز ${threshold} مهمة / Over ${threshold} assignments:\n` + over.map((o) => `${o.employee_no} ${o.name_ar}: ${o.count + 1}`).join('\n') + (wo.selection_reason ? `\n${wo.selection_reason}` : '') : '');
+  } else if (critSkip && setting('wo_creation_approval') === '1') {
+    notify(creationChain(officials).map((k) => k === 'foreman' ? require('./org').foremenOf(wo.section_id) : officials[k]?.employee_id).flat(), {
+      type: 'wo_created', severity: 'critical', title: `${wo.wo_number} - حالة حرجة بدأت دون انتظار الاعتماد / Critical case started without waiting for approval`,
+      body: wo.title, link, details,
     });
   }
   if (split) notify([officials.section_head?.employee_id, officials.division_manager?.employee_id], { type: 'split_warning', severity: 'warning', title: `${wo.wo_number} - تحذير / Warning`, body: split, link });
@@ -202,7 +211,31 @@ function createWorkOrder(data, req, { importedNumber } = {}) {
   const holidayWarning = hol.length ? `Planned during a public holiday: ${hol.map((h) => h.name_en).join(', ')} / خلال إجازة رسمية: ${hol.map((h) => h.name_ar).join('، ')}` : null;
   const crew = crewSummary(wo.id);
   const seatWarning = crew.vehicles.length && crew.seats < crew.people ? `Vehicle seats (${crew.seats}) are fewer than the crew (${crew.people}) / المقاعد أقل من عدد الفريق` : null;
-  return { wo, warnings: [split, holidayWarning, seatWarning, needsSector ? `Sector Head authorization required (assignment > ${threshold} in ${category}) / يتطلب اعتماد رئيس القطاع` : null].filter(Boolean) };
+  const chainNote = firstStep ? `بانتظار الاعتماد: ${steps.map((k) => D['step_' + k][0]).join(' ← ')} / Awaiting approval: ${steps.map((k) => D['step_' + k][1]).join(' → ')}` : null;
+  return { wo, warnings: [split, holidayWarning, seatWarning, needsSector ? `Sector Head authorization required (assignment > ${threshold} in ${category}) / يتطلب اعتماد رئيس القطاع` : null].filter(Boolean), notes: [chainNote].filter(Boolean) };
+}
+
+// ---------- approval chains ----------
+// Before execution: foreman (when the section has one) -> head of section -> division manager
+const creationChain = (officials) => [officials.foreman ? 'foreman' : null, 'section_head', 'division_manager'].filter(Boolean);
+// On completion: the team leader signs the submission, then foreman -> head of section -> division manager
+const closureChain = (officials) => ['team_leader', ...creationChain(officials)];
+
+const expectedFor = (step, officials, wo) => (step === 'team_leader' ? wo.team_leader_id : officials[step]?.employee_id ?? null);
+
+/** Insert approval steps; a step whose approver is the person acting now is signed immediately. */
+function insertSteps(woId, phase, steps, officials, wo, signerId) {
+  const base = get('SELECT COALESCE(MAX(seq), 0) n FROM wo_approvals WHERE wo_id = ? AND phase = ?', woId, phase).n;
+  const at = nowIso();
+  steps.forEach((step, i) => {
+    const expected = expectedFor(step, officials, wo);
+    const signedBySigner = signerId && (expected === signerId || (step === 'foreman' && require('./org').foremenOf(wo.section_id ?? null).includes(signerId)));
+    const r = run('INSERT INTO wo_approvals(wo_id, phase, step, seq, expected_employee_id) VALUES (?,?,?,?,?)', woId, phase, step, base + i + 1, expected);
+    if (signedBySigner) {
+      run("UPDATE wo_approvals SET decision = 'approved', decided_by = ?, decided_at = ?, comment = ?, verification_code = ? WHERE id = ?",
+        signerId, at, phase === 'closure' ? 'تقديم للإغلاق / Submitted' : 'المنشئ / Creator', crypto.randomBytes(4).toString('hex').toUpperCase(), r.lastInsertRowid);
+    }
+  });
 }
 
 function woDetails(wo) {
@@ -310,6 +343,8 @@ function canDecide(wo, step, user) {
   if (!user) return { ok: false };
   if (step.step === 'team_leader') return { ok: user.id === wo.team_leader_id, acting: false };
   if (step.expected_employee_id === user.id) return { ok: true, acting: false };
+  // Any active foreman of the work order's section may sign the foreman step
+  if (step.step === 'foreman') return { ok: user.role === 'foreman' && user.status === 'active' && user.section_id === wo.section_id, acting: false };
   const nowOfficials = officialsAt(wo.section_id, nowIso());
   const holder = nowOfficials[step.step];
   if (holder?.employee_id === user.id) return { ok: true, acting: !!holder.acting };
@@ -317,9 +352,11 @@ function canDecide(wo, step, user) {
   return { ok: false };
 }
 
-function notifyApprover(wo, step) {
+function notifyApprover(wo, step, extra = '') {
+  if (!step) return;
   let ids;
   if (step.step === 'team_leader') ids = [wo.team_leader_id];
+  else if (step.step === 'foreman') ids = require('./org').foremenOf(wo.section_id);
   else {
     const holder = officialsAt(wo.section_id, nowIso())[step.step];
     ids = [holder?.employee_id || step.expected_employee_id].filter(Boolean);
@@ -328,7 +365,7 @@ function notifyApprover(wo, step) {
   notify(ids, {
     type: 'approval_request', severity: isCritical(wo) ? 'critical' : 'warning',
     title: `${wo.wo_number} - مطلوب اعتمادك (${D['step_' + step.step][0]}) / Your approval is required (${D['step_' + step.step][1]})`,
-    body: `${wo.title}\n${both('phase_' + step.phase)}`, link: `/wo/${wo.id}`, details: woDetails(wo),
+    body: `${wo.title}\n${both('phase_' + step.phase)}${extra ? '\n' + extra : ''}`, link: `/wo/${wo.id}#approvals`, details: woDetails(wo),
   });
 }
 
@@ -373,17 +410,8 @@ function submitForClosure(wo, req) {
   const officials = officialsAt(wo.section_id, at);
   tx(() => {
     run("UPDATE wo_approvals SET decision = 'superseded' WHERE wo_id = ? AND phase = 'closure' AND decision = 'pending'", wo.id);
-    const steps = ['team_leader', 'section_head'];
-    if (isCritical(wo)) steps.push('division_manager');
-    steps.forEach((s, i) => {
-      const expected = s === 'team_leader' ? wo.team_leader_id : officials[s]?.employee_id ?? null;
-      const r = run("INSERT INTO wo_approvals(wo_id, phase, step, seq, expected_employee_id) VALUES (?, 'closure', ?, ?, ?)", wo.id, s, i + 1, expected);
-      // Submitting as the team leader signs the team-leader step
-      if (s === 'team_leader' && req.user.id === wo.team_leader_id) {
-        run("UPDATE wo_approvals SET decision = 'approved', decided_by = ?, decided_at = ?, verification_code = ? WHERE id = ?",
-          req.user.id, at, crypto.randomBytes(4).toString('hex').toUpperCase(), r.lastInsertRowid);
-      }
-    });
+    // Submitting signs the submitter's own step (normally the team leader's)
+    insertSteps(wo.id, 'closure', closureChain(officials), officials, wo, req.user.id);
     run("UPDATE work_orders SET status = 'pending_closure', actual_end = COALESCE(actual_end, ?) WHERE id = ?", at, wo.id);
     audit(req, 'submit_closure', 'work_order', wo.wo_number, { status: wo.status }, { status: 'pending_closure' });
   });
@@ -466,7 +494,7 @@ function updateWorkOrder(wo, data, reason, req) {
   const over = counts.filter((c) => c.count + 1 > threshold);
   if (over.length && travel.category === 'C' && !data.selection_reason)
     throw new HttpError(400, `Assignment ${threshold + 1}+ over 200 km requires a selection reason / يلزم تبرير الاختيار: ${over.map((o) => o.employee_no).join(', ')}`);
-  const wasAuthorized = !!get("SELECT 1 FROM wo_approvals WHERE wo_id = ? AND phase = 'authorization' AND decision = 'approved'", wo.id);
+  const wasAuthorized = !!get("SELECT 1 FROM wo_approvals WHERE wo_id = ? AND phase = 'authorization' AND step = 'sector_head' AND decision = 'approved'", wo.id);
   const needsAuth = over.length > 0 && !wo.needs_sector_approval && wo.status === 'open' && !wasAuthorized;
 
   const priority = data.priority || wo.priority;
@@ -492,8 +520,7 @@ function updateWorkOrder(wo, data, reason, req) {
     if (needsAuth) {
       const o = officials || JSON.parse(wo.officials_json || '{}');
       run("UPDATE work_orders SET needs_sector_approval = 1, status = 'awaiting_authorization' WHERE id = ?", wo.id);
-      run("INSERT INTO wo_approvals(wo_id, phase, step, seq, expected_employee_id) VALUES (?, 'authorization', 'department_manager', 1, ?)", wo.id, o.department_manager?.employee_id ?? null);
-      run("INSERT INTO wo_approvals(wo_id, phase, step, seq, expected_employee_id) VALUES (?, 'authorization', 'sector_head', 2, ?)", wo.id, o.sector_head?.employee_id ?? null);
+      insertSteps(wo.id, 'authorization', ['department_manager', 'sector_head'], o, wo, null);
     }
     audit(req, 'update', 'work_order', wo.wo_number, before, { ...after, participants: participantIdsNew, equipment: equipmentIds }, reason);
   });
@@ -541,6 +568,7 @@ function cancelWorkOrder(wo, reason, req) {
 }
 
 module.exports = {
+  creationChain, closureChain,
   CRITICAL, ACTIVE_STATUSES, isCritical, nextWoNumber, availabilityErrors, distanceCounts, createWorkOrder,
   closureChecklist, reconciliation, lineVariance, lineErrors, pendingApproval, canDecide, startWork,
   submitForClosure, decide, cancelWorkOrder, updateWorkOrder, participantIds, woDetails, riyadhDate, holderAt, teamAway, holidaysBetween, crewSummary,

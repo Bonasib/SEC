@@ -1,0 +1,17 @@
+<%# Item transactions table. Params: rows, showItem %>
+<div class="table-wrap"><table class="tbl">
+  <thead><tr><th><%= t('date') %></th><% if (showItem) { %><th><%= t('item') %></th><% } %><th><%= t('transaction_type') %></th><th class="num"><%= t('quantity') %></th><th class="num"><%= t('balance') %></th><th><%= t('reference') %></th><th><%= t('notes') %></th><th><%= t('by') %></th></tr></thead>
+  <tbody>
+  <% if (!rows.length) { %><tr><td colspan="<%= showItem ? 8 : 7 %>" class="empty"><%= t('no_records') %></td></tr><% } %>
+  <% rows.forEach(m => { const tone = /^(receive|order_received)$/.test(m.kind) ? 'ok' : /damage|cancelled/.test(m.kind) ? 'bad' : /consume|reserve_reserved/.test(m.kind) ? 'warn' : 'info'; %><tr>
+    <td class="nowrap" data-sort-value="<%= m.at %>"><%= fmt(m.at) %></td>
+    <% if (showItem) { %><td><a class="item-cell" href="/materials/<%= m.item_id %>" style="color:inherit;min-width:180px"><span><span class="cell-main"><%= lang === 'en' && m.name_en ? m.name_en : m.name_ar %></span><span class="cell-sub mono"><%= m.code %><%= m.inventory_no ? ' · #' + m.inventory_no : '' %></span></span></a></td><% } %>
+    <td><span class="pill <%= tone %>"><%= t('tx_' + m.kind) %></span></td>
+    <td class="num mono" dir="ltr"><%= m.qty > 0 && !/^order|^reserve/.test(m.kind) ? '+' : '' %><%= m.qty %> <small class="muted"><%= t('uom_' + m.uom) %></small></td>
+    <td class="num"><%= m.balance == null ? '—' : m.balance %></td>
+    <td><% if (m.wo_id) { %><a class="wo-link" href="/wo/<%= m.wo_id %>#items"><%= m.wo_number %></a><% } else if (m.order_no) { %><span class="mono"><%= m.order_no %></span><% } else { %>—<% } %></td>
+    <td><%= tx(m.note || '') %></td>
+    <td><%= m.by_ar ? nm({ name_ar: m.by_ar, name_en: m.by_en }) : '—' %></td>
+  </tr><% }) %>
+  </tbody>
+</table></div>

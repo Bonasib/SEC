@@ -1,0 +1,41 @@
+<%# Documents card. Params: kind (wo|vehicle|employee), id, documents, rights {view, edit}, types, hint %>
+<% const kb = (n) => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+   const icon = (m) => /pdf/.test(m || '') ? 'file' : /image/.test(m || '') ? 'image' : /sheet|excel/.test(m || '') ? 'sheet' : 'file'; %>
+<section class="card" id="documents">
+  <div class="card-head"><h2><%- ic('file') %><%= t('documents') %></h2><span class="pill"><%= documents.length %></span></div>
+  <% if (typeof hint !== 'undefined' && hint) { %><p class="muted small"><%= hint %></p><% } %>
+  <% if (!documents.length) { %><p class="muted"><%= t('no_documents') %></p><% } else { %>
+  <ul class="doc-list">
+    <% documents.forEach(d => { %>
+    <li class="doc <%= d.state ? 'doc-' + d.state : '' %>">
+      <a class="doc-ic" href="/documents/<%= d.id %>" target="_blank" rel="noopener" aria-label="<%= t('open') %>"><%- ic(icon(d.mime)) %></a>
+      <div class="doc-main">
+        <a href="/documents/<%= d.id %>" target="_blank" rel="noopener"><b><%= d.title || d.original_name %></b></a>
+        <span class="cell-sub"><%= t('dt_' + d.doc_type) %><%= d.doc_no ? ' · ' + d.doc_no : '' %> · <%= kb(d.size || 0) %> · <%= nm(d) %> · <%= fmt(d.uploaded_at, false) %></span>
+        <% if (d.issue_date || d.expiry_date) { %><span class="cell-sub"><% if (d.issue_date) { %><%= t('issue_date') %>: <span class="mono"><%= d.issue_date %></span><% } %><% if (d.expiry_date) { %> · <%= t('expiry_date') %>: <span class="mono"><%= d.expiry_date %></span><% } %></span><% } %>
+        <% if (d.notes) { %><span class="cell-sub"><%= d.notes %></span><% } %>
+      </div>
+      <% if (d.state && d.state !== 'valid') { %><span class="pill <%= d.state === 'expired' ? 'bad' : 'warn' %>"><%- ic('alert') %><%= t('doc_' + d.state) %></span><% } else if (d.state === 'valid') { %><span class="pill ok"><%- ic('check') %><%= t('doc_valid') %></span><% } %>
+      <div class="doc-actions">
+        <a class="icon-btn" href="/documents/<%= d.id %>?download=1" aria-label="<%= t('download') %>" title="<%= t('download') %>"><%- ic('download') %></a>
+        <% if (rights.edit) { %><form method="post" action="/documents/<%= d.id %>/delete" data-confirm="<%= t('confirm_remove') %>"><button class="icon-btn" aria-label="<%= t('remove') %>" title="<%= t('remove') %>"><%- ic('trash') %></button></form><% } %>
+      </div>
+    </li>
+    <% }) %>
+  </ul>
+  <% } %>
+  <% if (rights.edit) { %>
+  <details class="add-line"><summary class="btn small"><%- ic('upload') %><%= t('add_document') %></summary>
+    <form method="post" action="/documents/<%= kind %>/<%= id %>" enctype="multipart/form-data" class="form-grid upload-panel">
+      <label class="file-drop span2"><input type="file" name="files" multiple required accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.doc,.docx,.xls,.xlsx,.txt"><span class="fd-text"><%- ic('upload') %> <%= t('choose_files') %> <small class="muted">PDF · JPG · PNG · Word · Excel — 25 MB</small></span></label>
+      <label><%= t('document_type') %><select name="doc_type"><% types.forEach(x => { %><option value="<%= x %>"><%= t('dt_' + x) %></option><% }) %></select></label>
+      <label><%= t('title') %><input name="title" placeholder="<%= t('optional') %>"></label>
+      <label><%= t('document_no') %><input name="doc_no" dir="ltr" placeholder="<%= t('optional') %>"></label>
+      <label><%= t('issue_date') %><input type="date" name="issue_date"></label>
+      <label><%= t('expiry_date') %><input type="date" name="expiry_date"><small class="muted"><%= t('expiry_alert_hint') %></small></label>
+      <label><%= t('notes') %><input name="notes"></label>
+      <div class="form-actions"><button class="btn primary"><%- ic('upload') %><%= t('upload') %></button></div>
+    </form>
+  </details>
+  <% } %>
+</section>

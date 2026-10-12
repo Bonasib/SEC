@@ -2,11 +2,11 @@
 <% const fmtN = (n) => Number(n).toLocaleString(lang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US'); %>
 <div class="page-head">
   <div><div class="eyebrow"><a href="/points?year=<%= year %>"><%- ic('arrow', 'ic-back') %> <%= t('points') %></a></div>
-    <h1 class="title-ic"><%- ic('file') %><%= t('statement') %> · <%= nm(e) %> <span class="result-count"><%= year %></span></h1></div>
+    <h1><%= t('statement') %> · <%= nm(e) %> <span class="result-count"><%= year %></span></h1></div>
 </div>
 <section class="card">
   <div class="my-standing">
-    <span class="avatar" style="width:52px;height:52px;font-size:18px"><%= initials(e) %></span>
+    <span class="avatar" style="width:52px;height:52px;font-size:18px"><%- face(e) %></span>
     <div><div class="muted small"><span class="mono"><%= e.employee_no %></span> · <%= e.section_code || '' %></div><b><%= nm(e) %></b></div>
     <div><div class="muted small"><%= t('opening_balance') %></div><b style="font-size:20px"><%= fmtN(opening) %></b></div>
     <div><div class="muted small"><%= t('change') %></div><b class="pts-delta <%= st && st.delta > 0 ? 'up' : st && st.delta < 0 ? 'down' : '' %>" style="font-size:20px"><%= st ? (st.delta > 0 ? '+' : '') + fmtN(st.delta) : '—' %></b></div>

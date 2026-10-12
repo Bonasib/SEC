@@ -164,6 +164,17 @@
     });
   });
 
+  // ---- photo inputs: preview the chosen image ----
+  document.querySelectorAll('input[type=file][data-preview]').forEach(function (inp) {
+    inp.addEventListener('change', function () {
+      var box = document.getElementById(inp.dataset.preview), f = inp.files && inp.files[0];
+      if (!box || !f || !/^image\//.test(f.type)) return;
+      var img = document.createElement('img'); img.alt = '';
+      img.src = URL.createObjectURL(f);
+      box.textContent = ''; box.appendChild(img);
+    });
+  });
+
   // ---- confirmation before destructive actions ----
   document.querySelectorAll('form[data-confirm]').forEach(function (f) {
     f.addEventListener('submit', function (e) {
@@ -194,6 +205,29 @@
       var row = tpl.content.firstElementChild.cloneNode(true);
       list.appendChild(row); wire(row); row.querySelector('select').focus();
     });
+  });
+
+  // ---- inventory picker: search, filter by kind, selected-only, live count ----
+  document.querySelectorAll('[data-item-grid]').forEach(function (g) {
+    var rows = Array.from(g.querySelectorAll('.ig-row'));
+    var search = g.querySelector('[data-ig-search]'), only = g.querySelector('[data-ig-only]'), count = g.querySelector('[data-ig-count]');
+    var kind = '';
+    var qtyOf = function (r) { var i = r.querySelector('input[type=number]'); return Number(i.value) || 0; };
+    var apply = function () {
+      var q = (search.value || '').trim().toLowerCase(), n = 0;
+      rows.forEach(function (r) {
+        var picked = qtyOf(r) > 0; if (picked) n++;
+        r.classList.toggle('picked', picked);
+        r.hidden = !((!kind || r.dataset.kind === kind) && (!q || r.dataset.text.indexOf(q) >= 0) && (!only.checked || picked));
+      });
+      count.textContent = n + ' ' + (rtl ? 'صنف محدد' : 'selected');
+    };
+    g.querySelectorAll('[data-ig-kind]').forEach(function (b) {
+      b.addEventListener('click', function () { kind = b.dataset.igKind; g.querySelectorAll('[data-ig-kind]').forEach(function (x) { x.classList.toggle('on', x === b); }); apply(); });
+    });
+    search.addEventListener('input', apply); only.addEventListener('change', apply);
+    g.addEventListener('input', function (e) { if (e.target.type === 'number') apply(); });
+    apply();
   });
 
   // ---- material line: fill number / description / unit from the catalog ----

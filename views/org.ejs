@@ -1,5 +1,5 @@
 <%- include('partials/header', { pageTitle: t('org_units') }) %>
-<div class="page-head"><h1 class="title-ic"><%- ic('network') %><%= t('org_units') %></h1><div class="btns"><a class="btn" href="/data/export/org_units"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#org_units"><%- ic('upload') %><%= t('import') %></a></div></div>
+<div class="page-head"><div><div class="eyebrow"><%- ic('network') %><%= t('grp_people') %></div><h1><%= t('org_units') %></h1></div><div class="btns"><a class="btn" href="/data/export/org_units"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#org_units"><%- ic('upload') %><%= t('import') %></a></div></div>
 <div class="card"><table class="tbl org">
   <tr><th><%= t('name') %></th><th><%= t('code') %></th><th><%= t('level') %></th><th><%= t('manager') %></th><th><%= t('employees') %></th></tr>
   <% rows.forEach(u => { %><tr><td style="padding-inline-start:<%= 8 + u.depth * 22 %>px"><%= u.depth ? '└ ' : '' %><b><%= nm(u) %></b></td><td><%= u.code %></td><td><%= lbl('level', u.level) %></td>

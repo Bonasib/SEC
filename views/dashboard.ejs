@@ -11,7 +11,7 @@
 </section>
 
 <div class="kpis">
-  <% const K = (key, val, href, tone, icon) => `<a class="kpi ${tone || ''} ${val ? '' : 'zero'}" href="${href}"><span class="kpi-icon">${ic(icon)}</span><span class="kpi-body"><b>${val}</b><span class="kpi-label">${t(key)}</span></span></a>`; %>
+  <% const K = (key, val, href, tone, icon) => `<a class="kpi ${tone || ''} ${val ? '' : 'zero'}" ${href ? `href="${href}"` : ''}><span class="kpi-icon">${ic(icon)}</span><span class="kpi-body"><b>${val}</b><span class="kpi-label">${t(key)}</span></span></a>`; %>
   <%- K('kpi_critical_open', kpi.critical_open, '/wo?priority=critical', 'crit', 'siren') %>
   <%- K('kpi_critical_overdue', kpi.critical_overdue, '/wo?priority=critical', 'crit', 'clock') %>
   <%- K('kpi_open', kpi.open, '/wo?status=open', '', 'clipboard') %>
@@ -22,8 +22,8 @@
   <%- K('kpi_temporary', kpi.temporary, '/wo?status=closed', 'warn', 'alert') %>
   <%- K('kpi_unverified_res', kpi.unverified_res, '/wo?status=open', 'warn', 'package') %>
   <%- K('kpi_unreconciled', kpi.unreconciled, '/wo?status=in_progress', 'crit', 'transfer') %>
-  <%- K('kpi_on_leave', kpi.on_leave, '/leaves?current=1', '', 'calendar') %>
-  <%- K('kpi_available', Math.max(0, kpi.available), '/employees', 'ok', 'users') %>
+  <%- K('kpi_on_leave', kpi.on_leave, canPeople ? '/leaves?current=1' : null, '', 'calendar') %>
+  <%- K('kpi_available', Math.max(0, kpi.available), canPeople ? '/employees' : null, 'ok', 'users') %>
   <%- K('kpi_expiring_eq', kpi.expiring_eq, '/equipment', 'warn', 'truck') %>
   <%- K('kpi_closed_month', kpi.closed_month, '/wo?status=closed', 'ok', 'check-circle') %>
   <%- K('kpi_tasks_today', kpi.tasks_today, '/tasks', 'violet', 'tasks') %>
@@ -46,7 +46,7 @@
   <section class="card honor">
     <div class="card-head"><h2><%- ic('star') %><%= t('honor_board') %> · <%= t('per_month') %></h2><a class="small" href="/board"><%= t('board') %> →</a></div>
     <% if (!stars.length) { %><p class="muted"><%= t('honor_empty') %></p><% } %>
-    <ol class="rank-list"><% stars.forEach((e, i) => { %><li><a href="/employees/<%= e.id %>"><span class="medal-dot m<%= i %>"><%= i + 1 %></span><span class="avatar"><%= initials(e) %></span><span class="grow"><%= nm(e) %><small class="muted"> · <%= e.section_code || '' %></small></span><b><%= e.score %></b></a></li><% }) %></ol>
+    <ol class="rank-list"><% stars.forEach((e, i) => { %><li><a <%- empHref(e.id) %>><span class="medal-dot m<%= i %>"><%= i + 1 %></span><span class="avatar"><%- face(e) %></span><span class="grow"><%= nm(e) %><small class="muted"> · <%= e.section_code || '' %></small></span><b><%= e.score %></b></a></li><% }) %></ol>
   </section>
 </div>
 
@@ -96,7 +96,7 @@
     </div>
     <h3><%= t('kpi_acting_now') %></h3>
     <% if (!acting.length) { %><p class="muted small"><%= t('none') %></p><% } %>
-    <ul class="people"><% acting.forEach(a => { %><li><span class="avatar"><%= initials(a) %></span><span><b><%= nm(a) %></b><span class="cell-sub"><%= lang === 'en' ? a.u_en : a.u_ar %> · <%= t('to') %> <%= fmt(a.end_at, false) %></span></span></li><% }) %></ul>
+    <ul class="people"><% acting.forEach(a => { %><li><span class="avatar"><%- face({ ...a, employee_id: a.acting_employee_id }) %></span><span><b><%= nm(a) %></b><span class="cell-sub"><%= lang === 'en' ? a.u_en : a.u_ar %> · <%= t('to') %> <%= fmt(a.end_at, false) %></span></span></li><% }) %></ul>
   </section>
 </div>
 
@@ -105,7 +105,7 @@
     <div class="card-head"><h2><%- ic('star') %><%= top.length ? t('top_performers') : t('my_points') %></h2><a class="btn ghost btn-sm" href="/points"><%= t('points') %><%- ic('chevron', 'ic-dir') %></a></div>
     <% if (me) { %><p class="muted small"><%= t('my_points') %>: <b style="color:var(--text)"><%= Number(me.balance).toLocaleString('en-US') %></b> <% if (me.rating) { %>· #<%= me.rank %> <span class="rt rt-<%= me.rating %>"><%= t('rt_' + me.rating) %></span><% } %></p><% } %>
     <% if (top.length) { %><ul class="list"><% top.forEach(r => { %>
-      <li><b style="width:28px">#<%= r.rank %></b><span class="avatar" style="width:30px;height:30px;font-size:12px"><%= initials(r) %></span><span class="grow"><span class="cell-main"><%= nm(r) %></span><span class="cell-sub mono"><%= r.employee_no %> · <%= r.section_code || '' %></span></span><b class="mono"><%= Number(r.balance).toLocaleString('en-US') %></b><span class="rt rt-<%= r.rating %>"><%= t('rt_' + r.rating) %></span></li>
+      <li><b style="width:28px">#<%= r.rank %></b><span class="avatar" style="width:30px;height:30px;font-size:12px"><%- face(r) %></span><span class="grow"><span class="cell-main"><%= nm(r) %></span><span class="cell-sub mono"><%= r.employee_no %> · <%= r.section_code || '' %></span></span><b class="mono"><%= Number(r.balance).toLocaleString('en-US') %></b><span class="rt rt-<%= r.rating %>"><%= t('rt_' + r.rating) %></span></li>
     <% }) %></ul><% } %>
   </section>
   <section class="card">

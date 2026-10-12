@@ -7,7 +7,7 @@ const A = require('../access');
 
 const router = express.Router();
 const toArr = (v) => (v == null ? [] : Array.isArray(v) ? v : [v]);
-const ROLE_ORDER = ['employee', 'team_leader', 'section_head', 'division_manager', 'department_manager', 'sector_head', 'hr', 'safety', 'warehouse', 'auditor', 'admin'];
+const ROLE_ORDER = ['employee', 'team_leader', 'foreman', 'section_head', 'division_manager', 'department_manager', 'sector_head', 'hr', 'safety', 'warehouse', 'auditor', 'admin'];
 
 router.get('/permissions', (req, res) => {
   if (!['hr', 'admin', 'auditor'].includes(req.user.role)) throw new HttpError(403, res.locals.t('forbidden'));

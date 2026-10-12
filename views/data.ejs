@@ -1,5 +1,5 @@
 <%- include('partials/header', { pageTitle: t('data') }) %>
-<h1 class="title-ic"><%- ic('transfer') %><%= t('data') %></h1>
+<div class="page-head"><div><div class="eyebrow"><%- ic('transfer') %><%= t('grp_admin') %></div><h1><%= t('data') %></h1></div></div>
 <p class="muted"><%= lang === 'ar'
   ? 'نزّل القالب، املأه في Excel، ثم ارفعه. يعرض النظام معاينة لكل صف مع الأخطاء قبل التأكيد، وبعد التأكيد تنعكس البيانات مباشرة في النظام (أوامر العمل المستوردة تُرسل بريدًا للفريق تلقائيًا). كل عملية تُسجل في سجل التدقيق.'
   : 'Download the template, fill it in Excel, then upload it. Every row is validated and previewed before you confirm; confirmed data is reflected in the system immediately (imported work orders email their teams automatically). Every operation is recorded in the audit log.' %></p>

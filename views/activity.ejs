@@ -1,6 +1,6 @@
 <%- include('partials/header', { pageTitle: t('activity') }) %>
 <div class="page-head">
-  <div><div class="eyebrow"><%- ic('clipboard') %><%= t('grp_operations') %><% if (scoped) { %> · <%= t('scoped_access') %><% } %></div><h1 class="title-ic"><%= t('activity') %></h1>
+  <div><div class="eyebrow"><%- ic('clipboard') %><%= t('grp_operations') %><% if (scoped) { %> · <%= t('scoped_access') %><% } %></div><h1><%= t('activity') %></h1>
     <p class="page-sub"><%= t('activity_hint') %></p></div>
 </div>
 <form class="filters card" method="get" role="search">

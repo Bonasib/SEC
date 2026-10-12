@@ -21,17 +21,17 @@ const PERMISSIONS = {
 
 const MANAGERS = ['section_head', 'division_manager', 'department_manager', 'sector_head'];
 const ROLE_DEFAULTS = {
-  'wo.view_all': [...MANAGERS, 'team_leader', 'hr', 'safety', 'warehouse', 'admin', 'auditor'],
-  'wo.view_history': [...MANAGERS, 'hr', 'admin', 'auditor'],
+  'wo.view_all': [...MANAGERS, 'team_leader', 'foreman', 'hr', 'safety', 'warehouse', 'admin', 'auditor'],
+  'wo.view_history': [...MANAGERS, 'foreman', 'hr', 'admin', 'auditor'],
   'calendar.view_all': [...MANAGERS, 'hr', 'safety', 'admin', 'auditor'],
-  'travel.view_all': [...MANAGERS, 'team_leader', 'hr', 'admin', 'auditor'],
-  'points.view_all': [...MANAGERS, 'team_leader', 'hr', 'safety', 'admin', 'auditor'],
+  'travel.view_all': [...MANAGERS, 'team_leader', 'foreman', 'hr', 'admin', 'auditor'],
+  'points.view_all': [...MANAGERS, 'team_leader', 'foreman', 'hr', 'safety', 'admin', 'auditor'],
   'training.manage': ['hr', 'admin'],
   'plans.view': [...MANAGERS, 'hr', 'admin', 'auditor'],
   'fleet.manage': ['admin', 'safety'],
   'employees.manage': ['hr', 'admin'],
   'materials.manage': ['warehouse', 'admin'],
-  'tasks.dispatch': [...MANAGERS, 'team_leader', 'admin'],
+  'tasks.dispatch': [...MANAGERS, 'team_leader', 'foreman', 'admin'],
 };
 const GRANTERS = ['hr', 'admin'];
 

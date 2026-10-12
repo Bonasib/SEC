@@ -69,7 +69,7 @@ function runAlertChecks() {
   const remindH = Number(setting('approval_reminder_hours'));
   for (const a of all(`SELECT a.*, w.wo_number, w.title, w.section_id, w.team_leader_id FROM wo_approvals a JOIN work_orders w ON w.id = a.wo_id
       WHERE a.decision = 'pending' AND a.requested_at < ?`, new Date(nowMs - remindH * 3600e3).toISOString())) {
-    const holder = a.step === 'team_leader' ? a.team_leader_id : (officialsAt(a.section_id, now)[a.step]?.employee_id || a.expected_employee_id);
+    const holder = a.step === 'team_leader' ? a.team_leader_id : a.step === 'foreman' ? (a.expected_employee_id || require('./org').foremenOf(a.section_id)[0]) : (officialsAt(a.section_id, now)[a.step]?.employee_id || a.expected_employee_id);
     const windowNo = Math.floor((nowMs - Date.parse(a.requested_at)) / (remindH * 3600e3));
     fire(`approval-remind-${a.id}-${windowNo}`, () => notify(ids(holder), {
       type: 'approval_reminder', severity: 'warning',
@@ -89,7 +89,7 @@ function runAlertChecks() {
       fire(`eq-${field}-${q.id}-${d}-${expired ? 'x' : 'soon'}`, () => notify(idsByRole('admin', 'safety'), {
         type: 'equipment_expiry', severity: expired ? 'critical' : 'warning',
         title: `${q.code} ${q.name} - ${expired ? 'منتهية / expired' : 'قريبة الانتهاء / expiring soon'} (${label}: ${d})`,
-        body: q.type, link: '/equipment',
+        body: both('et_' + q.type), link: q.type === 'vehicle' ? `/fleet/${q.id}` : '/equipment',
       }));
     }
   }
@@ -157,6 +157,7 @@ function runAlertChecks() {
 
   // Overdue daily tasks and the Sunday weekly summary for managers
   count += require('./sync').overdueTasks();
+  count += require('./documents').checkExpiry();
   count += require('./sync').weeklyDigest();
 
   // 12. Pending extension requests older than the reminder window

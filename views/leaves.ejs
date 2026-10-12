@@ -1,5 +1,5 @@
 <%- include('partials/header', { pageTitle: t('leaves') }) %>
-<div class="page-head"><h1 class="title-ic"><%- ic('calendar') %><%= t('leaves') %></h1><div class="btns"><a class="btn" href="/data/export/leaves"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#leaves"><%- ic('upload') %><%= t('import') %></a><a class="btn" href="/calendar"><%- ic('calendar') %><%= t('calendar') %></a><a class="btn ghost" href="?current=1"><%= lang === 'ar' ? 'الحالية والقادمة' : 'Current & upcoming' %></a></div></div>
+<div class="page-head"><div><div class="eyebrow"><%- ic('calendar') %><%= t('grp_people') %></div><h1><%= t('leaves') %></h1></div><div class="btns"><a class="btn" href="/data/export/leaves"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#leaves"><%- ic('upload') %><%= t('import') %></a><a class="btn" href="/calendar"><%- ic('calendar') %><%= t('calendar') %></a><a class="btn ghost" href="?current=1"><%= lang === 'ar' ? 'الحالية والقادمة' : 'Current & upcoming' %></a></div></div>
 <% if (['hr','admin'].includes(user.role)) { %>
 <form method="post" action="/leaves" class="card form-grid">
   <label><%= t('employee') %> *<select name="employee_id" required><option value=""></option><% employees.forEach(e => { %><option value="<%= e.id %>"><%= e.employee_no %> - <%= nm(e) %></option><% }) %></select></label>
@@ -18,7 +18,7 @@
   <tbody>
   <% if (!rows.length) { %><tr><td colspan="8" class="empty"><%= t('no_records') %></td></tr><% } %>
   <% const hrEdit = ['hr','admin'].includes(user.role);
-     rows.forEach(l => { %><tr class="<%= l.status === 'cancelled' ? 'muted' : '' %>"><td><a href="/employees/<%= l.employee_id %>"><%= l.employee_no %></a> <%= nm(l) %></td><td><span class="ev-tag ev-<%= l.type %>"><%= t('lt_' + l.type) %></span></td><td><%= l.mode ? t('mode_' + l.mode) : '' %><%= l.location ? (l.mode ? ' · ' : '') + l.location : '' %></td><td class="mono"><%= l.start_date %></td><td class="mono"><%= l.end_date %></td><td><span class="pill <%= l.status === 'approved' ? 'ok' : l.status === 'cancelled' ? 'bad' : 'warn' %>"><%= lbl('leave_status', l.status) %></span></td><td><%= l.notes || '' %></td>
+     rows.forEach(l => { %><tr class="<%= l.status === 'cancelled' ? 'muted' : '' %>"><td><a <%- empHref(l.employee_id) %>><%= l.employee_no %></a> <%= nm(l) %></td><td><span class="ev-tag ev-<%= l.type %>"><%= t('lt_' + l.type) %></span></td><td><%= l.mode ? t('mode_' + l.mode) : '' %><%= l.location ? (l.mode ? ' · ' : '') + l.location : '' %></td><td class="mono"><%= l.start_date %></td><td class="mono"><%= l.end_date %></td><td><span class="pill <%= l.status === 'approved' ? 'ok' : l.status === 'cancelled' ? 'bad' : 'warn' %>"><%= lbl('leave_status', l.status) %></span></td><td><%= l.notes || '' %></td>
     <td class="nowrap"><% if (hrEdit && l.status !== 'cancelled') { %>
       <details><summary class="btn small ghost"><%- ic('pen') %><%= t('edit') %></summary>
         <form method="post" action="/leaves/<%= l.id %>" class="mini-grid">

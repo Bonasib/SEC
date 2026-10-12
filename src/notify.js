@@ -27,11 +27,20 @@ const AR = /[؀-ۿ]/;
 function splitBilingual(text) {
   const s = String(text ?? '');
   const i = s.lastIndexOf(' / ');
+  // A "/" inside brackets, e.g. "(غير متاح / unavailable)", is part of the sentence: keep the line whole
+  const open = (s.slice(0, i).match(/\(/g) || []).length > (s.slice(0, i).match(/\)/g) || []).length;
+  if (open) return { ar: s, en: s };
   if (i > 0 && AR.test(s.slice(0, i)) && !AR.test(s.slice(i + 3))) {
     const ar = s.slice(0, i);
     // Keep a shared prefix such as "WO000123 - " on the English line too
     const prefix = (ar.match(/^[^\u0600-\u06FF]+? - /) || [''])[0];
     return { ar, en: prefix + s.slice(i + 3) };
+  }
+  // "English / عربي" (error messages)
+  if (i > 0 && !AR.test(s.slice(0, i)) && AR.test(s.slice(i + 3))) {
+    const en = s.slice(0, i), ar = s.slice(i + 3);
+    const prefix = (en.match(/^[A-Z0-9-]+\s?[-:]\s/) || [''])[0];
+    return { ar: prefix && !ar.startsWith(prefix) ? prefix + ar : ar, en };
   }
   return AR.test(s) ? { ar: s, en: '' } : { ar: '', en: s };
 }

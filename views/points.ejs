@@ -9,7 +9,7 @@
   let cum = 0;
 %>
 <div class="page-head">
-  <div><div class="eyebrow"><%- ic('star') %><%= t('opening_balance') %>: <%= fmtN(board.opening) %></div><h1 class="title-ic"><%= t('points') %> <span class="result-count"><%= year %></span></h1></div>
+  <div><div class="eyebrow"><%- ic('star') %><%= t('opening_balance') %>: <%= fmtN(board.opening) %></div><h1><%= t('points') %> <span class="result-count"><%= year %></span></h1></div>
   <form class="btns" method="get">
     <select name="year" onchange="this.form.submit()" aria-label="year"><% [...new Set([year, ...years])].sort((a, b) => b - a).forEach(y => { %><option <%= y === year ? 'selected' : '' %>><%= y %></option><% }) %></select>
     <% if (canViewAll) { %>
@@ -22,12 +22,12 @@
 <% if (me) { %>
 <section class="card">
   <div class="my-standing">
-    <span class="avatar" style="width:52px;height:52px;font-size:18px"><%= initials(user) %></span>
+    <span class="avatar" style="width:52px;height:52px;font-size:18px"><%- face(user) %></span>
     <div><div class="muted small"><%= t('my_points') %></div><div class="big"><%= fmtN(me.balance) %></div></div>
     <div><div class="muted small"><%= t('change') %></div><b class="pts-delta <%= me.delta > 0 ? 'up' : me.delta < 0 ? 'down' : '' %>" style="font-size:20px"><%= sgn(me.delta) %></b></div>
     <div><div class="muted small"><%= t('rank') %></div><b style="font-size:20px"><%= me.rank ? '#' + me.rank : '—' %></b></div>
     <div><div class="muted small"><%= t('rating') %></div><%- ratingBadge(me) %></div>
-    <a class="btn ghost" style="margin-inline-start:auto" href="/points/employee/<%= user.id %>?year=<%= year %>"><%- ic('file') %><%= t('statement') %></a>
+    <a class="btn ghost" style="margin-inline-start:auto" <%- ptsHref(user.id, '?year=' + year) %>><%- ic('file') %><%= t('statement') %></a>
   </div>
 </section>
 <% } %>
@@ -36,9 +36,9 @@
 <% if (ranked.length) { %>
 <div class="podium">
   <% ranked.slice(0, 3).forEach((r, i) => { %>
-    <a class="card p<%= i + 1 %>" href="/points/employee/<%= r.id %>?year=<%= year %>" style="color:inherit;text-decoration:none">
+    <a class="card p<%= i + 1 %>" <%- ptsHref(r.id, '?year=' + year) %> style="color:inherit;text-decoration:none">
       <span class="medal"><%= r.rank %></span>
-      <span class="avatar"><%= initials(r) %></span>
+      <span class="avatar"><%- face(r) %></span>
       <b><%= nm(r) %></b><div class="muted small"><span class="mono"><%= r.employee_no %></span> · <%= r.section_code || '' %></div>
       <span class="pts"><%= fmtN(r.balance) %></span>
       <%- ratingBadge(r) %>
@@ -56,7 +56,7 @@
     <% const flat = board.rows.filter(r => !r.awarded && !r.below); board.rows.filter(r => r.awarded || r.below).forEach(r => { %>
       <tr class="<%= r.below ? 'row-warn' : '' %>">
         <td><b><%= r.rank ? '#' + r.rank : '—' %></b></td>
-        <td><a href="/points/employee/<%= r.id %>?year=<%= year %>" style="display:flex;align-items:center;gap:10px;color:inherit"><span class="avatar" style="width:30px;height:30px;font-size:12px"><%= initials(r) %></span><span><span class="cell-main"><%= nm(r) %></span><span class="cell-sub mono"><%= r.employee_no %></span></span></a></td>
+        <td><a <%- ptsHref(r.id, '?year=' + year) %> style="display:flex;align-items:center;gap:10px;color:inherit"><span class="avatar" style="width:30px;height:30px;font-size:12px"><%- face(r) %></span><span><span class="cell-main"><%= nm(r) %></span><span class="cell-sub mono"><%= r.employee_no %></span></span></a></td>
         <td class="mono"><%= r.section_code || '' %></td>
         <td class="num"><b><%= fmtN(r.balance) %></b><div class="balance-bar"><span style="width:<%= Math.round(r.balance / maxBal * 100) %>%"></span></div></td>
         <td class="num"><span class="pts-delta <%= r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : '' %>"><%= sgn(r.delta) %></span><% if (r.pending) { %> <span class="pill warn" title="<%= t('ps_pending') %>"><%- ic('hourglass') %><%= r.pending %></span><% } %></td>
@@ -68,7 +68,7 @@
   </table></div>
   <% if (flat.length) { %>
   <details class="collapsible" style="padding:14px 20px;border-top:1px solid var(--border)"><summary><b><%= flat.length %></b>&nbsp;<%= lang === 'ar' ? 'موظفًا عند الرصيد الافتتاحي (غير مستحقين)' : 'employees at the opening balance (not eligible)' %></summary>
-    <div style="display:flex;flex-wrap:wrap;gap:6px"><% flat.forEach(r => { %><a class="pill" href="/points/employee/<%= r.id %>?year=<%= year %>"><span class="mono"><%= r.employee_no %></span> <%= nm(r) %><% if (r.pending) { %> · <%- ic('hourglass') %><%= r.pending %><% } %></a><% }) %></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px"><% flat.forEach(r => { %><a class="pill" <%- ptsHref(r.id, '?year=' + year) %>><span class="mono"><%= r.employee_no %></span> <%= nm(r) %><% if (r.pending) { %> · <%- ic('hourglass') %><%= r.pending %><% } %></a><% }) %></div>
   </details>
   <% } %>
 </section>

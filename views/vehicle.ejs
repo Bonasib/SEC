@@ -1,0 +1,59 @@
+<%- include('partials/header', { pageTitle: q.plate_number || q.code }) %>
+<section class="page-head wo-head">
+  <div style="flex:1;min-width:260px">
+    <a class="small" href="/fleet"><%- ic('arrow', 'ic-back') %> <%= t('fleet') %></a>
+    <h1 style="margin-top:8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="plate" dir="ltr"><%= q.plate_number || '—' %></span> <%= t('vt_' + (q.vehicle_type || 'other')) %></h1>
+    <div class="tags">
+      <span class="wo-num"><%= q.code %></span>
+      <span class="pill <%= q.status === 'available' ? 'ok' : 'warn' %>"><%= t('es_' + q.status) %></span>
+      <% if (q.flag) { %><span class="pill <%= q.flag === 'expired' ? 'bad' : 'warn' %>"><%- ic('alert') %><%= q.flag === 'expired' ? t('registration_expired') : t('doc_soon') %></span><% } %>
+      <% if (q.section_code) { %><span class="pill"><%- ic('network') %><%= q.section_code %></span><% } %>
+    </div>
+  </div>
+</section>
+<div class="kpis">
+  <div class="kpi"><span class="kpi-icon"><%- ic('users') %></span><span class="kpi-body"><b><%= q.seats || '—' %></b><span class="kpi-label"><%= t('seats') %></span></span></div>
+  <div class="kpi"><span class="kpi-icon"><%- ic('clipboard') %></span><span class="kpi-body"><b><%= trips.length %></b><span class="kpi-label"><%= t('work_orders') %></span></span></div>
+  <div class="kpi ok"><span class="kpi-icon"><%- ic('check-circle') %></span><span class="kpi-body"><b><%= trips.filter(x => x.status === 'closed').length %></b><span class="kpi-label"><%= t('completed_trips') %></span></span></div>
+  <div class="kpi violet"><span class="kpi-icon"><%- ic('route') %></span><span class="kpi-body"><b><%= Math.round(km).toLocaleString('en') %></b><span class="kpi-label">km</span></span></div>
+  <div class="kpi <%= documents.some(d => d.state === 'expired') ? 'crit' : documents.some(d => d.state === 'soon') ? 'warn' : '' %>"><span class="kpi-icon"><%- ic('file') %></span><span class="kpi-body"><b><%= documents.length %></b><span class="kpi-label"><%= t('documents') %></span></span></div>
+</div>
+<div class="grid2">
+<section class="card">
+  <h2><%- ic('truck') %><%= t('details') %></h2>
+  <dl class="kv">
+    <dt><%= t('make_model') %></dt><dd><%= q.make_model || q.name %></dd>
+    <dt><%= t('model_year') %></dt><dd><%= q.model_year || '—' %></dd>
+    <dt><%= t('registration_expiry') %></dt><dd class="mono"><%= q.expiry_date || '—' %></dd>
+    <dt><%= t('location') %></dt><dd><%= q.location || '—' %></dd>
+  </dl>
+  <% if (canEdit) { %>
+  <details class="collapsible" style="margin-top:12px"><summary class="btn small"><%- ic('pen') %><%= t('edit') %></summary>
+    <form method="post" action="/fleet/<%= q.id %>" class="form-grid" style="margin-top:12px">
+      <input type="hidden" name="back" value="detail">
+      <label><%= t('plate_number') %><input name="plate_number" value="<%= q.plate_number || '' %>" required dir="ltr"></label>
+      <label><%= t('vehicle_type') %><select name="vehicle_type"><% VEHICLE_TYPES.forEach(v => { %><option value="<%= v %>" <%= q.vehicle_type === v ? 'selected' : '' %>><%= t('vt_' + v) %></option><% }) %></select></label>
+      <label><%= t('make_model') %><input name="make_model" value="<%= q.make_model || '' %>"></label>
+      <label><%= t('model_year') %><input type="number" name="model_year" value="<%= q.model_year || '' %>"></label>
+      <label><%= t('seats') %><input type="number" min="1" name="seats" value="<%= q.seats || '' %>" required></label>
+      <label><%= t('section') %><select name="section_id"><option value=""></option><% sections.forEach(s => { %><option value="<%= s.id %>" <%= q.section_id === s.id ? 'selected' : '' %>><%= s.code %> · <%= nm(s) %></option><% }) %></select></label>
+      <label><%= t('status') %><select name="status"><% EQUIP_STATUS.forEach(v => { %><option value="<%= v %>" <%= q.status === v ? 'selected' : '' %>><%= t('es_' + v) %></option><% }) %></select></label>
+      <label><%= t('registration_expiry') %><input type="date" name="expiry_date" value="<%= q.expiry_date || '' %>"></label>
+      <label class="span2"><%= t('location') %><input name="location" value="<%= q.location || '' %>"></label>
+      <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button></div>
+    </form></details>
+  <% } %>
+</section>
+<%- include('partials/documents', { kind: 'vehicle', id: q.id, documents, rights: docRights, types: DOC_TYPES, hint: t('vehicle_docs_hint') }) %>
+</div>
+<section class="card table-card">
+  <div class="card-head"><h2><%- ic('clipboard') %><%= t('work_orders') %></h2><span class="pill"><%= trips.length %></span></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th><%= t('wo_number') %></th><th><%= t('title') %></th><th><%= t('team_leader') %></th><th><%= t('planned_start') %></th><th class="num">km</th><th><%= t('status') %></th></tr></thead>
+    <tbody>
+    <% if (!trips.length) { %><tr><td colspan="6" class="empty"><%= t('no_records') %></td></tr><% } %>
+    <% trips.forEach(w => { %><tr><td><a class="wo-link" href="/wo/<%= w.id %>"><%= w.wo_number %></a></td><td><%= w.title %></td><td><%= nm(w) %></td><td class="nowrap" data-sort-value="<%= w.planned_start %>"><%= fmt(w.planned_start) %></td><td class="num"><%= w.distance_km || 0 %></td><td><span class="st st-<%= w.status %>"><%= t('st_' + w.status) %></span></td></tr><% }) %>
+    </tbody>
+  </table></div>
+</section>
+<%- include('partials/footer') %>

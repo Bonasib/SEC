@@ -1,5 +1,5 @@
 <%- include('partials/header', { pageTitle: t('acting') }) %>
-<div class="page-head"><h1 class="title-ic"><%- ic('user-check') %><%= t('acting') %></h1><div class="btns"><a class="btn" href="/data/export/acting_assignments"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#acting_assignments"><%- ic('upload') %><%= t('import') %></a></div></div>
+<div class="page-head"><div><div class="eyebrow"><%- ic('user-check') %><%= t('grp_people') %></div><h1><%= t('acting') %></h1></div><div class="btns"><a class="btn" href="/data/export/acting_assignments"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#acting_assignments"><%- ic('upload') %><%= t('import') %></a></div></div>
 <section class="card">
   <h2><%- ic('search') %><%= lang === 'ar' ? 'من كان المسؤول في تاريخ معين؟' : 'Who was in charge on a given date?' %></h2>
   <form method="get" class="inline-form">

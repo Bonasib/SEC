@@ -16,7 +16,7 @@ function filtersFrom(req) {
   // Without the calendar.view_all permission an employee sees their own team (plus any granted sections)
   const v = require('../access').can(req.user, 'calendar.view_all');
   const own = req.user.section_id || null;
-  let sectionId = q.section === 'all' ? null : Number(q.section) || (['employee', 'team_leader', 'section_head'].includes(req.user.role) ? own : null);
+  let sectionId = q.section === 'all' ? null : Number(q.section) || (['employee', 'team_leader', 'foreman', 'section_head'].includes(req.user.role) ? own : null);
   if (v !== true) {
     const allowed = [own, ...(Array.isArray(v) ? v : [])].filter(Boolean);
     if (!allowed.includes(sectionId)) sectionId = own;

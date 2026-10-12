@@ -1,31 +1,48 @@
 <%- include('partials/header', { pageTitle: item.code }) %>
+<% const nameOf = (x) => lang === 'en' && x.name_en ? x.name_en : x.name_ar; const U = t('uom_' + item.uom); %>
 <section class="page-head wo-head">
-  <div style="flex:1;min-width:260px">
-    <a class="small" href="/materials"><%- ic('arrow', 'ic-back') %> <%= t('materials_tools') %></a>
-    <h1 style="margin-top:8px"><%= lang === 'en' && item.name_en ? item.name_en : item.name_ar %></h1>
-    <div class="tags">
-      <span class="wo-num"><%= item.code %></span>
-      <span class="pill ik-<%= item.kind %>"><%- ic(item.kind === 'material' ? 'package' : item.kind === 'tool' ? 'wrench' : 'zap') %><%= t('ik_' + item.kind) %></span>
-      <% if (item.category) { %><span class="pill"><%= item.category %></span><% } %>
-      <% if (item.status === 'inactive') { %><span class="pill bad"><%= t('inactive') %></span><% } %>
-      <span class="pill <%= item.out ? 'bad' : item.low ? 'warn' : 'ok' %>"><%= item.out ? t('stock_out') : item.low ? t('stock_low') : t('stock_ok') %></span>
+  <div style="flex:1;min-width:260px;display:flex;gap:16px;align-items:center">
+    <%- thumb(item, 'xxl') %>
+    <div>
+      <a class="small" href="/materials"><%- ic('arrow', 'ic-back') %> <%= t('materials_tools') %></a>
+      <h1 style="margin-top:8px"><%= nameOf(item) %></h1>
+      <div class="tags">
+        <span class="wo-num"><%= item.code %></span>
+        <% if (item.inventory_no) { %><span class="pill mono" title="<%= t('inventory_no') %>"># <%= item.inventory_no %></span><% } %>
+        <span class="pill ik-<%= item.kind %>"><%= t('ik_' + item.kind) %></span>
+        <% if (item.category) { %><span class="pill"><%= item.category %></span><% } %>
+        <% if (item.status === 'inactive') { %><span class="pill bad"><%= t('inactive') %></span><% } %>
+        <span class="pill <%= item.out ? 'bad' : item.low ? 'warn' : 'ok' %>"><%= item.out ? t('stock_out') : item.low ? t('stock_low') : t('stock_ok') %></span>
+      </div>
     </div>
   </div>
+  <div class="btns"><a class="btn" href="/materials/transactions?item=<%= item.id %>"><%- ic('transfer') %><%= t('item_transactions') %></a></div>
 </section>
+
 <div class="kpis">
-  <div class="kpi"><span class="kpi-icon"><%- ic('boxes') %></span><span class="kpi-body"><b><%= item.quantity %></b><span class="kpi-label"><%= t('on_hand') %> (<%= t('uom_' + item.uom) %>)</span></span></div>
+  <div class="kpi"><span class="kpi-icon"><%- ic('boxes') %></span><span class="kpi-body"><b><%= item.quantity %></b><span class="kpi-label"><%= t('on_hand') %> (<%= U %>)</span></span></div>
   <div class="kpi violet"><span class="kpi-icon"><%- ic('clipboard') %></span><span class="kpi-body"><b><%= item.reserved %></b><span class="kpi-label"><%= t('reserved') %></span></span></div>
   <div class="kpi <%= item.out ? 'crit' : item.low ? 'warn' : 'ok' %>"><span class="kpi-icon"><%- ic('check-circle') %></span><span class="kpi-body"><b><%= item.available %></b><span class="kpi-label"><%= t('available') %></span></span></div>
-  <div class="kpi"><span class="kpi-icon"><%- ic('alert') %></span><span class="kpi-body"><b><%= item.min_qty %></b><span class="kpi-label"><%= t('min_qty') %></span></span></div>
+  <div class="kpi"><span class="kpi-icon"><%- ic('truck') %></span><span class="kpi-body"><b><%= item.on_order %></b><span class="kpi-label"><%= t('on_order') %></span></span></div>
+  <div class="kpi"><span class="kpi-icon"><%- ic('package') %></span><span class="kpi-body"><b><%= summary.consumed %></b><span class="kpi-label"><%= t('consumed_year') %> <%= summary.year %></span></span></div>
+  <div class="kpi"><span class="kpi-icon"><%- ic('clock') %></span><span class="kpi-body"><b><%= summary.cover_months == null ? '—' : summary.cover_months %></b><span class="kpi-label"><%= t('months_cover') %></span></span></div>
 </div>
-<div class="grid2">
+<% if (item.suggest) { %>
+<div class="flash flash-warning"><%- ic('alert') %><div><b><%= t('reorder_needed') %></b> — <%= t('suggested') %>: <b><%= item.suggest %> <%= U %></b><% if (canEdit) { %> · <a href="#orders"><%= t('create_order') %></a><% } %></div></div>
+<% } %>
+
+<div class="<%= canEdit ? 'grid2' : '' %>">
 <section class="card">
-  <h2><%- ic('file') %><%= t('details') %></h2>
+  <h2><%- ic('file') %><%= t('item_summary') %></h2>
   <dl class="kv">
-    <dt><%= t('name_ar') %></dt><dd><%= item.name_ar %></dd>
-    <dt><%= t('name_en') %></dt><dd dir="ltr" style="text-align:start"><%= item.name_en || '—' %></dd>
-    <dt><%= t('location') %></dt><dd><%= item.location || '—' %></dd>
-    <dt><%= t('section') %></dt><dd><%= item.section_code || '—' %></dd>
+    <dt><%= t('inventory_no') %></dt><dd class="mono"><%= item.inventory_no || '—' %></dd>
+    <dt><%= t('location') %></dt><dd><%= item.location || '—' %><%= item.section_code ? ' · ' + item.section_code : '' %></dd>
+    <dt><%= t('supplier') %></dt><dd><%= item.supplier || '—' %></dd>
+    <dt><%= t('min_qty') %> / <%= t('reorder_qty') %></dt><dd><%= item.min_qty %> / <%= item.reorder_qty || '—' %> <%= U %></dd>
+    <dt><%= t('received_year') %></dt><dd><%= summary.received %> <%= U %></dd>
+    <dt><%= t('consumed_year') %></dt><dd><%= summary.consumed %> <%= U %> · <%= t('avg_month') %> <%= summary.avg_month %></dd>
+    <dt><%= t('damaged') %></dt><dd><%= summary.damaged %> <%= U %></dd>
+    <dt><%= t('work_orders') %></dt><dd><%= summary.wo_count %></dd>
     <% if (item.notes) { %><dt><%= t('notes') %></dt><dd class="pre"><%= item.notes %></dd><% } %>
   </dl>
   <% if (canEdit) { %>
@@ -49,6 +66,36 @@
 <% } %>
 </div>
 
+<section class="card table-card" id="orders">
+  <div class="card-head"><h2><%- ic('truck') %><%= t('supplier_orders') %></h2><span class="pill"><%= orders.filter(o => o.status === 'open').length %> <%= t('open_orders') %></span></div>
+  <div class="table-wrap"><table class="tbl">
+    <thead><tr><th><%= t('date') %></th><th><%= t('order_no') %></th><th><%= t('supplier') %></th><th class="num"><%= t('ordered_qty') %></th><th class="num"><%= t('received_qty') %></th><th><%= t('expected_date') %></th><th><%= t('status') %></th><th></th></tr></thead>
+    <tbody>
+    <% if (!orders.length) { %><tr><td colspan="8" class="empty"><%= t('no_records') %></td></tr><% } %>
+    <% orders.forEach(o => { const left = Math.round((o.qty - o.received_qty) * 1000) / 1000; %><tr>
+      <td class="nowrap" data-sort-value="<%= o.created_at %>"><%= fmt(o.created_at, false) %></td><td class="mono"><%= o.order_no || '—' %></td><td><%= o.supplier || '—' %></td>
+      <td class="num"><%= o.qty %></td><td class="num"><%= o.received_qty %></td><td class="mono"><%= o.expected_date || '—' %></td>
+      <td><span class="pill <%= o.status === 'received' ? 'ok' : o.status === 'cancelled' ? 'bad' : 'info' %>"><%= t('os_' + o.status) %></span></td>
+      <td class="nowrap"><% if (canEdit && o.status === 'open') { %>
+        <form method="post" action="/materials/orders/<%= o.id %>/receive" class="inline-form"><input type="number" name="qty" min="0" step="any" max="<%= left %>" value="<%= left %>" style="width:90px" aria-label="<%= t('received_qty') %>"><button class="btn small primary"><%- ic('check') %><%= t('receive') %></button></form>
+        <form method="post" action="/materials/orders/<%= o.id %>/cancel" data-confirm="<%= t('cancel') %>?"><button class="btn small ghost danger"><%= t('cancel') %></button></form>
+      <% } %></td></tr><% }) %>
+    </tbody>
+  </table></div>
+  <% if (canEdit) { %>
+  <details class="add-line" <%= item.suggest ? 'open' : '' %>><summary class="btn small"><%- ic('plus') %><%= t('create_order') %></summary>
+    <form method="post" action="/materials/<%= item.id %>/orders" class="form-grid upload-panel">
+      <label><span><%= t('ordered_qty') %> <span class="req">*</span></span><input type="number" name="qty" min="0" step="any" required value="<%= item.suggest || item.reorder_qty || '' %>"></label>
+      <label><%= t('order_no') %><input name="order_no" dir="ltr" placeholder="PO-2026-0001"></label>
+      <label><%= t('supplier') %><input name="supplier" value="<%= item.supplier || '' %>"></label>
+      <label><%= t('expected_date') %><input type="date" name="expected_date"></label>
+      <label class="span2"><%= t('notes') %><input name="notes"></label>
+      <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button></div>
+    </form>
+  </details>
+  <% } %>
+</section>
+
 <section class="card table-card">
   <div class="card-head"><h2><%- ic('clipboard') %><%= t('work_orders') %></h2><span class="pill"><%= wos.length %></span></div>
   <div class="table-wrap"><table class="tbl">
@@ -61,13 +108,7 @@
 </section>
 
 <section class="card table-card" id="movements">
-  <div class="card-head"><h2><%- ic('transfer') %><%= t('stock_movements') %></h2><span class="pill"><%= movements.length %></span></div>
-  <div class="table-wrap"><table class="tbl">
-    <thead><tr><th><%= t('date') %></th><th><%= t('movement_type') %></th><th class="num"><%= t('quantity') %></th><th class="num"><%= t('balance') %></th><th><%= t('wo_number') %></th><th><%= t('notes') %></th><th><%= t('by') %></th></tr></thead>
-    <tbody>
-    <% if (!movements.length) { %><tr><td colspan="7" class="empty"><%= t('no_records') %></td></tr><% } %>
-    <% movements.forEach(m => { %><tr><td class="nowrap" data-sort-value="<%= m.created_at %>"><%= fmt(m.created_at) %></td><td><span class="pill <%= m.qty > 0 ? 'ok' : m.kind === 'damage' ? 'bad' : '' %>"><%= t('mv_' + m.kind) %></span></td><td class="num mono" dir="ltr"><%= m.qty > 0 ? '+' : '' %><%= m.qty %></td><td class="num"><b><%= m.balance %></b></td><td><% if (m.wo_id) { %><a class="wo-link" href="/wo/<%= m.wo_id %>"><%= m.wo_number %></a><% } %></td><td><%= m.note || '' %></td><td><%= m.name_ar ? nm(m) : '—' %></td></tr><% }) %>
-    </tbody>
-  </table></div>
+  <div class="card-head"><h2><%- ic('transfer') %><%= t('item_transactions') %></h2><a class="small" href="/materials/transactions?item=<%= item.id %>"><%= t('show_more') %> →</a></div>
+  <%- include('partials/tx_table', { rows: transactions, showItem: false }) %>
 </section>
 <%- include('partials/footer') %>

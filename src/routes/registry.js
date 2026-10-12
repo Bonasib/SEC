@@ -76,7 +76,23 @@ router.get('/fleet', (req, res) => {
     expired: rows.filter((q) => q.flag === 'expired').length,
     seats: rows.filter((q) => q.status === 'available' && q.flag !== 'expired').reduce((a, q) => a + (q.seats || 0), 0),
   };
-  res.render('fleet', { rows, stats, VEHICLE_TYPES, EQUIP_STATUS, sections: sections(), canEdit: FLEET_EDIT(req) });
+  res.render('fleet', { rows, stats, VEHICLE_TYPES, EQUIP_STATUS, sections: sections(), canEdit: FLEET_EDIT(req), docFlags: require('../documents').expirySummary('vehicle') });
+});
+
+router.get('/fleet/:id(\\d+)', (req, res) => {
+  const Docs = require('../documents');
+  const q = get("SELECT q.*, s.code section_code FROM equipment q LEFT JOIN org_units s ON s.id = q.section_id WHERE q.id = ? AND q.type = 'vehicle'", Number(req.params.id));
+  if (!q) throw new HttpError(404, res.locals.t('not_found'));
+  const today = todayRiyadh();
+  const horizon = new Date(Date.parse(today) + Number(setting('expiry_alert_days')) * 864e5).toISOString().slice(0, 10);
+  q.flag = q.expiry_date && q.expiry_date < today ? 'expired' : q.expiry_date && q.expiry_date <= horizon ? 'soon' : null;
+  const trips = all(`SELECT w.id, w.wo_number, w.title, w.status, w.planned_start, w.planned_end, w.distance_km, e.name_ar, e.name_en FROM wo_equipment x JOIN work_orders w ON w.id = x.wo_id
+    LEFT JOIN employees e ON e.id = w.team_leader_id WHERE x.equipment_id = ? ORDER BY w.planned_start DESC LIMIT 100`, q.id);
+  res.render('vehicle', {
+    q, trips, VEHICLE_TYPES, EQUIP_STATUS, sections: sections(), canEdit: FLEET_EDIT(req),
+    documents: Docs.list('vehicle', q.id), docRights: Docs.rights('vehicle', q, req.user), DOC_TYPES: Docs.TYPES.vehicle,
+    km: trips.filter((t) => t.status === 'closed').reduce((a, t) => a + (t.distance_km || 0), 0),
+  });
 });
 
 function vehicleFromBody(b, old = {}) {
@@ -113,7 +129,7 @@ router.post('/fleet/:id', (req, res) => {
   run(`UPDATE equipment SET name=?, plate_number=?, vehicle_type=?, make_model=?, model_year=?, seats=?, section_id=?, status=?, location=?, expiry_date=? WHERE id=?`, ...Object.values(v), q.id);
   audit(req, 'update', 'vehicle', q.code, q, v);
   res.flash('success', res.locals.t('saved'));
-  res.redirect('/fleet');
+  res.redirect(req.body.back === 'detail' ? `/fleet/${q.id}` : '/fleet');
 });
 
 router.get('/equipment', (req, res) => {

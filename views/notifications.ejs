@@ -1,5 +1,5 @@
 <%- include('partials/header', { pageTitle: t('notifications') }) %>
-<div class="page-head"><h1 class="title-ic"><%- ic('bell') %><%= t('notifications') %></h1><form method="post" action="/notifications/read-all"><button class="btn"><%- ic('check') %><%= t('mark_all_read') %></button></form></div>
+<div class="page-head"><div><div class="eyebrow"><%- ic('bell') %><%= t('grp_operations') %></div><h1><%= t('notifications') %></h1></div><form method="post" action="/notifications/read-all"><button class="btn"><%- ic('check') %><%= t('mark_all_read') %></button></form></div>
 <div class="card"><ul class="alerts big">
 <% rows.forEach(n => { %>
   <li class="sev-<%= n.severity %> <%= n.read_at ? '' : 'unread' %>"><span class="sev"><%- ic(n.severity === 'critical' ? 'siren' : n.severity === 'warning' ? 'alert' : 'bell') %></span><span class="a-body"><a href="/notifications/<%= n.id %>"><%= tx(n.title) %></a><% if (n.body) { %><span class="pre muted small"><%= tx(n.body) %></span><% } %><small><%= fmt(n.created_at) %> · <span><%= lbl('severity', n.severity) %></span></small></span><% if (!n.read_at) { %><span class="unread-dot" aria-label="unread"></span><% } %></li>

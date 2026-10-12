@@ -3,7 +3,7 @@ const { all, get, run } = require('./db');
 const { localToUtc, utcToLocalInput, audit, hashPassword } = require('./util');
 const wo = require('./workorders');
 
-const ROLES = ['employee', 'team_leader', 'section_head', 'division_manager', 'department_manager', 'sector_head', 'hr', 'safety', 'warehouse', 'admin', 'auditor'];
+const ROLES = ['employee', 'team_leader', 'foreman', 'section_head', 'division_manager', 'department_manager', 'sector_head', 'hr', 'safety', 'warehouse', 'admin', 'auditor'];
 const MANAGERS = ['section_head', 'division_manager', 'department_manager', 'sector_head'];
 const WO_TYPES = ['preventive', 'corrective', 'inspection', 'tower_inspection', 'critical', 'contractor_supervision', 'other'];
 const PRIORITIES = ['normal', 'C1', 'C2', 'C3', 'C4'];
@@ -460,8 +460,11 @@ const ENTITIES = {
       ['section_code', 'رمز القسم', 'Section code'],
       ['status', 'الحالة: active/inactive', 'Status: active/inactive'],
       ['notes', 'ملاحظات', 'Notes'],
+      ['inventory_no', 'رقم المخزون (SAP)', 'Inventory number (SAP)'],
+      ['reorder_qty', 'كمية إعادة الطلب', 'Reorder quantity'],
+      ['supplier', 'المورد', 'Supplier'],
     ],
-    exportRows: () => all(`SELECT i.code, i.kind, i.name_ar, i.name_en, i.category, i.uom, i.quantity, i.min_qty, i.location, s.code section_code, i.status, i.notes
+    exportRows: () => all(`SELECT i.code, i.kind, i.name_ar, i.name_en, i.category, i.uom, i.quantity, i.min_qty, i.location, s.code section_code, i.status, i.notes, i.inventory_no, i.reorder_qty, i.supplier
       FROM items i LEFT JOIN org_units s ON s.id = i.section_id ORDER BY i.kind, i.code`),
     validate(row) {
       const r = collect(row, {
@@ -471,15 +474,17 @@ const ENTITIES = {
         min_qty: (v) => Math.max(0, num(v, 'min_qty') || 0), location: text,
         section_id: () => (str(row.section_code) ? mustUnit(row.section_code, 'section_code').id : null),
         status: (v) => oneOf(str(v).toLowerCase(), ['active', 'inactive'], 'status') || 'active', notes: text,
+        inventory_no: text, reorder_qty: (v) => num(v, 'reorder_qty'), supplier: text,
       });
       r.mode = r.data.code && get('SELECT 1 FROM items WHERE code = ?', r.data.code) ? 'update' : 'insert';
       return r;
     },
     apply(d, mode, req) {
-      run(`INSERT INTO items(code, kind, name_ar, name_en, category, uom, min_qty, location, section_id, status, notes) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+      run(`INSERT INTO items(code, kind, name_ar, name_en, category, uom, min_qty, location, section_id, status, notes, inventory_no, reorder_qty, supplier) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(code) DO UPDATE SET kind=excluded.kind, name_ar=excluded.name_ar, name_en=excluded.name_en, category=excluded.category, uom=excluded.uom,
-        min_qty=excluded.min_qty, location=excluded.location, section_id=excluded.section_id, status=excluded.status, notes=excluded.notes`,
-        d.code, d.kind, d.name_ar, d.name_en, d.category, d.uom, d.min_qty, d.location, d.section_id, d.status, d.notes);
+        min_qty=excluded.min_qty, location=excluded.location, section_id=excluded.section_id, status=excluded.status, notes=excluded.notes,
+        inventory_no=excluded.inventory_no, reorder_qty=excluded.reorder_qty, supplier=excluded.supplier`,
+        d.code, d.kind, d.name_ar, d.name_en, d.category, d.uom, d.min_qty, d.location, d.section_id, d.status, d.notes, d.inventory_no, d.reorder_qty, d.supplier);
       const it = get('SELECT * FROM items WHERE code = ?', d.code);
       // The imported quantity becomes the stock on hand through an audited movement
       if (d.quantity != null && d.quantity !== it.quantity) {
@@ -492,7 +497,7 @@ const ENTITIES = {
   },
 
   tasks: {
-    label: 'daily_tasks', importRoles: ['admin', 'team_leader', 'section_head', 'division_manager', 'department_manager', 'sector_head'], exportRoles: ['*'],
+    label: 'daily_tasks', importRoles: ['admin', 'team_leader', 'foreman', 'section_head', 'division_manager', 'department_manager', 'sector_head'], exportRoles: ['*'],
     columns: [
       ['task_date', 'التاريخ YYYY-MM-DD', 'Date YYYY-MM-DD', true],
       ['start_time', 'وقت البداية HH:MM', 'Start time HH:MM'],
@@ -607,7 +612,7 @@ const ENTITIES = {
   },
 
   material_lines: {
-    label: 'materials', importRoles: ['admin', 'warehouse', 'team_leader', 'section_head'], exportRoles: ['*'],
+    label: 'materials', importRoles: ['admin', 'warehouse', 'team_leader', 'foreman', 'section_head'], exportRoles: ['*'],
     columns: [
       ['wo_number', 'رقم أمر العمل', 'Work order no.', true],
       ['reservation_number', 'رقم الحجز', 'Reservation no.'],
