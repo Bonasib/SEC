@@ -37,7 +37,7 @@
     <% const meter = (n) => { const pct = Math.min(100, Math.round(n / limit * 100)); const tone = n > limit ? 'over' : n === limit ? 'limit' : n >= limit * 0.8 ? 'near' : 'ok'; return `<div class="tmeter tm-${tone}" title="${n} / ${limit}"><span class="tm-bar"><span style="width:${pct}%"></span></span><b>${n}</b><small>/ ${limit}</small></div>`; }; %>
     <% rows.forEach(r => { %>
       <tr class="<%= r.state === 'over' ? 'row-bad' : r.state === 'limit' ? 'row-warn' : '' %>">
-        <td><a href="/travel?year=<%= year %>&employee=<%= r.id %>#trips" style="display:flex;align-items:center;gap:10px;color:inherit"><span class="avatar" style="width:30px;height:30px;font-size:12px"><%- face(r) %></span><span><span class="cell-main"><%= nm(r) %></span><span class="cell-sub mono"><%= r.employee_no %> · <%= r.job_title_en || '' %></span></span></a></td>
+        <td><a href="/travel?year=<%= year %>&employee=<%= r.id %>#trips" class="person-link"><span class="avatar av-sm"><%- face(r) %></span><span><span class="cell-main"><%= nm(r) %></span><span class="cell-sub mono"><%= r.employee_no %> · <%= r.job_title_en || '' %></span></span></a></td>
         <td class="mono"><%= r.section_code %></td>
         <td><%- meter(r.b) %></td>
         <td><%- meter(r.c) %></td>

@@ -14,11 +14,11 @@
       <td>
         <% if (self && p.status === 'approved' && p.points < 0 && !p.appeal_at) { %>
           <details><summary class="btn small ghost"><%- ic('message') %><%= t('appeal') %></summary>
-            <form method="post" action="/points/<%= p.id %>/appeal" class="mini-grid" style="grid-template-columns:1fr"><label><%= t('appeal_reason') %><textarea name="reason" required rows="2"></textarea></label><button class="btn small primary"><%= t('appeal') %></button></form></details>
+            <form method="post" action="/points/<%= p.id %>/appeal" class="mini-grid one-col"><label><%= t('appeal_reason') %><textarea name="reason" required rows="2"></textarea></label><button class="btn small primary"><%= t('appeal') %></button></form></details>
         <% } %>
         <% if (canReverse && p.status === 'approved' && p.rule_code !== 'reversal') { %>
           <details><summary class="btn small ghost"><%- ic('transfer') %><%= t('reverse') %></summary>
-            <form method="post" action="/points/<%= p.id %>/reverse" class="mini-grid" style="grid-template-columns:1fr"><label><span><%= t('reason') %> <span class="req">*</span></span><input name="reason" required></label><button class="btn small danger"><%= t('reverse') %></button></form></details>
+            <form method="post" action="/points/<%= p.id %>/reverse" class="mini-grid one-col"><label><span><%= t('reason') %> <span class="req">*</span></span><input name="reason" required></label><button class="btn small danger"><%= t('reverse') %></button></form></details>
         <% } %>
       </td>
     </tr>

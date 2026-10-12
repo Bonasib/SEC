@@ -607,3 +607,16 @@ test('dashboard follow-ups: the auditor sees extracted files to review; warehous
   assert.ok(wh.some((f) => f.key === 'fu_stock_out' && f.href === '/materials?stock=out'));
   assert.ok(!followUps(emp('F001')).some((f) => f.key.startsWith('fu_stock')));
 });
+
+test('demo databases: "(تجريبي)", "(عينة)", "(demo)" and "(sample)" are removed once; the audit log is left untouched', () => {
+  const B = require('../src/bootstrap');
+  require('../src/db').setSetting('demo_labels_cleaned', '0');
+  run("INSERT INTO items (code, name_ar, name_en, kind, uom, quantity) VALUES ('MAT-LBL-1', 'عازل (عينة)', 'Insulator (sample)', 'material', 'pcs', 1)");
+  run("UPDATE employees SET name_en = 'F001 (sample)' WHERE employee_no = 'F001'");
+  assert.ok(B.cleanDemoLabels() >= 3);
+  assert.deepStrictEqual({ ...get("SELECT name_ar, name_en FROM items WHERE code = 'MAT-LBL-1'") }, { name_ar: 'عازل', name_en: 'Insulator' });
+  assert.strictEqual(get("SELECT name_en FROM employees WHERE employee_no = 'F001'").name_en, null);
+  // Only once
+  run("UPDATE items SET name_ar = 'عازل (عينة)' WHERE code = 'MAT-LBL-1'");
+  assert.strictEqual(B.cleanDemoLabels(), 0);
+});

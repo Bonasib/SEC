@@ -51,8 +51,8 @@ app.use((req, res, next) => {
   res.locals.query = req.query;
   res.locals.fmt = (iso, withTime = true) => fmt(iso, req.lang, withTime);
   res.locals.localInput = utcToLocalInput;
-  // Sample employees have no real English name ("F001 (sample)"), so show the Arabic name instead
-  const enName = (o) => (req.lang === 'en' && o.name_en && !/\(sample\)$/.test(o.name_en) ? o.name_en : null);
+  // English name when there is one, otherwise the Arabic name
+  const enName = (o) => (req.lang === 'en' && o.name_en ? o.name_en : null);
   res.locals.nm = (o) => (o ? enName(o) || o.name_ar : '—');
   res.locals.smtpOn = SMTP_ON;
   res.locals.isDemo = isDemo();
@@ -65,7 +65,7 @@ app.use((req, res, next) => {
   // Direction arrow for links and ranges: points the way the text reads
   res.locals.arrow = req.lang === 'ar' ? '←' : '→';
   res.locals.ic = (name, cls = '') => `<svg class="ic ${cls}" aria-hidden="true" focusable="false"><use href="#i-${name}"/></svg>`;
-  // First letters of the first two words (brackets and digits ignored, e.g. "Auditor (demo)" → "AD")
+  // First letters of the first two words (brackets and digits ignored)
   res.locals.initials = (o) => String((o && (enName(o) || o.name_ar)) || '?').replace(/[^\p{L}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
   res.locals.face = require('./avatars').makeFace(res.locals.initials);
   // Item picture (or an icon by kind) for the inventory lists and the work order picker
@@ -174,6 +174,7 @@ if (require.main === module) {
     }
   }
   require('./points').ensureRules();
+  require('./bootstrap').cleanDemoLabels();
   const port = Number(process.env.PORT || 3000);
   const host = process.env.HOST || '0.0.0.0';
   const server = app.listen(port, host, () => {

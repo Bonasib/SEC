@@ -1,6 +1,6 @@
 <%- include('partials/header', { pageTitle: q.plate_number || q.code }) %>
 <section class="page-head wo-head">
-  <div style="flex:1;min-width:260px">
+  <div class="grow">
     <a class="small" href="/fleet"><%- ic('arrow', 'ic-back') %> <%= t('fleet') %></a>
     <h1 style="margin-top:8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="plate" dir="ltr"><%= q.plate_number || '—' %></span> <%= t('vt_' + (q.vehicle_type || 'other')) %></h1>
     <div class="tags">
@@ -28,8 +28,8 @@
     <dt><%= t('location') %></dt><dd><%= q.location || '—' %></dd>
   </dl>
   <% if (canEdit) { %>
-  <details class="collapsible" style="margin-top:12px"><summary class="btn small"><%- ic('pen') %><%= t('edit') %></summary>
-    <form method="post" action="/fleet/<%= q.id %>" class="form-grid" style="margin-top:12px">
+  <details class="collapsible mt-3"><summary class="btn small"><%- ic('pen') %><%= t('edit') %></summary>
+    <form method="post" action="/fleet/<%= q.id %>" class="form-grid mt-3">
       <input type="hidden" name="back" value="detail">
       <label><%= t('plate_number') %><input name="plate_number" value="<%= q.plate_number || '' %>" required dir="ltr"></label>
       <label><%= t('vehicle_type') %><select name="vehicle_type"><% VEHICLE_TYPES.forEach(v => { %><option value="<%= v %>" <%= q.vehicle_type === v ? 'selected' : '' %>><%= t('vt_' + v) %></option><% }) %></select></label>

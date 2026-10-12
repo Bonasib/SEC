@@ -2,7 +2,7 @@
 <div class="page-head"><div><div class="eyebrow"><%- ic('wrench') %><%= t('grp_assets') %></div><h1><%= t('devices') %> <span class="result-count">(<%= rows.length %>)</span></h1><p class="page-sub"><%= t('devices_hint') %></p></div><div class="btns"><a class="btn" href="/fleet"><%- ic('truck') %><%= t('fleet') %></a><a class="btn" href="/data/export/equipment"><%- ic('sheet') %>Excel</a><a class="btn" href="/data#equipment"><%- ic('upload') %><%= t('import') %></a></div></div>
 
 <% if (canEdit) { %>
-<details class="card collapsible"><summary><b class="inline-h" style="gap:8px;align-items:center"><%- ic('plus') %><%= t('add') %></b></summary><form method="post" action="/equipment" class="form-grid">
+<details class="card collapsible"><summary><b class="inline-h"><%- ic('plus') %><%= t('add') %></b></summary><form method="post" action="/equipment" class="form-grid">
   <label><%= t('code') %> *<input name="code" required></label>
   <label><%= t('type') %><select name="type"><% EQUIP_TYPES.forEach(x => { %><option value="<%= x %>"><%= lbl('equip_type', x) %></option><% }) %></select></label>
   <label><%= t('name') %> *<input name="name" required></label>

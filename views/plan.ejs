@@ -1,9 +1,9 @@
 <%- include('partials/header', { pageTitle: t('plan') }) %>
 <section class="page-head wo-head">
   <div style="display:flex;gap:16px;align-items:center;flex:1;min-width:260px">
-    <span class="avatar" style="width:56px;height:56px;font-size:20px"><%- face(plan) %></span>
+    <span class="avatar av-lg"><%- face(plan) %></span>
     <div><a class="small" href="/plans"><%- ic('arrow', 'ic-back') %> <%= t('plans') %></a>
-      <h1 style="margin:6px 0"><%= t('plan') %> · <a <%- empHref(plan.employee_id) %> style="color:inherit"><%= nm(plan) %></a></h1>
+      <h1 style="margin:6px 0"><%= t('plan') %> · <a <%- empHref(plan.employee_id) %> class="c-inherit"><%= nm(plan) %></a></h1>
       <div class="tags"><span class="wo-num"><%= plan.employee_no %></span><span class="pill"><%= plan.section_code %></span>
         <span class="pill <%= { active: 'warn', transfer_recommended: 'bad', improved: 'ok', transferred: 'info', closed: '' }[plan.status] %>"><%= t('pl_' + plan.status) %></span>
         <span class="pill"><%= t('plan_started') %> <%= plan.start_year %></span></div></div>
@@ -20,8 +20,8 @@
   <h2><%- ic('alert') %><%= t('transfer_decision') %></h2>
   <p><%= t('transfer_decision_hint').replace('{n}', PLAN_YEARS) %></p>
   <% if (canDecide) { %>
-  <div class="grid2" style="margin:0">
-    <form method="post" action="/plans/<%= plan.id %>/transfer" class="decide" style="margin:0">
+  <div class="grid2 m-0">
+    <form method="post" action="/plans/<%= plan.id %>/transfer" class="decide m-0">
       <b><%- ic('transfer') %> <%= t('confirm_transfer') %></b>
       <label><span><%= t('new_section') %> <span class="req">*</span></span><select name="section_id" required><option value=""></option><% sections.forEach(s => { %><option value="<%= s.id %>"><%= s.code %> · <%= nm(s) %></option><% }) %></select></label>
       <label><span><%= t('decision_no') %> <span class="req">*</span></span><input name="decision_no" required></label>

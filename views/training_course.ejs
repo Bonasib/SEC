@@ -1,8 +1,8 @@
 <%- include('partials/header', { pageTitle: lang === 'en' ? c.title_en : c.title_ar }) %>
 <section class="page-head wo-head">
-  <div style="flex:1;min-width:260px">
+  <div class="grow">
     <a class="small" href="/training?year=<%= c.start_date.slice(0, 4) %>"><%- ic('arrow', 'ic-back') %> <%= t('training') %></a>
-    <h1 style="margin-top:8px"><%= lang === 'en' ? c.title_en : c.title_ar %></h1>
+    <h1 class="mt-2"><%= lang === 'en' ? c.title_en : c.title_ar %></h1>
     <div class="tags">
       <span class="wo-num"><%= c.code %></span>
       <span class="pill <%= c.scope === 'international' ? 'info' : '' %>"><%- ic(c.scope === 'international' ? 'globe' : 'pin') %><%= t('scope_' + c.scope) %></span>
@@ -13,7 +13,7 @@
   </div>
   <dl class="kv" style="min-width:260px">
     <dt><%= t('place') %></dt><dd><%= c.mode === 'remote' ? t('mode_remote') : place || '—' %></dd>
-    <dt><%= t('date') %></dt><dd class="mono" dir="ltr" style="text-align:start"><%= c.start_date %> → <%= c.end_date %> (<%= days %>)</dd>
+    <dt><%= t('date') %></dt><dd class="mono text-start" dir="ltr"><%= c.start_date %> → <%= c.end_date %> (<%= days %>)</dd>
     <dt><%= t('provider') %></dt><dd><%= c.provider || '—' %></dd>
     <dt><%= t('hours') %> / <%= t('capacity') %></dt><dd><%= c.hours || '—' %> / <%= c.capacity || '∞' %></dd>
   </dl>
@@ -27,7 +27,7 @@
     <% if (!attendees.length) { %><tr><td colspan="7" class="empty"><%- ic('users') %><%= t('no_records') %></td></tr><% } %>
     <% attendees.forEach(a => { %>
       <tr class="<%= a.attendance === 'cancelled' ? 'muted' : '' %>">
-        <td><a <%- empHref(a.employee_id) %> style="display:flex;align-items:center;gap:10px;color:inherit"><span class="avatar" style="width:30px;height:30px;font-size:12px"><%- face(a) %></span><span><span class="cell-main"><%= nm(a) %></span><span class="cell-sub mono"><%= a.employee_no %> · <%= a.job_title_en || '' %></span></span></a></td>
+        <td><a <%- empHref(a.employee_id) %> class="person-link"><span class="avatar av-sm"><%- face(a) %></span><span><span class="cell-main"><%= nm(a) %></span><span class="cell-sub mono"><%= a.employee_no %> · <%= a.job_title_en || '' %></span></span></a></td>
         <td class="mono"><%= a.section_code %></td>
         <td><%= t('ar_' + a.role) %></td>
         <td><span class="pill <%= a.attendance === 'attended' ? 'ok' : a.attendance === 'absent' ? 'bad' : a.attendance === 'cancelled' ? '' : 'info' %>"><%= t('att_' + a.attendance) %></span></td>
@@ -46,10 +46,10 @@
     </tbody>
   </table></div>
   <% if (canManage && c.status !== 'cancelled') { %>
-  <details class="collapsible" style="padding:16px 20px;border-top:1px solid var(--border)"><summary><b><%- ic('plus') %> <%= t('register_employees') %></b></summary>
+  <details class="collapsible collapsible-row"><summary><b><%- ic('plus') %> <%= t('register_employees') %></b></summary>
     <form method="post" action="/training/<%= c.id %>/register">
       <p class="muted small"><%= t('register_hint') %></p>
-      <div class="search-field" style="position:relative"><%- ic('search') %><input class="picker-filter" style="padding-inline-start:38px" placeholder="<%= t('search') %>…" data-target="att-picker" aria-label="<%= t('search') %>"></div>
+      <div class="search-field"><%- ic('search') %><input class="picker-filter" placeholder="<%= t('search') %>…" data-target="att-picker" aria-label="<%= t('search') %>"></div>
       <div class="picker" id="att-picker"><% employees.forEach(e => { %><label data-text="<%= e.employee_no %> <%= e.name_ar %> <%= e.name_en || '' %> <%= e.section_code || '' %>"><input type="checkbox" name="employee_ids" value="<%= e.id %>"><span class="picker-meta"><span><b class="mono"><%= e.employee_no %></b> <%= nm(e) %></span><small><%= e.section_code || '' %></small></span></label><% }) %></div>
       <div class="btns"><select name="role" aria-label="<%= t('role') %>" style="width:auto"><% ['trainee','trainer','presenter','assessor'].forEach(r => { %><option value="<%= r %>"><%= t('ar_' + r) %></option><% }) %></select><button class="btn primary"><%- ic('plus') %><%= t('register') %></button></div>
     </form>
@@ -61,9 +61,9 @@
 <section class="card">
   <h2><%- ic('route') %><%= t('suggested_for_course') %></h2>
   <div class="away-grid">
-    <% suggested.forEach(s => { %><div class="away-card ev-training"><span class="avatar" style="width:34px;height:34px;font-size:12px"><%- face(s) %></span>
+    <% suggested.forEach(s => { %><div class="away-card ev-training"><span class="avatar"><%- face(s) %></span>
       <span class="grow"><a class="cell-main" <%- empHref(s.id) %>><%= nm(s) %></a><span class="cell-sub mono"><%= s.employee_no %> · <%= s.section_code %></span><span class="cell-sub"><%= s.reasons.map(r => t('why_' + r)).join(' · ') %></span></span>
-      <% if (canManage) { %><form method="post" action="/training/<%= c.id %>/register" style="margin:0"><input type="hidden" name="employee_ids" value="<%= s.id %>"><button class="btn small"><%- ic('plus') %><%= t('register') %></button></form><% } %></div><% }) %>
+      <% if (canManage) { %><form method="post" action="/training/<%= c.id %>/register" class="m-0"><input type="hidden" name="employee_ids" value="<%= s.id %>"><button class="btn small"><%- ic('plus') %><%= t('register') %></button></form><% } %></div><% }) %>
   </div>
 </section>
 <% } %>

@@ -7,7 +7,7 @@
   <button class="btn primary"><%- ic('filter') %><%= t('filter') %></button>
 </form>
 <% if (canEdit) { %>
-<details class="card collapsible"><summary><b class="inline-h" style="gap:8px;align-items:center"><%- ic('plus') %><%= t('add') %></b></summary><form method="post" action="/assets" class="form-grid">
+<details class="card collapsible"><summary><b class="inline-h"><%- ic('plus') %><%= t('add') %></b></summary><form method="post" action="/assets" class="form-grid">
   <label><%= t('code') %> *<input name="code" required></label>
   <label><%= t('type') %> *<select name="type"><% ASSET_TYPES.forEach(x => { %><option value="<%= x %>"><%= lbl('asset_type', x) %></option><% }) %></select></label>
   <label><%= t('name_ar') %><input name="name_ar"></label><label><%= t('name_en') %><input name="name_en"></label>

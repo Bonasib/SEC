@@ -15,7 +15,7 @@
   <a class="kpi warn <%= stats.pending ? '' : 'zero' %>" href="?status=pending_review"><span class="kpi-icon"><%- ic('hourglass') %></span><span class="kpi-body"><b><%= stats.pending %></b><span class="kpi-label"><%= t('xs_pending_review') %></span></span></a>
   <a class="kpi ok <%= stats.exported ? '' : 'zero' %>" href="?status=exported"><span class="kpi-icon"><%- ic('check-circle') %></span><span class="kpi-body"><b><%= stats.exported %></b><span class="kpi-label"><%= t('xs_exported') %></span></span></a>
   <a class="kpi crit <%= stats.rejected ? '' : 'zero' %>" href="?status=rejected"><span class="kpi-icon"><%- ic('x-circle') %></span><span class="kpi-body"><b><%= stats.rejected %></b><span class="kpi-label"><%= t('xs_rejected') %></span></span></a>
-  <div class="kpi <%= aiOn ? 'violet' : 'zero' %>"><span class="kpi-icon"><%- ic('zap') %></span><span class="kpi-body"><b><%= aiOn ? t('enabled') : t('disabled') %></b><span class="kpi-label"><%= t('ai_extraction') %></span></span></div>
+  <div class="kpi <%= aiOn ? 'violet' : 'zero' %>"><span class="kpi-icon"><%- ic('zap') %></span><span class="kpi-body"><b class="kpi-text"><%= aiOn ? t('enabled') : t('disabled') %></b><span class="kpi-label"><%= t('ai_extraction') %></span></span></div>
 </div>
 
 <section class="card">
@@ -41,7 +41,7 @@
     <% if (!rows.length) { %><tr><td colspan="8" class="empty"><%- ic('file') %><%= t('no_records') %></td></tr><% } %>
     <% rows.forEach(x => { %><tr>
       <td><a class="wo-link" href="/extract/<%= x.id %>">#<%= x.id %></a></td>
-      <td><a href="/extract/<%= x.id %>" style="color:inherit"><span class="cell-main"><%= x.original_name %></span></a></td>
+      <td><a href="/extract/<%= x.id %>" class="c-inherit"><span class="cell-main"><%= x.original_name %></span></a></td>
       <td><%= x.entity ? t(ENTITIES[x.entity].label) : '—' %></td>
       <td class="num"><%= x.n %><% if (x.approved) { %><span class="cell-sub"><%= t('approved_rows') %> <%= x.approved %></span><% } %><% if (x.bad) { %><span class="cell-sub warn-text"><%= t('rows_with_errors') %> <%= x.bad %></span><% } %></td>
       <td><span class="pill"><%= t('rm_used_' + x.method) %></span></td>

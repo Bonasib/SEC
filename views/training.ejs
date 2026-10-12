@@ -69,7 +69,7 @@
   <p class="muted small" style="padding:0 20px"><%= t('suggestions_hint') %></p>
   <%- include('partials/suggestion_rows', { list: prio, title: t('priority_improvement'), tone: 'bad' }) %>
   <% if (general.length) { %>
-  <details class="collapsible" style="padding:14px 20px;border-top:1px solid var(--border)"><summary><b><%= t('general_development') %></b>&nbsp;<span class="pill"><%= general.length %></span></summary>
+  <details class="collapsible collapsible-row"><summary><b><%= t('general_development') %></b>&nbsp;<span class="pill"><%= general.length %></span></summary>
     <%- include('partials/suggestion_rows', { list: general, title: null, tone: '' }) %>
   </details>
   <% } %>

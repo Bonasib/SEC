@@ -27,7 +27,7 @@ function seed() {
     const unit = (code, level, ar, en, parent) =>
       Number(run('INSERT INTO org_units(code, level, name_ar, name_en, parent_id) VALUES (?,?,?,?,?)', code, level, ar, en, parent ? get('SELECT id FROM org_units WHERE code = ?', parent).id : null).lastInsertRowid);
     unit('SEC-TR', 'company', 'الشركة السعودية للكهرباء - نقل الطاقة', 'Saudi Electricity Company - Transmission');
-    unit('SEC-EAST', 'sector', 'قطاع النقل - الشرقية (تجريبي)', 'Transmission Sector - East (sample)', 'SEC-TR');
+    unit('SEC-EAST', 'sector', 'قطاع النقل - الشرقية', 'Transmission Sector - East', 'SEC-TR');
     unit('REG-AHSA', 'region', 'منطقة الأحساء', 'Al-Ahsa Region', 'SEC-EAST');
     unit('DEP-AM-AHSA', 'department', 'إدارة صيانة الأصول بالأحساء', 'Al-Ahsa Asset Maintenance Department', 'REG-AHSA');
     unit('DIV-LINES', 'division', 'دائرة الخطوط', 'Lines Division', 'DEP-AM-AHSA');
@@ -41,36 +41,35 @@ function seed() {
       sectionCode ? get('SELECT id FROM org_units WHERE code = ?', sectionCode).id : null, title, extra.title_ar || null, role, pw, extra.phone || null).lastInsertRowid);
     const setManager = (unitCode, empId) => run('UPDATE org_units SET manager_id = ? WHERE code = ?', empId, unitCode);
 
-    setManager('SEC-EAST', emp('DEMO-SH', 'رئيس القطاع (تجريبي)', 'Sector Head (demo)', 'sector_head', null, 'Sector Head'));
-    setManager('DEP-AM-AHSA', emp('DEMO-DM', 'مدير الإدارة (تجريبي)', 'Department Manager (demo)', 'department_manager', null, 'Department Manager'));
-    setManager('DIV-LINES', emp('DEMO-DV1', 'مدير دائرة الخطوط (تجريبي)', 'Lines Division Manager (demo)', 'division_manager', null, 'Division Manager'));
-    setManager('DIV-SUB', emp('DEMO-DV2', 'مدير دائرة المحطات (تجريبي)', 'Substations Division Manager (demo)', 'division_manager', null, 'Division Manager'));
-    setManager('DIV-FAC', emp('DEMO-DV3', 'مدير دائرة المرافق (تجريبي)', 'Facilities Division Manager (demo)', 'division_manager', null, 'Division Manager'));
-    for (const [code, ar, en] of SECTIONS) setManager(code, emp(`DEMO-${code}`, `رئيس قسم ${ar} (تجريبي)`, `${en} Section Head (demo)`, 'section_head', code, 'Section Head'));
-    for (const [code, ar, en] of SECTIONS) emp(`DEMO-FM-${code}`, `ملاحظ قسم ${ar} (تجريبي)`, `${en} Foreman (demo)`, 'foreman', code, 'Foreman');
-    emp('DEMO-HR', 'الموارد البشرية (تجريبي)', 'HR Officer (demo)', 'hr', null, 'HR Officer');
-    emp('DEMO-SAF', 'مسؤول السلامة (تجريبي)', 'Safety Officer (demo)', 'safety', null, 'Safety Officer');
-    emp('DEMO-WH', 'أمين المستودع (تجريبي)', 'Warehouse Keeper (demo)', 'warehouse', null, 'Warehouse Keeper');
-    emp('DEMO-AUD', 'المدقق (تجريبي)', 'Auditor (demo)', 'auditor', null, 'Auditor');
+    setManager('SEC-EAST', emp('DEMO-SH', 'رئيس القطاع', 'Sector Head', 'sector_head', null, 'Sector Head'));
+    setManager('DEP-AM-AHSA', emp('DEMO-DM', 'مدير الإدارة', 'Department Manager', 'department_manager', null, 'Department Manager'));
+    setManager('DIV-LINES', emp('DEMO-DV1', 'مدير دائرة الخطوط', 'Lines Division Manager', 'division_manager', null, 'Division Manager'));
+    setManager('DIV-SUB', emp('DEMO-DV2', 'مدير دائرة المحطات', 'Substations Division Manager', 'division_manager', null, 'Division Manager'));
+    setManager('DIV-FAC', emp('DEMO-DV3', 'مدير دائرة المرافق', 'Facilities Division Manager', 'division_manager', null, 'Division Manager'));
+    for (const [code, ar, en] of SECTIONS) setManager(code, emp(`DEMO-${code}`, `رئيس قسم ${ar}`, `${en} Section Head`, 'section_head', code, 'Section Head'));
+    for (const [code, ar, en] of SECTIONS) emp(`DEMO-FM-${code}`, `ملاحظ قسم ${ar}`, `${en} Foreman`, 'foreman', code, 'Foreman');
+    emp('DEMO-HR', 'الموارد البشرية', 'HR Officer', 'hr', null, 'HR Officer');
+    emp('DEMO-SAF', 'مسؤول السلامة', 'Safety Officer', 'safety', null, 'Safety Officer');
+    emp('DEMO-WH', 'أمين المستودع', 'Warehouse Keeper', 'warehouse', null, 'Warehouse Keeper');
+    emp('DEMO-AUD', 'المدقق', 'Auditor', 'auditor', null, 'Auditor');
     emp('admin', 'مشغل النظام', 'System Administrator', 'admin', null, 'System Administrator');
 
     for (const s of samples) {
       emp(s.id, s.name_ar, null, TEAM_LEADERS.includes(s.id) ? 'team_leader' : 'employee', s.section, s.title_en, { nationality: s.nationality });
     }
-    run("UPDATE employees SET name_en = employee_no || ' (sample)' WHERE name_en IS NULL");
 
     // Assets: a 380 kV line with towers 001-150, two 230/115 kV lines, substations
     const asset = (code, type, ar, en, kv, line, lat, lng) =>
       run('INSERT INTO assets(code, type, name_ar, name_en, voltage_kv, line_code, region, lat, lng) VALUES (?,?,?,?,?,?,?,?,?)', code, type, ar, en, kv, line, 'Al-Ahsa', lat, lng);
-    asset('L-380-01', 'line', 'خط 380 ك.ف الأحساء - الدمام (تجريبي)', '380 kV Al-Ahsa - Dammam line (sample)', 380, 'L-380-01', 25.38, 49.58);
-    asset('L-230-02', 'line', 'خط 230 ك.ف الهفوف - العيون (تجريبي)', '230 kV Hofuf - Uyun line (sample)', 230, 'L-230-02', 25.6, 49.55);
-    asset('L-115-03', 'line', 'خط 115 ك.ف المبرز (تجريبي)', '115 kV Mubarraz line (sample)', 115, 'L-115-03', 25.41, 49.59);
+    asset('L-380-01', 'line', 'خط 380 ك.ف الأحساء - الدمام', '380 kV Al-Ahsa - Dammam line', 380, 'L-380-01', 25.38, 49.58);
+    asset('L-230-02', 'line', 'خط 230 ك.ف الهفوف - العيون', '230 kV Hofuf - Uyun line', 230, 'L-230-02', 25.6, 49.55);
+    asset('L-115-03', 'line', 'خط 115 ك.ف المبرز', '115 kV Mubarraz line', 115, 'L-115-03', 25.41, 49.59);
     for (let i = 1; i <= 150; i++) {
       const n = String(i).padStart(3, '0');
       asset(`T-380-01-${n}`, 'tower', `برج ${n} - خط 380`, `Tower ${n} - 380 kV line`, 380, 'L-380-01', +(25.38 + i * 0.004).toFixed(5), +(49.58 + i * 0.003).toFixed(5));
     }
-    asset('SS-AHSA-380', 'substation', 'محطة الأحساء 380 (تجريبي)', 'Al-Ahsa 380 kV Substation (sample)', 380, null, 25.37, 49.57);
-    asset('SS-HOFUF-115', 'substation', 'محطة الهفوف 115 (تجريبي)', 'Hofuf 115 kV Substation (sample)', 115, null, 25.36, 49.59);
+    asset('SS-AHSA-380', 'substation', 'محطة الأحساء 380', 'Al-Ahsa 380 kV Substation', 380, null, 25.37, 49.57);
+    asset('SS-HOFUF-115', 'substation', 'محطة الهفوف 115', 'Hofuf 115 kV Substation', 115, null, 25.36, 49.59);
     asset('CB-AHSA-380-01', 'equipment', 'قاطع غازي 380-01', 'GCB 380-01', 380, null, 25.37, 49.57);
 
     const today = todayRiyadh();
@@ -147,7 +146,7 @@ function seed() {
 
     // Acting: Overhead Lines section head on leave; F010 acts for a week
     run(`INSERT INTO acting_assignments(unit_id, acting_employee_id, assignment_type, start_at, end_at, decision_no, approving_authority)
-      VALUES ((SELECT id FROM org_units WHERE code='H1'), (SELECT id FROM employees WHERE employee_no='F006'), 'leave', ?, ?, 'DEC-2026-001 (sample)', 'DEMO-DM')`,
+      VALUES ((SELECT id FROM org_units WHERE code='H1'), (SELECT id FROM employees WHERE employee_no='F006'), 'leave', ?, ?, 'DEC-2026-001', 'DEMO-DM')`,
     localToUtc(plus(5) + 'T07:00'), localToUtc(plus(12) + 'T16:00'));
 
     run("INSERT OR REPLACE INTO sequences(name, value) VALUES ('wo', 0)");
@@ -209,7 +208,7 @@ function seedPeopleModules() {
   T.register(c.aus, [id('F065')], 'trainee', req);
   T.register(c.hai, [id('F046'), id('F053')], 'trainee', req);
 
-  // An older improvement plan close to its 3-year limit (sample), then plans from current ratings
+  // An older improvement plan close to its 3-year limit, then plans from current ratings
   const pl = run(`INSERT INTO improvement_plans(employee_id, start_year, trigger_rating, goals, actions, coach_id, created_by)
     VALUES (?, ?, 'acceptable', ?, ?, (SELECT id FROM employees WHERE employee_no = 'DEMO-H1'), ?)`, id('F047'), Number(today.slice(0, 4)) - 2,
   'رفع الأداء إلى تقدير "جيد" / Reach a "Good" rating\nصفر مخالفات مرورية / Zero traffic violations', 'دورة السلامة في أعمال الجهد العالي / HV Work Safety course', hr.id).lastInsertRowid;
@@ -227,7 +226,7 @@ function seedPeopleModules() {
       const w = run(`INSERT INTO work_orders(wo_number, type, title, section_id, distance_km, distance_category, involves_travel, planned_start, planned_end, actual_start, actual_end,
           status, team_leader_id, materials_withdrawn, materials_used, result, action_description, overnight, travel_hours, closed_at, created_at)
         VALUES (?, 'inspection', ?, (SELECT id FROM org_units WHERE code = ?), ?, ?, 'yes', ?, ?, ?, ?, 'closed', ?, 'no', 'no', 'complete', 'Sample trip', ?, ?, ?, ?)`,
-      W.nextWoNumber(), `Line patrol trip ${i + 1} (sample)`, sec, km, cat, d, e, d, e, id(no), km > 200 ? 1 : 0, km > 200 ? 6 : 3, e, d);
+      W.nextWoNumber(), `Line patrol trip ${i + 1}`, sec, km, cat, d, e, d, e, id(no), km > 200 ? 1 : 0, km > 200 ? 6 : 3, e, d);
       run("INSERT INTO wo_participants(wo_id, employee_id, role) VALUES (?, ?, 'leader')", w.lastInsertRowid, id(no));
     }
   };
@@ -251,19 +250,19 @@ function seedStockAndTasks() {
   const req = { user: wh, ip: 'seed', get: () => 'seed' };
   const sec = (c) => get('SELECT id FROM org_units WHERE code = ?', c)?.id || null;
   const items = [
-    ['MAT-INS-380', 'material', 'عازل خزفي 380 ك.ف (عينة)', 'Porcelain insulator 380 kV (sample)', 'Insulators', 'piece', 40, 10, 'Main store A-01', 'H1'],
-    ['MAT-INS-132', 'material', 'عازل بوليمري 132 ك.ف (عينة)', 'Polymer insulator 132 kV (sample)', 'Insulators', 'piece', 6, 8, 'Main store A-02', 'H1'],
-    ['MAT-CLMP-01', 'material', 'مشبك تعليق (عينة)', 'Suspension clamp (sample)', 'Hardware', 'piece', 120, 30, 'Main store B-04', 'H1'],
-    ['MAT-BOLT-M16', 'material', 'طقم مسامير M16 مجلفن (عينة)', 'Galvanized bolt set M16 (sample)', 'Hardware', 'set', 300, 50, 'Main store B-07', null],
-    ['MAT-COND-ACSR', 'material', 'موصل ACSR (عينة)', 'ACSR conductor (sample)', 'Conductors', 'meter', 850, 200, 'Yard C', 'H1'],
-    ['MAT-GREASE', 'material', 'شحم موصلات (عينة)', 'Conductor grease (sample)', 'Consumables', 'kg', 3, 5, 'Main store D-01', null],
-    ['TL-TORQ-01', 'tool', 'مفتاح عزم (عينة)', 'Torque wrench (sample)', 'Hand tools', 'piece', 6, 2, 'Tool room', 'H1'],
-    ['TL-HOTSTICK', 'tool', 'عصا التشغيل المعزولة (عينة)', 'Insulated hot stick (sample)', 'Live-line tools', 'piece', 4, 2, 'Tool room', 'H1'],
-    ['TL-HARNESS', 'tool', 'حزام أمان للعمل على الارتفاعات (عينة)', 'Full-body safety harness (sample)', 'PPE', 'piece', 18, 6, 'Tool room', null],
-    ['TL-LADDER', 'tool', 'سلم ألياف زجاجية (عينة)', 'Fibreglass ladder (sample)', 'Access', 'piece', 3, 1, 'Yard C', 'H2'],
-    ['EQ-EARTH-KIT', 'equipment', 'طقم تأريض مؤقت (عينة)', 'Temporary earthing kit (sample)', 'Safety equipment', 'set', 8, 3, 'Tool room', 'H1'],
-    ['EQ-GEN-5KVA', 'equipment', 'مولد كهربائي متنقل 5 ك.ف.أ (عينة)', 'Portable generator 5 kVA (sample)', 'Power', 'piece', 2, 1, 'Yard C', null],
-    ['EQ-IR-TESTER', 'equipment', 'جهاز قياس العزل (عينة)', 'Insulation resistance tester (sample)', 'Test equipment', 'piece', 3, 1, 'Lab', 'H3'],
+    ['MAT-INS-380', 'material', 'عازل خزفي 380 ك.ف', 'Porcelain insulator 380 kV', 'Insulators', 'piece', 40, 10, 'Main store A-01', 'H1'],
+    ['MAT-INS-132', 'material', 'عازل بوليمري 132 ك.ف', 'Polymer insulator 132 kV', 'Insulators', 'piece', 6, 8, 'Main store A-02', 'H1'],
+    ['MAT-CLMP-01', 'material', 'مشبك تعليق', 'Suspension clamp', 'Hardware', 'piece', 120, 30, 'Main store B-04', 'H1'],
+    ['MAT-BOLT-M16', 'material', 'طقم مسامير M16 مجلفن', 'Galvanized bolt set M16', 'Hardware', 'set', 300, 50, 'Main store B-07', null],
+    ['MAT-COND-ACSR', 'material', 'موصل ACSR', 'ACSR conductor', 'Conductors', 'meter', 850, 200, 'Yard C', 'H1'],
+    ['MAT-GREASE', 'material', 'شحم موصلات', 'Conductor grease', 'Consumables', 'kg', 3, 5, 'Main store D-01', null],
+    ['TL-TORQ-01', 'tool', 'مفتاح عزم', 'Torque wrench', 'Hand tools', 'piece', 6, 2, 'Tool room', 'H1'],
+    ['TL-HOTSTICK', 'tool', 'عصا التشغيل المعزولة', 'Insulated hot stick', 'Live-line tools', 'piece', 4, 2, 'Tool room', 'H1'],
+    ['TL-HARNESS', 'tool', 'حزام أمان للعمل على الارتفاعات', 'Full-body safety harness', 'PPE', 'piece', 18, 6, 'Tool room', null],
+    ['TL-LADDER', 'tool', 'سلم ألياف زجاجية', 'Fibreglass ladder', 'Access', 'piece', 3, 1, 'Yard C', 'H2'],
+    ['EQ-EARTH-KIT', 'equipment', 'طقم تأريض مؤقت', 'Temporary earthing kit', 'Safety equipment', 'set', 8, 3, 'Tool room', 'H1'],
+    ['EQ-GEN-5KVA', 'equipment', 'مولد كهربائي متنقل 5 ك.ف.أ', 'Portable generator 5 kVA', 'Power', 'piece', 2, 1, 'Yard C', null],
+    ['EQ-IR-TESTER', 'equipment', 'جهاز قياس العزل', 'Insulation resistance tester', 'Test equipment', 'piece', 3, 1, 'Lab', 'H3'],
   ];
   items.forEach(([code, kind, ar, en, cat, uom, qty, min, loc, s], n) => {
     I.save({ code, kind, name_ar: ar, name_en: en, category: cat, uom, quantity: qty, min_qty: min, location: loc, section_id: sec(s),
@@ -286,8 +285,8 @@ function seedStockAndTasks() {
         materials_withdrawn: 'no', items: lines.map(([c, q]) => ({ item_id: get('SELECT id FROM items WHERE code = ?', c).id, qty: q })) }, { user: head0, ip: 'seed', get: () => 'seed' });
     } catch (e) { console.warn('sample work order skipped:', e.message); }
   };
-  mk('استبدال سلسلة عوازل على البرج 090 (عينة)', '07:00', '14:00', ['F010', 'F011', 'F012'], [['MAT-INS-380', 6], ['MAT-CLMP-01', 12], ['TL-HOTSTICK', 2], ['EQ-EARTH-KIT', 2]]);
-  mk('شد مسامير قواعد الأبراج 100-110 (عينة)', '08:00', '15:00', ['F006', 'F007', 'F008'], [['MAT-BOLT-M16', 20], ['TL-TORQ-01', 1], ['TL-HARNESS', 4]]);
+  mk('استبدال سلسلة عوازل على البرج 090', '07:00', '14:00', ['F010', 'F011', 'F012'], [['MAT-INS-380', 6], ['MAT-CLMP-01', 12], ['TL-HOTSTICK', 2], ['EQ-EARTH-KIT', 2]]);
+  mk('شد مسامير قواعد الأبراج 100-110', '08:00', '15:00', ['F006', 'F007', 'F008'], [['MAT-BOLT-M16', 20], ['TL-TORQ-01', 1], ['TL-HARNESS', 4]]);
   // The first sample work order goes through the whole pre-execution chain; the second waits for the foreman
   const first = get("SELECT * FROM work_orders WHERE status = 'awaiting_authorization' ORDER BY id LIMIT 1");
   if (first) {
@@ -295,7 +294,7 @@ function seedStockAndTasks() {
     for (const no of ['DEMO-FM-H1', 'DEMO-H1', 'DEMO-DV1']) {
       const step = W.pendingApproval(first.id);
       if (!step) break;
-      try { W.decide(get('SELECT * FROM work_orders WHERE id = ?', first.id), 'approved', 'موافق (عينة) / Approved (sample)', as(no)); } catch (e) { /* not this person's step */ }
+      try { W.decide(get('SELECT * FROM work_orders WHERE id = ?', first.id), 'approved', 'موافق / Approved', as(no)); } catch (e) { /* not this person's step */ }
     }
   }
   I.lowStockCheck();
@@ -307,10 +306,10 @@ function seedStockAndTasks() {
   const ids = (...nos) => nos.map((n) => get('SELECT id FROM employees WHERE employee_no = ?', n)?.id).filter(Boolean);
   const task = (title, start, end, loc, priority, nos, details) =>
     T.save({ task_date: today, start_time: start, end_time: end, title, location: loc, priority, section_id: sec('H1'), assignee_ids: ids(...nos), details }, treq);
-  task('اجتماع السلامة الصباحي (عينة)', '06:30', '07:00', 'Al-Ahsa office', 'normal', ['F001', 'F002', 'F003', 'F004', 'F005'], 'Toolbox talk / PPE check');
-  task('فحص حراري لخط 380 ك.ف (عينة)', '07:30', '11:00', 'Line 380-01 towers 80-95', 'high', ['F002', 'F003'], 'Thermal camera inspection of joints and clamps');
-  task('استلام مواد من المستودع (عينة)', '08:00', '09:00', 'Main store', 'normal', ['F004'], null);
-  task('معالجة بلاغ عازل مكسور (عينة)', '09:00', '13:00', 'Tower T-380-01-090', 'urgent', ['F001', 'F005'], 'Replace broken insulator string; earthing kit required');
+  task('اجتماع السلامة الصباحي', '06:30', '07:00', 'Al-Ahsa office', 'normal', ['F001', 'F002', 'F003', 'F004', 'F005'], 'Toolbox talk / PPE check');
+  task('فحص حراري لخط 380 ك.ف', '07:30', '11:00', 'Line 380-01 towers 80-95', 'high', ['F002', 'F003'], 'Thermal camera inspection of joints and clamps');
+  task('استلام مواد من المستودع', '08:00', '09:00', 'Main store', 'normal', ['F004'], null);
+  task('معالجة بلاغ عازل مكسور', '09:00', '13:00', 'Tower T-380-01-090', 'urgent', ['F001', 'F005'], 'Replace broken insulator string; earthing kit required');
 }
 
 module.exports = { seed, DEMO_PASSWORD };

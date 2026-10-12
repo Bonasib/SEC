@@ -48,7 +48,7 @@
           <% if (tk.status === 'open') { %><form method="post" action="/tasks/<%= tk.id %>/status"><button class="btn btn-sm" name="status" value="done"><%- ic('check') %><%= t('mark_done') %></button></form><% } else { %><span class="pill ok"><%- ic('check') %><%= t('task_done') %></span><% } %></li>
       <% }) %>
     </ul>
-    <% if (dispatcher) { %><p style="margin-top:10px"><a class="btn btn-sm" href="/tasks#send"><%- ic('send', 'ic-dir') %><%= t('send_all_btn') %></a></p><% } %>
+    <% if (dispatcher) { %><p class="mt-3"><a class="btn btn-sm" href="/tasks#send"><%- ic('send', 'ic-dir') %><%= t('send_all_btn') %></a></p><% } %>
   </section>
   <section class="card honor">
     <div class="card-head"><h2><%- ic('star') %><%= t('honor_board') %> · <%= t('per_month') %></h2><a class="small" href="/board"><%= t('board') %> <%= arrow %></a></div>
@@ -112,7 +112,7 @@
     <div class="card-head"><h2><%- ic('star') %><%= top.length ? t('top_performers') : t('my_points') %></h2><a class="btn ghost btn-sm" href="/points"><%= t('points') %><%- ic('chevron', 'ic-dir') %></a></div>
     <% if (me) { %><p class="muted small"><%= t('my_points') %>: <b style="color:var(--text)"><%= Number(me.balance).toLocaleString('en-US') %></b> <% if (me.rating) { %>· #<%= me.rank %> <span class="rt rt-<%= me.rating %>"><%= t('rt_' + me.rating) %></span><% } %></p><% } %>
     <% if (top.length) { %><ul class="list"><% top.forEach(r => { %>
-      <li><b style="width:28px">#<%= r.rank %></b><span class="avatar" style="width:30px;height:30px;font-size:12px"><%- face(r) %></span><span class="grow"><span class="cell-main"><%= nm(r) %></span><span class="cell-sub mono"><%= r.employee_no %> · <%= r.section_code || '' %></span></span><b class="mono"><%= Number(r.balance).toLocaleString('en-US') %></b><span class="rt rt-<%= r.rating %>"><%= t('rt_' + r.rating) %></span></li>
+      <li><b style="width:28px">#<%= r.rank %></b><span class="avatar av-sm"><%- face(r) %></span><span class="grow"><span class="cell-main"><%= nm(r) %></span><span class="cell-sub mono"><%= r.employee_no %> · <%= r.section_code || '' %></span></span><b class="mono"><%= Number(r.balance).toLocaleString('en-US') %></b><span class="rt rt-<%= r.rating %>"><%= t('rt_' + r.rating) %></span></li>
     <% }) %></ul><% } %>
   </section>
   <section class="card">

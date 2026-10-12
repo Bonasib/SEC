@@ -6,7 +6,7 @@
   const okCount = checklist.filter(i => i.ok).length;
 %>
 <section class="page-head wo-head">
-  <div style="flex:1;min-width:260px">
+  <div class="grow">
     <span class="wo-num"><%- ic('clipboard') %><%= wo.wo_number %></span>
     <h1><%= wo.title %></h1>
     <div class="tags">
@@ -87,7 +87,7 @@
   </tbody></table>
   <h3><%= t('participants') %> (<%= participants.length %>)</h3>
   <ul class="people"><% participants.forEach(p => { %>
-    <li><span class="avatar"><%- face(p) %></span><span style="flex:1;min-width:0"><a <%- empHref(p.id) %>><b><%= nm(p) %></b></a><span class="cell-sub"><span class="mono"><%= p.employee_no %></span> · <%= p.job_title_en || '' %></span></span><% if (p.p_role === 'leader') { %><span class="pill info"><%= t('team_leader') %></span><% } %></li>
+    <li><span class="avatar"><%- face(p) %></span><span class="flex-1"><a <%- empHref(p.id) %>><b><%= nm(p) %></b></a><span class="cell-sub"><span class="mono"><%= p.employee_no %></span> · <%= p.job_title_en || '' %></span></span><% if (p.p_role === 'leader') { %><span class="pill info"><%= t('team_leader') %></span><% } %></li>
   <% }) %></ul>
   <h3><%= t('crew_fleet') %></h3>
   <div class="crew-panel">
@@ -95,9 +95,9 @@
     <div class="crew-stat"><small><%= t('vehicles') %></small><b><%= crew.vehicles.length %></b></div>
     <div class="crew-stat"><small><%= t('seats') %></small><b class="<%= crew.vehicles.length && crew.seats < crew.people ? 'bad' : '' %>"><%= crew.seats %></b></div>
     <div class="crew-stat"><small><%= t('devices') %></small><b><%= crew.devices.length %></b></div>
-    <% if (crew.vehicles.length && crew.seats < crew.people) { %><div class="crew-msg"><div class="flash flash-error" style="margin:0"><%- ic('alert') %><div><%= t('crew_short').replace('{n}', crew.people - crew.seats) %></div></div></div><% } %>
+    <% if (crew.vehicles.length && crew.seats < crew.people) { %><div class="crew-msg"><div class="flash flash-error m-0"><%- ic('alert') %><div><%= t('crew_short').replace('{n}', crew.people - crew.seats) %></div></div></div><% } %>
   </div>
-  <% if (crew.vehicles.length) { %><table class="tbl small" style="margin-top:10px"><thead><tr><th><%= t('plate_number') %></th><th><%= t('vehicle_type') %></th><th class="num"><%= t('seats') %></th><th><%= t('fleet_no') %></th></tr></thead><tbody>
+  <% if (crew.vehicles.length) { %><table class="tbl small mt-3"><thead><tr><th><%= t('plate_number') %></th><th><%= t('vehicle_type') %></th><th class="num"><%= t('seats') %></th><th><%= t('fleet_no') %></th></tr></thead><tbody>
     <% crew.vehicles.forEach(v => { %><tr><td><span class="plate" dir="ltr" style="font-size:12px;padding:1px 6px"><%= v.plate_number || '—' %></span></td><td><%= t('vt_' + (v.vehicle_type || 'other')) %><span class="cell-sub"><%= v.make_model || '' %></span></td><td class="num"><%= v.seats || '—' %></td><td class="mono"><a href="/fleet"><%= v.code %></a></td></tr><% }) %>
   </tbody></table><% } %>
   <% if (crew.devices.length) { %><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"><% crew.devices.forEach(q => { %><span class="pill"><%- ic('wrench') %><%= q.code %> · <%= q.name %></span><% }) %></div><% } %>
@@ -108,7 +108,7 @@
   <div class="card-head"><h2><%- ic('clock') %><%= t('schedule_changes') %></h2>
     <div class="btns"><% const approvedExt = extensions.filter(x => x.status === 'approved').length; if (approvedExt) { %><span class="pill info"><%- ic('calendar') %><%= t('extended') %> ×<%= approvedExt %></span><% } %>
     <% const nextHo = handovers.find(h => h.status === 'scheduled'); if (nextHo) { %><span class="pill warn"><%- ic('transfer') %><%= t('handover_at') %> <%= fmt(nextHo.scheduled_at) %></span><% } %></div></div>
-  <div class="grid2" style="margin:0">
+  <div class="grid2 m-0">
     <div>
       <h3 class="sub-h"><%- ic('calendar') %><%= t('extension') %></h3>
       <p class="muted small"><%= t('extension_hint') %></p>
@@ -132,7 +132,7 @@
         </div>
       <% } %>
       <% const pastExt = extensions.filter(x => x.status !== 'pending'); if (pastExt.length) { %>
-      <ol class="timeline" style="margin-top:14px">
+      <ol class="timeline mt-4">
         <% pastExt.forEach(x => { %><li class="dec-<%= x.status === 'approved' ? 'approved' : x.status === 'rejected' ? 'rejected' : 'superseded' %>"><span class="t-dot"><%- ic(x.status === 'approved' ? 'check' : 'x') %></span>
           <div class="t-head"><b class="mono" dir="ltr"><%= fmt(x.old_end) %> → <%= fmt(x.new_end) %></b><span class="pill dec-<%= x.status === 'approved' ? 'approved' : x.status === 'rejected' ? 'rejected' : 'superseded' %>"><%= t('ps_' + (x.status === 'cancelled' ? 'reversed' : x.status)) %></span></div>
           <div class="t-meta"><%= x.reason %> · <%= lang === 'en' && x.req_en ? x.req_en : x.req_ar %><% if (x.dec_ar) { %> <%= arrow %> <%= lang === 'en' && x.dec_en ? x.dec_en : x.dec_ar %><% } %> · <%= fmt(x.decided_at) %></div>
@@ -147,19 +147,19 @@
         <label class="span2"><span><%= t('handover_to') %> <span class="req">*</span></span><select name="to_employee_id" required><option value=""></option>
           <% handoverCandidates.filter(e => e.id !== wo.team_leader_id).forEach(e => { %><option value="<%= e.id %>"><%= e.employee_no %> · <%= nm(e) %> (<%= e.section_code || '' %>)<%= participants.some(p => p.id === e.id) ? ' ★' : '' %></option><% }) %></select></label>
         <label><span><%= t('handover_at') %> <span class="req">*</span></span><input type="datetime-local" name="scheduled_at" required></label>
-        <label class="inline" style="align-self:end"><input type="checkbox" name="remove_outgoing" value="1"><%= t('remove_outgoing') %></label>
+        <label class="inline self-end"><input type="checkbox" name="remove_outgoing" value="1"><%= t('remove_outgoing') %></label>
         <label class="span2"><span><%= t('reason') %> <span class="req">*</span></span><input name="reason" required placeholder="<%= lang === 'ar' ? 'مثال: انتهاء مناوبة، إجازة، نقل تكليف' : 'e.g. end of shift, leave, reassignment' %>"></label>
         <label class="span2"><%= t('work_status_at_handover') %><textarea name="work_status" rows="2" placeholder="<%= lang === 'ar' ? 'المنجز، المتبقي، المخاطر، التصاريح، المواد...' : 'Done, remaining, risks, permits, materials...' %>"></textarea></label>
         <div class="form-actions"><button class="btn primary"><%- ic('clock') %><%= t('schedule_handover') %></button></div>
       </form>
       <% } %>
       <% if (!handovers.length) { %><div class="empty-inline"><%- ic('transfer') %><%= t('none') %></div><% } %>
-      <ol class="timeline" style="margin-top:14px">
+      <ol class="timeline mt-4">
         <% handovers.forEach(h => { %><li class="dec-<%= h.status === 'completed' ? 'approved' : h.status === 'scheduled' ? 'pending' : 'superseded' %>"><span class="t-dot"><%- ic(h.status === 'completed' ? 'check' : h.status === 'scheduled' ? 'clock' : 'x') %></span>
-          <div class="t-head"><b><%= lang === 'en' && h.from_en && !/sample/.test(h.from_en) ? h.from_en : h.from_ar %></b><%- ic('arrow', 'ic-dir') %><b><%= lang === 'en' && h.to_en && !/sample/.test(h.to_en) ? h.to_en : h.to_ar %></b><span class="pill <%= h.status === 'completed' ? 'ok' : h.status === 'scheduled' ? 'warn' : '' %>"><%= t('ho_' + h.status) %></span></div>
+          <div class="t-head"><b><%= lang === 'en' && h.from_en ? h.from_en : h.from_ar %></b><%- ic('arrow', 'ic-dir') %><b><%= lang === 'en' && h.to_en ? h.to_en : h.to_ar %></b><span class="pill <%= h.status === 'completed' ? 'ok' : h.status === 'scheduled' ? 'warn' : '' %>"><%= t('ho_' + h.status) %></span></div>
           <div class="t-meta"><%- ic('clock') %> <%= fmt(h.scheduled_at) %><% if (h.executed_at && h.status === 'completed') { %> · ✓ <%= fmt(h.executed_at) %><% } %> · <%= h.reason %></div>
           <% if (h.work_status) { %><div class="comment"><%- ic('file') %><span class="pre"><%= h.work_status %></span></div><% } %>
-          <% if (h.status === 'scheduled' && (wo.team_leader_id === user.id || isManager)) { %><form method="post" action="/wo/<%= wo.id %>/handovers/<%= h.id %>/cancel" style="margin-top:6px"><button class="btn small ghost"><%- ic('x') %><%= t('cancel') %></button></form><% } %>
+          <% if (h.status === 'scheduled' && (wo.team_leader_id === user.id || isManager)) { %><form method="post" action="/wo/<%= wo.id %>/handovers/<%= h.id %>/cancel" class="mt-1-5"><button class="btn small ghost"><%- ic('x') %><%= t('cancel') %></button></form><% } %>
         </li><% }) %>
       </ol>
     </div>
@@ -177,9 +177,9 @@
     <label><span><%= t('arrival_at') %><% if (isCritical) { %> <span class="req">*</span><% } %></span><input type="datetime-local" name="arrival_at" value="<%= localInput(wo.arrival_at) %>"></label>
     <label><span><%= t('restored_at') %><% if (isCritical) { %> <span class="req">*</span><% } %></span><input type="datetime-local" name="restored_at" value="<%= localInput(wo.restored_at) %>"></label>
     <label><%= t('travel_hours') %><input type="number" step="0.5" min="0" name="travel_hours" value="<%= wo.travel_hours ?? '' %>"></label>
-    <label class="inline" style="align-self:end"><input type="checkbox" name="overnight" value="1" <%= wo.overnight ? 'checked' : '' %>><%= t('overnight') %></label>
+    <label class="inline self-end"><input type="checkbox" name="overnight" value="1" <%= wo.overnight ? 'checked' : '' %>><%= t('overnight') %></label>
     <div class="span2">
-      <p style="margin-bottom:8px"><b><%= t('materials_used') %></b> <span class="req">*</span></p>
+      <p class="mb-2"><b><%= t('materials_used') %></b> <span class="req">*</span></p>
       <div class="segmented" role="radiogroup">
         <label><input type="radio" name="materials_used" value="yes" <%= wo.materials_used === 'yes' ? 'checked' : '' %>><%= t('yes') %></label>
         <label><input type="radio" name="materials_used" value="no" <%= wo.materials_used === 'no' ? 'checked' : '' %>><%= t('no') %></label>
@@ -216,7 +216,7 @@
     <label id="pair-wrap" class="hidden"><%= t('pair_with') %><select name="pair_photo_id"><option value=""></option><% befores.forEach((p, i) => { %><option value="<%= p.id %>">#<%= i + 1 %> <%= p.caption || p.original_name %></option><% }) %></select></label>
     <label><%= t('caption') %><input name="caption"></label>
     <label><%= t('defect_location') %><input name="defect_location" list="defects"><datalist id="defects"><% ['insulator','conductor','crossarm','tower body','foundation','bolts','clamps','communication wire','shield wire'].forEach(d => { %><option><%= d %></option><% }) %></datalist></label>
-    <label class="span2 file-drop" style="position:relative"><input type="file" name="photos" accept="image/*" capture="environment" multiple required><%- ic('upload') %><span class="fd-text"><b><%= t('upload_photos') %></b><br><small><bdi>JPG · PNG · WEBP · HEIC</bdi> — <%= t('max_size_15') %></small></span></label>
+    <label class="span2 file-drop"><input type="file" name="photos" accept="image/*" capture="environment" multiple required><%- ic('upload') %><span class="fd-text"><b><%= t('upload_photos') %></b><br><small><bdi>JPG · PNG · WEBP · HEIC</bdi> — <%= t('max_size_15') %></small></span></label>
     <input type="hidden" name="lat"><input type="hidden" name="lng">
     <div class="form-actions" style="align-items:center"><button class="btn primary"><%- ic('upload') %><%= t('upload_photos') %></button> <small class="muted geo-status"></small></div>
   </form>
@@ -246,7 +246,7 @@
     <% list.forEach(p => { %>
       <figure>
         <a href="/wo/<%= wo.id %>/photos/<%= p.id %>" target="_blank" rel="noopener"><img src="/wo/<%= wo.id %>/photos/<%= p.id %>" loading="lazy" alt="<%= p.caption || t(stage) %>"></a>
-        <figcaption><span class="cell-main"><%= p.caption || '—' %></span><% if (p.defect_location) { %><span class="pill warn" style="align-self:flex-start"><%= p.defect_location %></span><% } %><small class="muted"><%= nm(p) %> · <%= fmt(p.uploaded_at) %></small><% if (p.lat) { %><small><a href="https://maps.google.com/?q=<%= p.lat %>,<%= p.lng %>" target="_blank" rel="noopener"><%- ic('pin') %> <%= p.lat.toFixed(4) %>, <%= p.lng.toFixed(4) %></a></small><% } %><small class="muted mono" title="SHA-256">#<%= p.sha256.slice(0, 12) %></small></figcaption>
+        <figcaption><span class="cell-main"><%= p.caption || '—' %></span><% if (p.defect_location) { %><span class="pill warn self-start"><%= p.defect_location %></span><% } %><small class="muted"><%= nm(p) %> · <%= fmt(p.uploaded_at) %></small><% if (p.lat) { %><small><a href="https://maps.google.com/?q=<%= p.lat %>,<%= p.lng %>" target="_blank" rel="noopener"><%- ic('pin') %> <%= p.lat.toFixed(4) %>, <%= p.lng.toFixed(4) %></a></small><% } %><small class="muted mono" title="SHA-256">#<%= p.sha256.slice(0, 12) %></small></figcaption>
       </figure>
     <% }) %>
     </div>
@@ -288,8 +288,8 @@
   <details class="add-line"><summary class="btn small"><%- ic('plus') %><%= t('add_items') %></summary>
     <form method="post" action="/wo/<%= wo.id %>/items" class="upload-panel">
       <%- include('partials/item_picker', { items: itemOptions, sel: {} }) %>
-      <label style="margin-top:10px"><%= t('notes') %><input name="notes"></label>
-      <div class="form-actions" style="margin-top:10px"><button class="btn primary"><%- ic('save') %><%= t('save') %></button></div>
+      <label class="mt-3"><%= t('notes') %><input name="notes"></label>
+      <div class="form-actions mt-3"><button class="btn primary"><%- ic('save') %><%= t('save') %></button></div>
     </form>
   </details>
   <% } %>
@@ -434,7 +434,7 @@
   <div class="away-grid">
     <% away.people.forEach(a => { %>
       <div class="away-card ev-<%= a.type %>">
-        <span class="avatar" style="width:34px;height:34px;font-size:12px"><%- face(a) %></span>
+        <span class="avatar"><%- face(a) %></span>
         <span class="grow"><a class="cell-main" <%- empHref(a.employee_id) %>><%= nm(a) %></a>
           <span class="cell-sub mono"><%= a.employee_no %></span><span class="dates mono" dir="ltr"><%= a.start_date %> → <%= a.end_date %></span>
           <% if (a.location || a.notes) { %><span class="cell-sub"><%= [a.location, a.notes].filter(Boolean).join(' · ') %></span><% } %></span>

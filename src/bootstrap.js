@@ -42,4 +42,33 @@ function bootstrapProduction() {
 
 const isDemoDatabase = () => !!get('SELECT 1 FROM employees WHERE is_sample = 1 LIMIT 1');
 
-module.exports = { bootstrapProduction, isDemoDatabase };
+/**
+ * Older demo databases carried "(تجريبي)", "(عينة)", "(demo)" and "(sample)" after names and titles.
+ * Remove those words once, from every text column. Runs only on a demo database, never on real data.
+ */
+function cleanDemoLabels() {
+  const { db, setting, setSetting } = require('./db');
+  if (setting('demo_labels_cleaned') === '1' || !isDemoDatabase()) return 0;
+  const RE = /\s*\((?:تجريبي|تجريبية|عينة|demo|sample)\)/gi;
+  db.function('strip_demo_label', { deterministic: true }, (v) => (typeof v === 'string' ? v.replace(RE, '') : v));
+  const like = ['(تجريبي)', '(تجريبية)', '(عينة)', '(demo)', '(sample)'];
+  let n = 0;
+  const { tx } = require('./db');
+  tx(() => {
+    // Sample employees had "F001 (sample)" as their English name: they have no English name
+    n += Number(db.prepare("UPDATE employees SET name_en = NULL WHERE is_sample = 1 AND name_en = employee_no || ' (sample)'").run().changes);
+    // The audit log is immutable and the email outbox is a record of what was sent: both stay as they are
+    for (const { name } of db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT IN ('audit_log', 'emails')").all()) {
+      for (const c of db.prepare(`PRAGMA table_info("${name}")`).all()) {
+        if (!/TEXT/i.test(c.type) || c.name === 'password_hash') continue;
+        const where = like.map(() => `"${c.name}" LIKE ?`).join(' OR ');
+        n += Number(db.prepare(`UPDATE "${name}" SET "${c.name}" = strip_demo_label("${c.name}") WHERE ${where}`).run(...like.map((l) => `%${l}%`)).changes);
+      }
+    }
+  });
+  setSetting('demo_labels_cleaned', '1');
+  if (n) console.log(`Removed demo/sample labels from ${n} values.`);
+  return n;
+}
+
+module.exports = { bootstrapProduction, isDemoDatabase, cleanDemoLabels };

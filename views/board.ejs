@@ -54,7 +54,7 @@
     <% }) %>
   </div>
   <% if (H.runners.length || H.yearTop.length) { %>
-  <div class="grid2" style="margin-top:14px">
+  <div class="grid2 mt-4">
     <div><h3><%= t('also_outstanding') %></h3>
       <ol class="rank-list" start="4"><% H.runners.forEach(e => { %><li><a <%- empHref(e.id) %>><span class="avatar"><%- face(e) %></span><span class="grow"><%= nm(e) %><small class="muted"> · <%= e.section_code || '' %></small></span><b><%= e.score %></b></a></li><% }) %>
       <% if (!H.runners.length) { %><li class="muted"><%= t('none') %></li><% } %></ol></div>
@@ -85,7 +85,7 @@
     <span id="ev-count" class="muted small" aria-live="polite"></span>
   </div>
   <div id="ev-feed" class="ev-feed"></div>
-  <div style="text-align:center;margin-top:10px"><button type="button" class="btn small" id="ev-more" hidden><%= t('show_more') %></button></div>
+  <div class="text-center mt-3"><button type="button" class="btn small" id="ev-more" hidden><%= t('show_more') %></button></div>
 </section>
 
 <section class="card">

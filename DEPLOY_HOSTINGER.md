@@ -125,7 +125,7 @@ SMTP_PASS=********
 MAIL_FROM="Transmission WMS <wms@yourdomain.com>"
 APP_URL=https://wms.yourdomain.com
 ```
-جرّبه من **الإعدادات → إرسال بريد تجريبي**. · Test from **Settings → Send test email**.
+جرّبه من **الإعدادات → إرسال بريد اختبار**. · Test from **Settings → Send test email**.
 
 ---
 
@@ -153,7 +153,7 @@ Copy `/var/lib/sec-wms/backups` off the server regularly (Hostinger backups or e
 
 - [ ] HTTPS يعمل (ملفات تعريف الارتباط آمنة في الإنتاج) · HTTPS works (cookies are Secure in production)
 - [ ] تغيير كلمة مرور `admin` · admin password changed
-- [ ] إعداد SMTP وإرسال بريد تجريبي · SMTP configured and tested
+- [ ] إعداد SMTP وإرسال بريد اختبار · SMTP configured and tested
 - [ ] استيراد الهيكل التنظيمي ثم الموظفين ثم الأصول والأسطول والدورات · import org → employees → assets, fleet, courses
 - [ ] اعتماد قيم الإعدادات (المهل، حد 20 مهمة، النقاط) · approve policy values in Settings / Points
 - [ ] النسخ الاحتياطي اليومي يعمل وتمت تجربة الاستعادة · daily backup running, restore tested

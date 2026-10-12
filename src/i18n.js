@@ -3,7 +3,6 @@
 const D = {
   app_name: ['نظام نقل الطاقة - إدارة أوامر العمل والصيانة', 'SEC Transmission - Work Order & Maintenance System'],
   app_short: ['نقل الطاقة', 'Transmission'],
-  sample_banner: ['بيئة تجريبية - البيانات وهمية للاختبار فقط', 'Test environment - sample data for testing only'],
   login: ['تسجيل الدخول', 'Sign in'],
   logout: ['تسجيل الخروج', 'Sign out'],
   employee_no: ['الرقم الوظيفي', 'Employee ID'],
@@ -69,7 +68,6 @@ const D = {
   skip_to_content: ['تخطي إلى المحتوى', 'Skip to content'],
   theme_dark: ['الوضع الداكن', 'Dark mode'],
   theme_light: ['الوضع الفاتح', 'Light mode'],
-  sample_short: ['بيئة تجريبية', 'Test environment'],
   menu: ['القائمة', 'Menu'],
   welcome: ['مرحبًا', 'Welcome'],
   overview_hint: ['نظرة عامة على أوامر العمل والتنبيهات اليوم', "Today's overview of work orders and alerts"],
@@ -520,7 +518,7 @@ const D = {
   smtp_status: ['حالة خادم البريد', 'Mail server status'],
   smtp_on: ['مفعّل - يتم الإرسال عبر SMTP', 'Configured - sending via SMTP'],
   smtp_off: ['غير مهيأ - الرسائل تُحفظ في صندوق الصادر فقط', 'Not configured - emails are kept in the outbox only'],
-  send_test: ['إرسال بريد تجريبي', 'Send test email'],
+  send_test: ['إرسال بريد اختبار', 'Send test email'],
   to_email: ['إلى', 'To'],
   subject: ['الموضوع', 'Subject'],
   sent_at: ['وقت الإرسال', 'Sent at'],
@@ -703,7 +701,7 @@ const D = {
   // ----- file extraction -----
   // needs attention (dashboard)
   needs_attention: ['يحتاج متابعتك', 'Needs your attention'],
-  before_after: ['قبل ← بعد', 'Before → after'], max_size_25: ['حتى 25 ميغابايت للملف', 'up to 25 MB each'], max_size_15: ['حتى 15 ميغابايت للصورة', 'up to 15 MB each'], course_language: ['لغة الدورة', 'Course language'],
+  before_after: ['قبل ← بعد', 'Before → after'], login_accounts: ['حسابات الدخول', 'Sign-in accounts'], max_size_25: ['حتى 25 ميغابايت للملف', 'up to 25 MB each'], max_size_15: ['حتى 15 ميغابايت للصورة', 'up to 15 MB each'], course_language: ['لغة الدورة', 'Course language'],
   clang_ar: ['العربية', 'Arabic'], clang_en: ['الإنجليزية', 'English'], clang_ar_en: ['العربية والإنجليزية', 'Arabic and English'],
   set_sla: ['مهلة الاستجابة {p} (ساعة)', '{p} response time (h)'], set_wo_sequence: ['تسلسل أوامر العمل', 'WO sequence'], columns: ['الأعمدة', 'Columns'],
   imported_badge: ['مستورد', 'Imported'], imported_hint: ['أُدخل من ملف استيراد أو استخراج', 'Added from an import or extraction file'],

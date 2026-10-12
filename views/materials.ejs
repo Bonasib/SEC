@@ -44,7 +44,7 @@
   <% if (!rows.length) { %><tr><td colspan="9" class="empty"><%- ic('boxes') %><%= t('no_records') %></td></tr><% } %>
   <% rows.forEach(i => { %>
     <tr class="<%= i.out ? 'row-bad' : i.low ? 'row-warn' : '' %>">
-      <td><a class="item-cell" href="/materials/<%= i.id %>" style="color:inherit"><%- thumb(i) %><span><span class="cell-main"><%= lang === 'en' && i.name_en ? i.name_en : i.name_ar %></span><span class="cell-sub"><b class="mono wo-link"><%= i.code %></b><%= i.inventory_no ? ' · #' + i.inventory_no : '' %></span></span></a></td>
+      <td><a class="item-cell c-inherit" href="/materials/<%= i.id %>"><%- thumb(i) %><span><span class="cell-main"><%= lang === 'en' && i.name_en ? i.name_en : i.name_ar %></span><span class="cell-sub"><b class="mono wo-link"><%= i.code %></b><%= i.inventory_no ? ' · #' + i.inventory_no : '' %></span></span></a></td>
       <td><span class="pill ik-<%= i.kind %>"><%= t('ik_' + i.kind) %></span></td>
       <td><%= i.category || '—' %></td>
       <td class="num"><b><%= i.quantity %></b> <small class="muted"><%= t('uom_' + i.uom) %></small></td>

@@ -15,5 +15,5 @@
   <label><%= t('course_language') %><select name="language"><option value=""></option><% ['ar','en','ar/en'].forEach(x => { %><option value="<%= x %>" <%= c.language === x ? 'selected' : '' %>><%= t('clang_' + x.replace('/', '_')) %></option><% }) %></select></label>
   <label><%= t('cost') %> (SAR)<input type="number" min="0" name="cost" value="<%= c.cost || '' %>"></label>
   <label><%= t('status') %><select name="status"><% ['planned','completed','cancelled'].forEach(x => { %><option value="<%= x %>" <%= (c.status || 'planned') === x ? 'selected' : '' %>><%= t('cs_' + x) %></option><% }) %></select></label>
-  <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button><small class="muted" style="align-self:center"><%= t('course_sync_hint') %></small></div>
+  <div class="form-actions"><button class="btn primary"><%- ic('save') %><%= t('save') %></button><small class="muted self-center"><%= t('course_sync_hint') %></small></div>
 </form>

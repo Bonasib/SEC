@@ -5,7 +5,7 @@
     <%- thumb(item, 'xxl') %>
     <div>
       <a class="small" href="/materials"><%- ic('arrow', 'ic-back') %> <%= t('materials_tools') %></a>
-      <h1 style="margin-top:8px"><%= nameOf(item) %></h1>
+      <h1 class="mt-2"><%= nameOf(item) %></h1>
       <div class="tags">
         <span class="wo-num"><%= item.code %></span>
         <% if (item.inventory_no) { %><span class="pill mono" title="<%= t('inventory_no') %>"># <%= item.inventory_no %></span><% } %>
@@ -46,7 +46,7 @@
     <% if (item.notes) { %><dt><%= t('notes') %></dt><dd class="pre"><%= item.notes %></dd><% } %>
   </dl>
   <% if (canEdit) { %>
-  <details class="collapsible" style="margin-top:12px"><summary class="btn small"><%- ic('pen') %><%= t('edit') %></summary>
+  <details class="collapsible mt-3"><summary class="btn small"><%- ic('pen') %><%= t('edit') %></summary>
     <%- include('partials/item_form', { i: item }) %></details>
   <% } %>
 </section>

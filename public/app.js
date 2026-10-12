@@ -23,6 +23,21 @@
   if (navBtn) navBtn.addEventListener('click', function () { setNav(!document.body.classList.contains('nav-open')); });
   document.querySelectorAll('[data-close-nav]').forEach(function (el) { el.addEventListener('click', function () { setNav(false); }); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.body.classList.contains('nav-open')) { setNav(false); navBtn && navBtn.focus(); } });
+  // Tile rows (summary numbers, follow-ups): choose a column count that leaves no tile alone on the last row
+  var balance = function (n, max) {
+    if (n <= max) return n;
+    var best = max, empty = 99;
+    for (var c = max; c >= 2; c--) { var e = n % c ? c - n % c : 0; if (e < empty) { empty = e; best = c; } }
+    return best;
+  };
+  document.querySelectorAll('.kpis, .att-list, .ev-tiles').forEach(function (g) {
+    var n = Array.prototype.filter.call(g.children, function (c) { return getComputedStyle(c).display !== 'none'; }).length;
+    if (!n) return;
+    var att = g.classList.contains('att-list'), ev = g.classList.contains('ev-tiles');
+    g.style.setProperty('--cols', balance(n, att ? 3 : ev ? 6 : 6));
+    g.style.setProperty('--cols-mid', balance(n, att ? 2 : 4));
+  });
+
   // "/" anywhere (outside a field) jumps to the global search
   document.addEventListener('keydown', function (e) {
     if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;

@@ -1,5 +1,5 @@
 <%- include('partials/header', { pageTitle: e.employee_no }) %>
-<div class="page-head wo-head"><div style="display:flex;gap:16px;align-items:center"><span class="avatar xxl"><%- face(e) %></span><div><span class="wo-num"><%- ic('user') %><%= e.employee_no %></span><h1 style="margin:8px 0 6px"><%= e.name_ar %><% if (e.name_en) { %> <small class="muted">/ <%= e.name_en %></small><% } %></h1>
+<div class="page-head wo-head"><div style="display:flex;gap:16px;align-items:center"><span class="avatar xxl"><%- face(e) %></span><div><span class="wo-num"><%- ic('user') %><%= e.employee_no %></span><h1 class="my-head"><%= e.name_ar %><% if (e.name_en) { %> <small class="muted">/ <%= e.name_en %></small><% } %></h1>
   <span class="pill"><%= t('role_' + e.role) %></span> <span class="pill <%= e.status === 'active' ? 'ok' : 'bad' %>"><%= lbl('emp_status', e.status) %></span></div></div></div>
   <div class="btns"><% if (canEdit) { %><a class="btn primary" href="/employees/<%= e.id %>/edit"><%- ic('pen') %><%= t('edit') %></a><% } %><a class="btn" <%- ptsHref(e.id) %>><%- ic('star') %><%= t('statement') %></a><a class="btn" href="/calendar?employee=<%= e.id %>&section=<%= e.section_id || 'all' %>"><%- ic('calendar') %><%= t('calendar') %></a></div>
 <div class="grid2">
@@ -8,7 +8,7 @@
     <dt><%= t('job_title') %></dt><dd><%= e.job_title_ar || '' %> <%= e.job_title_en || '' %></dd>
     <dt><%= t('section') %></dt><dd><%= path_.map(u => nm(u)).join(' › ') || '—' %></dd>
     <dt><%= t('nationality') %></dt><dd><%= e.nationality || '—' %></dd>
-    <dt><%= t('email') %></dt><dd dir="ltr" style="text-align:start"><%= e.email || '—' %></dd>
+    <dt><%= t('email') %></dt><dd dir="ltr" class="text-start"><%= e.email || '—' %></dd>
     <dt><%= t('phone') %></dt><dd><%= (canEdit || self) ? (e.phone || '—') : '****' %></dd>
     <% ['section_head','division_manager','department_manager','sector_head'].forEach(k => { const o = officials[k]; if (o) { %>
       <dt><%= t('step_' + k) %></dt><dd><%= o.employee_no ? nm(o) : '—' %> <% if (o.acting) { %><span class="pill warn"><%= t('acting_label') %></span><% } %></dd>
@@ -54,7 +54,7 @@
 </div>
 <div class="grid2">
 <section class="card"><h2><%- ic('calendar') %><%= t('leaves') %></h2>
-  <table class="tbl small"><% leaves.forEach(l => { %><tr><td><%= lbl('leave_type', l.type) %></td><td class="mono" dir="ltr" style="text-align:start"><%= l.start_date %> → <%= l.end_date %></td><td><%= lbl('leave_status', l.status) %></td></tr><% }) %>
+  <table class="tbl small"><% leaves.forEach(l => { %><tr><td><%= lbl('leave_type', l.type) %></td><td class="mono text-start" dir="ltr"><%= l.start_date %> → <%= l.end_date %></td><td><%= lbl('leave_status', l.status) %></td></tr><% }) %>
   <% if (!leaves.length) { %><tr><td class="muted"><%= t('no_records') %></td></tr><% } %></table>
 </section>
 </div>

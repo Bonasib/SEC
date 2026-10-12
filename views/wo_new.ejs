@@ -9,7 +9,7 @@
 </div>
 <% if (typeof error !== 'undefined' && error) { %><div class="flash flash-error" role="alert"><%- ic('x-circle') %><div><%= error %></div></div><% } %>
 <form method="post" action="<%= editing ? '/wo/' + editing.id + '/edit' : '/wo' %>" class="card form-grid" id="wo-form" data-msg-ok="<%= t('crew_ok') %>" data-msg-short="<%= t('crew_short') %>" data-msg-none="<%= t('crew_no_vehicle') %>">
-  <div class="form-section" style="border:0;padding-top:0;margin-top:0"><h3><%- ic('file') %><%= t('details') %></h3></div>
+  <div class="form-section first"><h3><%- ic('file') %><%= t('details') %></h3></div>
   <label class="span2"><span><%= t('title') %> <span class="req">*</span></span><input name="title" required value="<%= form.title || '' %>"></label>
   <label><span><%= t('type') %> <span class="req">*</span></span><select name="type" required><% WO_TYPES.forEach(x => { %><option value="<%= x %>" <%= form.type === x ? 'selected' : '' %>><%= t('wt_' + x) %></option><% }) %></select></label>
   <label><span><%= t('priority') %> <span class="req">*</span></span><select name="priority" id="priority"><% PRIORITIES.forEach(x => { %><option value="<%= x %>" <%= form.priority === x ? 'selected' : '' %>><%= t('pr_' + x) %></option><% }) %></select></label>
@@ -28,25 +28,25 @@
   <div class="form-section"><h3><%- ic('calendar') %><%= t('planned_start') %></h3></div>
   <label><span><%= t('planned_start') %> <span class="req">*</span></span><input type="datetime-local" name="planned_start" required value="<%= form.planned_start || '' %>" <%= datesLocked ? 'disabled' : '' %>></label>
   <label><span><%= t('planned_end') %> <span class="req">*</span></span><input type="datetime-local" name="planned_end" required value="<%= form.planned_end || '' %>" <%= datesLocked ? 'disabled' : '' %>></label>
-  <% if (datesLocked) { %><p class="muted small span2" style="margin:0"><%- ic('clock') %> <%= t('dates_locked') %> — <a href="/wo/<%= editing.id %>#schedule"><%= t('schedule_changes') %></a></p><% } %>
+  <% if (datesLocked) { %><p class="muted small span2 m-0"><%- ic('clock') %> <%= t('dates_locked') %> — <a href="/wo/<%= editing.id %>#schedule"><%= t('schedule_changes') %></a></p><% } %>
   <div class="form-section"><h3><%- ic('route') %><%= t('travel') %></h3></div>
   <div class="span2">
-    <p style="margin-bottom:8px"><b><%= t('involves_travel_q') %></b> <span class="req">*</span></p>
+    <p class="mb-2"><b><%= t('involves_travel_q') %></b> <span class="req">*</span></p>
     <div class="segmented" role="radiogroup" aria-label="<%= t('involves_travel_q') %>">
       <label><input type="radio" name="involves_travel" value="no" required <%= form.involves_travel === 'no' ? 'checked' : '' %>><%= t('no') %></label>
       <label><input type="radio" name="involves_travel" value="yes" <%= form.involves_travel === 'yes' ? 'checked' : '' %>><%= t('yes') %></label>
     </div>
   </div>
   <div id="travel-fields" class="form-grid span2 travel-box">
-    <div class="span2"><p style="margin-bottom:8px"><b><%= t('travel_distance_band') %></b> <span class="req">*</span></p>
+    <div class="span2"><p class="mb-2"><b><%= t('travel_distance_band') %></b> <span class="req">*</span></p>
       <div class="segmented" role="radiogroup">
         <label><input type="radio" name="travel_band" value="over_100" <%= form.travel_band === 'over_100' ? 'checked' : '' %>><%= t('band_over_100') %></label>
         <label><input type="radio" name="travel_band" value="over_200" <%= form.travel_band === 'over_200' ? 'checked' : '' %>><%= t('band_over_200') %></label>
       </div></div>
-    <label><span><%= t('distance_km') %> <span class="req">*</span></span><input type="number" min="0" step="0.1" name="distance_km" id="distance" value="<%= form.distance_km || '' %>"><span id="dist-cat" class="pill info" style="align-self:flex-start"></span></label>
+    <label><span><%= t('distance_km') %> <span class="req">*</span></span><input type="number" min="0" step="0.1" name="distance_km" id="distance" value="<%= form.distance_km || '' %>"><span id="dist-cat" class="pill info self-start"></span></label>
     <label><%= t('travel_hours') %><input type="number" min="0" step="0.5" name="travel_hours" value="<%= form.travel_hours || '' %>"></label>
     <label class="inline span2"><input type="checkbox" name="overnight" value="1" <%= form.overnight ? 'checked' : '' %>><%= t('overnight') %></label>
-    <p class="muted small span2" style="margin:0"><%- ic('alert') %> <%= t('travel_limit_hint') %></p>
+    <p class="muted small span2 m-0"><%- ic('alert') %> <%= t('travel_limit_hint') %></p>
   </div>
   <label class="span2"><%= t('selection_reason') %><textarea name="selection_reason" rows="2" placeholder="<%= lang === 'ar' ? 'إلزامي عند تجاوز 20 مهمة فوق 200 كم: عدم توفر بديل، خبرة تخصصية، حالة حرجة...' : 'Required beyond 20 assignments over 200 km: no alternative, specialist expertise, critical case...' %>"><%= form.selection_reason || '' %></textarea></label>
 
@@ -54,7 +54,7 @@
     <p class="muted small"><%= lang === 'ar' ? 'يتحقق النظام من الإجازات والدورات والتعارض مع مهام أخرى، ويُرسل بريدًا لكل عضو بأمر العمل.' : 'Leave, training and conflicting work are checked; every member is emailed the work order.' %></p></div>
   <label class="span2"><span><%= t('team_leader') %> <span class="req">*</span></span><select name="team_leader_id" id="team-leader" required><option value=""></option><% employees.forEach(e => { %><option value="<%= e.id %>" <%= String(form.team_leader_id) === String(e.id) ? 'selected' : '' %>><%= e.employee_no %> · <%= nm(e) %> (<%= e.section_code || '' %>)</option><% }) %></select></label>
   <div class="span2">
-    <div class="search-field" style="position:relative"><%- ic('search') %><input class="picker-filter" style="padding-inline-start:38px" placeholder="<%= t('search') %>…" data-target="emp-picker" aria-label="<%= t('search') %> <%= t('participants') %>"></div>
+    <div class="search-field"><%- ic('search') %><input class="picker-filter" placeholder="<%= t('search') %>…" data-target="emp-picker" aria-label="<%= t('search') %> <%= t('participants') %>"></div>
     <div class="picker" id="emp-picker">
       <% const sel = [].concat(form.participant_ids || []).map(String); employees.forEach(e => { %>
         <label data-text="<%= e.employee_no %> <%= e.name_ar %> <%= e.name_en || '' %> <%= e.section_code %> <%= e.job_title_en || '' %>"><input type="checkbox" name="participant_ids" value="<%= e.id %>" <%= sel.includes(String(e.id)) ? 'checked' : '' %>><span class="picker-meta"><span><b class="mono"><%= e.employee_no %></b> <%= nm(e) %></span><small><%= e.section_code %> · <%= e.job_title_en || '' %></small></span></label>
@@ -92,7 +92,7 @@
 
   <div class="form-section"><h3><%- ic('package') %><%= t('warehouse_reservation') %></h3></div>
   <div class="span2">
-    <p style="margin-bottom:8px"><b><%= t('materials_withdrawn') %></b> <span class="req">*</span></p>
+    <p class="mb-2"><b><%= t('materials_withdrawn') %></b> <span class="req">*</span></p>
     <div class="segmented" role="radiogroup">
       <label><input type="radio" name="materials_withdrawn" value="yes" required <%= form.materials_withdrawn === 'yes' ? 'checked' : '' %>><%= t('yes') %></label>
       <label><input type="radio" name="materials_withdrawn" value="no" <%= form.materials_withdrawn === 'no' ? 'checked' : '' %>><%= t('no') %></label>

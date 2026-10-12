@@ -16,7 +16,7 @@
     </div>
     <% if (d.canImport) { %>
     <form method="post" action="/data/import/<%= d.key %>" enctype="multipart/form-data" class="inline-form">
-      <input type="file" name="file" accept=".xlsx,.csv" required aria-label="<%= t('file') %>" style="flex:1;min-width:0">
+      <input type="file" name="file" accept=".xlsx,.csv" required aria-label="<%= t('file') %>" class="flex-1">
       <button class="btn small primary"><%- ic('upload') %><%= t('upload_preview') %></button>
     </form>
     <% } %>

@@ -10,7 +10,7 @@
     <label><%= t('scope') %><select name="section_id"><option value=""><%= t('all_sections') %></option><% sections.forEach(s => { %><option value="<%= s.id %>"><%= s.code %> · <%= nm(s) %></option><% }) %></select></label>
     <label><%= t('expires') %><input type="date" name="expires_at"><small class="muted"><%= t('expires_hint') %></small></label>
     <div class="span2">
-      <div class="search-field" style="position:relative"><%- ic('search') %><input class="picker-filter" style="padding-inline-start:38px" placeholder="<%= t('search') %>…" data-target="perm-picker" aria-label="<%= t('search') %>"></div>
+      <div class="search-field"><%- ic('search') %><input class="picker-filter" placeholder="<%= t('search') %>…" data-target="perm-picker" aria-label="<%= t('search') %>"></div>
       <div class="picker" id="perm-picker"><% employees.forEach(e => { %><label data-text="<%= e.employee_no %> <%= e.name_ar %> <%= e.name_en || '' %> <%= e.section_code || '' %> <%= e.role %>"><input type="checkbox" name="employee_ids" value="<%= e.id %>"><span class="picker-meta"><span><b class="mono"><%= e.employee_no %></b> <%= nm(e) %></span><small><%= e.section_code || '' %> · <%= t('role_' + e.role) %></small></span></label><% }) %></div>
     </div>
     <label class="span2"><%= t('notes') %><input name="note"></label>
@@ -31,7 +31,7 @@
       <td><%= g.expires_at ? fmt(g.expires_at, false) : '∞' %></td>
       <td><%= lang === 'en' && g.by_en ? g.by_en : g.by_ar %><span class="cell-sub"><%= fmt(g.granted_at) %></span></td>
       <td><span class="pill <%= g.state === 'active' ? 'ok' : g.state === 'expired' ? 'warn' : '' %>"><%= t('gs_' + g.state) %></span></td>
-      <td><% if (canGrant && g.state === 'active') { %><form method="post" action="/permissions/<%= g.id %>/revoke" style="margin:0"><button class="btn small ghost"><%- ic('x') %><%= t('revoke') %></button></form><% } %></td>
+      <td><% if (canGrant && g.state === 'active') { %><form method="post" action="/permissions/<%= g.id %>/revoke" class="m-0"><button class="btn small ghost"><%- ic('x') %><%= t('revoke') %></button></form><% } %></td>
     </tr><% }) %>
     </tbody>
   </table></div>

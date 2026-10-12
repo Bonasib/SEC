@@ -27,7 +27,7 @@
     <% if (!rows.length) { %><tr><td colspan="7" class="empty"><%- ic('route') %><%= t('no_records') %></td></tr><% } %>
     <% rows.forEach(p => { const yrs = Math.min(PLAN_YEARS, p.reviews); %>
       <tr class="<%= p.status === 'transfer_recommended' ? 'row-bad' : '' %>">
-        <td><a href="/plans/<%= p.id %>" style="display:flex;align-items:center;gap:10px;color:inherit"><span class="avatar" style="width:30px;height:30px;font-size:12px"><%- face(p) %></span><span><span class="cell-main"><%= nm(p) %></span><span class="cell-sub mono"><%= p.employee_no %></span></span></a></td>
+        <td><a href="/plans/<%= p.id %>" class="person-link"><span class="avatar av-sm"><%- face(p) %></span><span><span class="cell-main"><%= nm(p) %></span><span class="cell-sub mono"><%= p.employee_no %></span></span></a></td>
         <td class="mono"><%= p.section_code %></td>
         <td class="mono"><%= p.start_year %></td>
         <td><div class="year-dots"><% for (let i = 0; i < PLAN_YEARS; i++) { %><span class="yd <%= i < yrs ? (p.status === 'improved' && i === yrs - 1 ? 'ok' : 'on') : '' %>" title="<%= p.start_year + i %>"><%= p.start_year + i %></span><% } %></div></td>

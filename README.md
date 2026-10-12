@@ -2,7 +2,7 @@
 
 A bilingual system (Arabic RTL / English LTR) for transmission work orders, before/after photos, warehouse materials, approvals, email alerts and Excel/CSV import/export. It is built from the requirements in *SEC_Transmission_Advanced_Prompt_Bilingual_v1.1* and covers sections 4, 5, 6, 7, 9, 10, 12, 16 (approvals), 18, 21, 22 and 25.
 
-> **Test environment.** Everyone in the seed data is fictional: F001–F070 come from Appendix B, and the managers are `DEMO-*` placeholders. The real names in Appendix A are left out on purpose and should only be entered after formal verification.
+> **Seed data.** Everyone in the seed data is fictional: F001–F070 come from Appendix B, and the managers are `DEMO-*` placeholders. The real names in Appendix A are left out on purpose and should only be entered after formal verification. Names and titles are shown without "(sample)" or "(demo)" labels; databases created by older versions are cleaned once at start-up (the audit log and the email outbox keep their history). Production (`SEED_DEMO=false`) never contains seed data.
 
 ## Run it
 
@@ -368,6 +368,7 @@ Creating a work order on a public holiday shows a warning. Approved absences sti
   - Controls are at least 40–44px tall, and 16px inputs on mobile stop iOS from zooming in.
   - Status is shown by text plus color, never color alone. Animation is turned off when the device asks for reduced motion.
   - The before/after slider can be moved with the keyboard.
+- **Sizes and spacing:** one type scale (`--fs-xs` … `--fs-4xl`: 12, 13, 14, 15, 16, 18, 20, 24, 30px) and one spacing scale (`--space-0-5` … `--space-8`: 2, 4, 6, 8, 12, 16, 20, 24, 32px) at the top of `public/style.css`. Every font size, gap, padding and margin uses them; one-off inline styles in the templates were replaced by small utility classes (`mt-3`, `grow`, `self-center`, `av-sm` …). Rows of summary tiles choose a column count that leaves no tile alone on the last row, and on phones page actions fill even rows.
 - **Layout:** right-to-left and left-to-right layouts both use CSS logical properties. On mobile the sidebar opens as a slide-out drawer (Esc closes it). Pages were checked at 390px wide with no sideways scrolling.
 
 ## Project layout

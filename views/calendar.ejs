@@ -5,7 +5,7 @@
   const WD = lang === 'ar' ? ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const typeLabel = (ty) => ty === 'holiday' ? t('holiday') : ty === 'work' ? t('ev_work') : ty === 'task' ? t('ev_task') : ty === 'acting' ? t('ev_acting') : t('lt_' + ty);
   const typeIcon = { holiday: 'star', work: 'wrench', task: 'tasks', annual: 'calendar', sick: 'alert', emergency: 'siren', training: 'user-check', workshop: 'users', factory_test: 'package', permission: 'clock', business_travel: 'route', other: 'file', acting: 'pen' };
-  const who = (ev) => lang === 'en' && ev.name_en && !/sample/.test(ev.name_en) ? ev.name_en : ev.name_ar;
+  const who = (ev) => lang === 'en' && ev.name_en ? ev.name_en : ev.name_ar;
   const label = (ev) => ev.kind === 'holiday' ? (lang === 'en' ? ev.name_en : ev.name_ar)
     : ev.kind === 'work' ? ev.wo_number + ' · ' + ev.title
     : ev.kind === 'task' ? (ev.time ? ev.time + ' · ' : '') + ev.title + (ev.status === 'done' ? ' ✓' : '')

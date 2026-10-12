@@ -7,7 +7,7 @@
 <% if (errors.length) { %><div class="flash flash-error" role="alert"><%- ic('x-circle') %><div><b><%= t('errors') %>:</b><br><%= errors.join('\n') %></div></div><% } %>
 <form method="post" action="<%= mode === 'new' ? '/employees' : '/employees/' + e.id %>" class="card form-grid" enctype="multipart/form-data" novalidate>
   <% if (mode === 'edit') { %><input type="hidden" name="full_edit" value="1"><% } %>
-  <div class="form-section" style="border:0;padding-top:0;margin-top:0"><h3><%- ic('user') %><%= t('identity') %></h3></div>
+  <div class="form-section first"><h3><%- ic('user') %><%= t('identity') %></h3></div>
   <label><span><%= t('employee_no') %> <span class="req">*</span></span><input name="employee_no" required value="<%= e.employee_no || '' %>" dir="ltr" placeholder="F071" autocomplete="off"></label>
   <label><%= t('national_id') %><input name="national_id" value="<%= e.national_id || '' %>" dir="ltr" autocomplete="off"></label>
   <label><span><%= t('name_ar') %> <span class="req">*</span></span><input name="name_ar" required value="<%= e.name_ar || '' %>" dir="rtl"></label>
@@ -34,6 +34,6 @@
   <% if (mode === 'new') { %><label><%= t('initial_password') %><input type="password" name="password" minlength="8" autocomplete="new-password"><small class="muted"><%= t('password_hint') %></small></label><% } %>
   <label class="span2"><%= t('notes') %><textarea name="notes" rows="2"><%= e.notes || '' %></textarea></label>
   <div class="form-actions form-section"><button class="btn primary"><%- ic('save') %><%= t('save') %></button><a class="btn ghost" href="<%= mode === 'new' ? '/employees' : '/employees/' + e.id %>"><%= t('cancel') %></a>
-    <% if (mode === 'new') { %><a class="btn ghost" href="/data#employees" style="margin-inline-start:auto"><%- ic('upload') %><%= t('import_many') %></a><% } %></div>
+    <% if (mode === 'new') { %><a class="btn ghost ms-auto" href="/data#employees"><%- ic('upload') %><%= t('import_many') %></a><% } %></div>
 </form>
 <%- include('partials/footer') %>

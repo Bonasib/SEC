@@ -68,7 +68,7 @@
 <section class="card table-card">
   <div class="card-head"><h2><%- ic('tasks') %><%= t('tasks') %></h2><span class="pill"><%= agenda.tasks.length %></span></div>
   <div class="table-wrap"><table class="tbl">
-    <thead><tr><% if (manager) { %><th style="width:44px"><input type="checkbox" data-check-all="task_ids" aria-label="<%= t('select_all') %>" checked></th><% } %><th><%= t('time') %></th><th><%= t('title') %></th><th><%= t('assignees') %></th><th><%= t('priority') %></th><th><%= t('section') %></th><th><%= t('status') %></th><th></th></tr></thead>
+    <thead><tr><% if (manager) { %><th class="col-check"><input type="checkbox" data-check-all="task_ids" aria-label="<%= t('select_all') %>" checked></th><% } %><th><%= t('time') %></th><th><%= t('title') %></th><th><%= t('assignees') %></th><th><%= t('priority') %></th><th><%= t('section') %></th><th><%= t('status') %></th><th></th></tr></thead>
     <tbody>
     <% if (!agenda.tasks.length) { %><tr><td colspan="8" class="empty"><%- ic('tasks') %><%= t('no_tasks_day') %></td></tr><% } %>
     <% agenda.tasks.forEach(tk => { %>
@@ -93,7 +93,7 @@
 <section class="card table-card">
   <div class="card-head"><h2><%- ic('clipboard') %><%= t('wo_of_day') %></h2><span class="pill"><%= agenda.wos.length %></span></div>
   <div class="table-wrap"><table class="tbl">
-    <thead><tr><% if (manager) { %><th style="width:44px"><input type="checkbox" data-check-all="wo_ids" aria-label="<%= t('select_all') %>" checked></th><% } %><th><%= t('wo_number') %></th><th><%= t('title') %></th><th><%= t('participants') %></th><th><%= t('planned_start') %></th><th><%= t('planned_end') %></th><th><%= t('priority') %></th><th><%= t('status') %></th></tr></thead>
+    <thead><tr><% if (manager) { %><th class="col-check"><input type="checkbox" data-check-all="wo_ids" aria-label="<%= t('select_all') %>" checked></th><% } %><th><%= t('wo_number') %></th><th><%= t('title') %></th><th><%= t('participants') %></th><th><%= t('planned_start') %></th><th><%= t('planned_end') %></th><th><%= t('priority') %></th><th><%= t('status') %></th></tr></thead>
     <tbody>
     <% if (!agenda.wos.length) { %><tr><td colspan="8" class="empty"><%- ic('clipboard') %><%= t('no_records') %></td></tr><% } %>
     <% agenda.wos.forEach(w => { %>
@@ -123,7 +123,7 @@
   <div data-mode-panel="selected" class="<%= form.mode === 'selected' ? '' : 'hidden' %>">
     <p class="muted small"><%= t('mode_selected_hint') %></p>
     <div class="recipient-tools">
-      <div class="search-field" style="position:relative;flex:1 1 240px"><%- ic('search') %><input class="picker-filter" style="padding-inline-start:38px" placeholder="<%= t('search') %>…" data-target="recipient-picker" aria-label="<%= t('search') %>"></div>
+      <div class="search-field" style="position:relative;flex:1 1 240px"><%- ic('search') %><input class="picker-filter" placeholder="<%= t('search') %>…" data-target="recipient-picker" aria-label="<%= t('search') %>"></div>
       <select data-pick-section aria-label="<%= t('section') %>"><option value=""><%= t('select_section') %></option><% sections.forEach(s => { %><option value="<%= s.id %>"><%= s.code %> · <%= nm(s) %></option><% }) %></select>
       <button type="button" class="btn small" data-pick-all="recipient-picker"><%= t('select_all') %></button>
       <button type="button" class="btn small ghost" data-pick-none="recipient-picker"><%= t('clear') %></button>
@@ -132,13 +132,13 @@
     <div class="picker" id="recipient-picker">
       <% employees.forEach(e => { %><label data-text="<%= e.employee_no %> <%= e.name_ar %> <%= e.name_en || '' %> <%= e.section_code || '' %>" data-section="<%= e.section_id || '' %>"><input type="checkbox" name="recipient_ids" value="<%= e.id %>" <%= selR.includes(String(e.id)) ? 'checked' : '' %>><span class="picker-meta"><span><b class="mono"><%= e.employee_no %></b> <%= nm(e) %></span><small><%= e.section_code || '' %> · <%= e.email || t('no_email') %></small></span></label><% }) %>
     </div>
-    <label style="margin-top:12px"><%= t('external_emails') %><textarea name="external_emails" rows="2" dir="ltr" placeholder="contractor@example.com, supervisor@example.com"><%= form.external_emails || '' %></textarea><small class="muted"><%= t('external_emails_hint') %></small></label>
+    <label class="mt-3"><%= t('external_emails') %><textarea name="external_emails" rows="2" dir="ltr" placeholder="contractor@example.com, supervisor@example.com"><%= form.external_emails || '' %></textarea><small class="muted"><%= t('external_emails_hint') %></small></label>
   </div>
-  <label style="margin-top:12px"><%= t('message_optional') %><textarea name="message" rows="2" maxlength="1000" placeholder="<%= lang === 'ar' ? 'مثال: الالتزام بتصاريح العمل ومعدات السلامة، الاجتماع الصباحي 6:30' : 'e.g. Work permits and PPE required, toolbox talk at 06:30' %>"><%= form.message || '' %></textarea></label>
-  <div class="form-actions" style="margin-top:12px">
+  <label class="mt-3"><%= t('message_optional') %><textarea name="message" rows="2" maxlength="1000" placeholder="<%= lang === 'ar' ? 'مثال: الالتزام بتصاريح العمل ومعدات السلامة، الاجتماع الصباحي 6:30' : 'e.g. Work permits and PPE required, toolbox talk at 06:30' %>"><%= form.message || '' %></textarea></label>
+  <div class="form-actions mt-3">
     <button class="btn" name="action" value="preview"><%- ic('mail') %><%= t('preview') %></button>
     <button class="btn primary" name="action" value="send"><%- ic('send', 'ic-dir') %><%= t('send') %></button>
-    <small class="muted" style="align-self:center"><%= t('send_channels') %></small>
+    <small class="muted self-center"><%= t('send_channels') %></small>
   </div>
 </section>
 <% } %>
@@ -161,8 +161,8 @@
     <% } else { %><div class="field-stack"><label><%= t('repeat_until') %><input type="date" name="repeat_until" min="<%= day %>"></label><label class="inline small"><input type="checkbox" name="skip_weekend" value="1" checked><%= t('skip_weekend') %></label></div><% } %>
     <label class="span2"><%= t('details') %><textarea name="details" rows="2"><%= ft.details || '' %></textarea></label>
     <div class="span2">
-      <p style="margin-bottom:8px"><b><%= t('assignees') %></b> <span class="req">*</span></p>
-      <div class="search-field" style="position:relative"><%- ic('search') %><input class="picker-filter" style="padding-inline-start:38px" placeholder="<%= t('search') %>…" data-target="assignee-picker" aria-label="<%= t('search') %>"></div>
+      <p class="mb-2"><b><%= t('assignees') %></b> <span class="req">*</span></p>
+      <div class="search-field"><%- ic('search') %><input class="picker-filter" placeholder="<%= t('search') %>…" data-target="assignee-picker" aria-label="<%= t('search') %>"></div>
       <div class="picker" id="assignee-picker">
         <% employees.forEach(e => { %><label data-text="<%= e.employee_no %> <%= e.name_ar %> <%= e.name_en || '' %> <%= e.section_code || '' %>"><input type="checkbox" name="assignee_ids" value="<%= e.id %>" <%= selAssignees.includes(String(e.id)) ? 'checked' : '' %>><span class="picker-meta"><span><b class="mono"><%= e.employee_no %></b> <%= nm(e) %></span><small><%= e.section_code || '' %></small></span></label><% }) %>
       </div>

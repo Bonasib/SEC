@@ -10,7 +10,7 @@
   <span class="act-ic"><%- ic(AI[a.action] || 'pen') %></span>
   <div class="act-body">
     <div><b><%= t('act_' + a.action) === 'act_' + a.action ? lbl('action', a.action) : t('act_' + a.action) %></b><% if (showWo) { %> · <a class="wo-link" href="/wo/<%= a.wo_id %>"><%= a.wo_number %></a> <span class="muted small"><%= a.title %></span><% } %></div>
-    <% if (detail || a.reason) { %><div class="small"><%= detail %><%= detail && a.reason ? ' · ' : '' %><% if (a.reason) { %><span class="muted"><%- ic('message') %> <%= tx(a.reason) %></span><% } %></div><% } %>
+    <% if (detail || a.reason) { %><div class="small"><%= detail %><%= detail && a.reason ? ' · ' : '' %><% if (a.reason) { %><span class="muted"><%- ic('message') %> <%= isDemo ? tx(a.reason).replace(/\s*\((?:تجريبي|عينة|demo|sample)\)/gi, '') : tx(a.reason) %></span><% } %></div><% } %>
     <div class="muted small"><%= a.employee_no ? nm(a) : t('system') %> · <%= fmt(a.at) %></div>
   </div>
 </li>

@@ -4,9 +4,9 @@
    const counts = { approved: x.rows.filter(r => r.state === 'approved').length, rejected: x.rows.filter(r => r.state === 'rejected').length, errors: x.rows.filter(r => r.state !== 'rejected' && r.errors && r.errors.length).length };
    const isImg = /^image\//.test(x.mime || ''), isPdf = x.mime === 'application/pdf'; %>
 <section class="page-head wo-head">
-  <div style="flex:1;min-width:260px">
+  <div class="grow">
     <a class="small" href="/extract"><%- ic('arrow', 'ic-back') %> <%= t('extract_title') %></a>
-    <h1 style="margin-top:8px"><%= x.original_name %></h1>
+    <h1 class="mt-2"><%= x.original_name %></h1>
     <div class="tags">
       <span class="wo-num">#<%= x.id %></span>
       <span class="pill <%= st[x.status] %>"><%= t('xs_' + x.status) %></span>
@@ -33,8 +33,8 @@
     <% } else if (x.preview.table && x.preview.table.length) { %>
       <div class="table-wrap x-preview-table"><table class="tbl small" data-nosort data-nofilter><tbody><% x.preview.table.forEach(r => { %><tr><% r.forEach(c => { %><td><%= c %></td><% }) %></tr><% }) %></tbody></table></div>
     <% } else if (x.preview.text) { %><pre class="x-text"><%= x.preview.text %></pre><% } else { %><p class="muted"><%= t('no_preview') %></p><% } %>
-    <% if ((isImg || isPdf) && x.preview.text) { %><details style="margin-top:10px"><summary class="small muted"><%= t('read_text') %></summary><pre class="x-text"><%= x.preview.text %></pre></details><% } %>
-    <% if (x.preview.unmapped && x.preview.unmapped.length) { %><p class="small muted" style="margin-top:8px"><%= t('unmapped_columns') %>: <%= x.preview.unmapped.join('، ') %></p><% } %>
+    <% if ((isImg || isPdf) && x.preview.text) { %><details class="mt-3"><summary class="small muted"><%= t('read_text') %></summary><pre class="x-text"><%= x.preview.text %></pre></details><% } %>
+    <% if (x.preview.unmapped && x.preview.unmapped.length) { %><p class="small muted mt-2"><%= t('unmapped_columns') %>: <%= x.preview.unmapped.join('، ') %></p><% } %>
   </section>
   <section class="card">
     <h2><%- ic('settings') %><%= t('extraction_setup') %></h2>
@@ -45,14 +45,14 @@
       <div class="bad"><b><%= counts.rejected %></b><small><%= t('rejected_rows') %></small></div>
     </div>
     <% if (open) { %>
-    <form method="post" action="/extract/<%= x.id %>" class="form-grid" style="margin-top:12px">
+    <form method="post" action="/extract/<%= x.id %>" class="form-grid mt-3">
       <input type="hidden" name="action" value="reextract">
       <label><%= t('target_type') %><select name="entity"><option value="auto"><%= t('auto_detect') %></option><% TARGETS.forEach(e => { %><option value="<%= e %>" <%= x.entity === e ? 'selected' : '' %>><%= t(ENTITIES[e].label) %></option><% }) %></select></label>
       <label><%= t('read_method') %><select name="method"><option value="auto"><%= t('rm_auto') %></option><option value="local"><%= t('rm_local') %></option><% if (aiOn) { %><option value="ai"><%= t('rm_ai') %></option><% } %></select></label>
       <div class="form-actions"><button class="btn" data-confirm-click="<%= t('reextract_confirm') %>"><%- ic('transfer') %><%= t('reextract') %></button></div>
     </form>
     <% } %>
-    <p class="muted small" style="margin-top:10px"><%= t('review_hint') %></p>
+    <p class="muted small mt-3"><%= t('review_hint') %></p>
   </section>
 </div>
 

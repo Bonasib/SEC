@@ -15,7 +15,6 @@
         <li><span class="ic-wrap"><%- ic('bell') %></span><%= t('login_f3') %></li>
       </ul>
     </div>
-    <% if (isDemo) { %><span class="env-pill"><span class="dot"></span><%= t('sample_banner') %></span><% } %>
   </aside>
   <main class="login-main">
     <form class="login" method="post" action="/login">
@@ -25,13 +24,13 @@
       <label><%= t('employee_no') %><input name="employee_no" id="employee_no" required autofocus autocomplete="username" dir="ltr"></label>
       <label><%= t('password') %><input name="password" id="password" type="password" required autocomplete="current-password" dir="ltr"></label>
       <button class="btn primary" style="min-height:46px"><%= t('login') %><%- ic('arrow', 'ic-dir') %></button>
-      <% if (isDemo) { %><details class="demo-accounts" open><summary><%- ic('users') %> Demo accounts / حسابات تجريبية</summary>
+      <% if (isDemo) { %><details class="demo-accounts" open><summary><%- ic('users') %> <%= t('login_accounts') %></summary>
         <table class="tbl small">
           <% [['admin','role_admin'],['DEMO-H1','role_section_head'],['DEMO-DV1','role_division_manager'],['DEMO-DM','role_department_manager'],['DEMO-SH','role_sector_head'],['DEMO-FM-H1','role_foreman'],['F010','role_team_leader'],['F001','role_employee'],['DEMO-WH','role_warehouse'],['DEMO-HR','role_hr']].forEach(([u, r]) => { %>
             <tr><td><button type="button" class="link" data-demo="<%= u %>"><%= u %></button></td><td><%= t(r) %></td></tr>
           <% }) %>
         </table>
-        <p class="muted small" style="margin:6px 0 0">Password / كلمة المرور: <span class="mono">Demo@12345</span></p>
+        <p class="muted small" style="margin:6px 0 0"><%= t('password') %>: <span class="mono" dir="ltr">Demo@12345</span></p>
       </details><% } %>
     </form>
   </main>

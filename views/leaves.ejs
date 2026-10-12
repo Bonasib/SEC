@@ -4,7 +4,7 @@
 <form method="post" action="/leaves" class="card form-grid">
   <label><%= t('employee') %> *<select name="employee_id" required><option value=""></option><% employees.forEach(e => { %><option value="<%= e.id %>"><%= e.employee_no %> - <%= nm(e) %></option><% }) %></select></label>
   <label><%= t('type') %><select name="type" id="leave-type"><% LEAVE_TYPES.forEach(x => { %><option value="<%= x %>"><%= t('lt_' + x) %></option><% }) %></select></label>
-  <div id="mode-wrap" class="span2 hidden"><p style="margin-bottom:8px"><b><%= t('mode') %></b> <span class="req">*</span></p>
+  <div id="mode-wrap" class="span2 hidden"><p class="mb-2"><b><%= t('mode') %></b> <span class="req">*</span></p>
     <div class="segmented" role="radiogroup"><% MODES.forEach(m => { %><label><input type="radio" name="mode" value="<%= m %>"><%= t('mode_' + m) %></label><% }) %></div></div>
   <label><%= t('location') %><input name="location" placeholder="<%= lang === 'ar' ? 'المصنع / المدينة / الدولة' : 'Factory / city / country' %>"></label>
   <label><%= t('from') %> *<input type="date" name="start_date" required></label>
