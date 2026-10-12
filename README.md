@@ -127,7 +127,9 @@ Exports are `.xlsx` or `.csv` (with a BOM so Excel shows Arabic correctly). The 
 | **Operations** | Dashboard · Recognition & Events Board · Work Orders · New Work Order · Daily Tasks · Work Activity · Travel Assignments · Team Calendar · Alerts |
 | **People** | Employees · Leave & Absences · Training Courses · Improvement Plans · Points & Ratings · Acting Assignments · Organization |
 | **Assets & Fleet** | Assets · Vehicle Fleet · Devices & equipment · Materials, tools & equipment |
-| **Administration** | Permissions · Import & Export · Email Outbox · Audit Log · Settings |
+| **Administration** | Permissions · Import & Export · Extract data from files · Email Outbox · Audit Log · Settings |
+
+The search box at the top of every page (press `/`) searches every section at once; see *Global search* below.
 
 Everything is connected and updates in real time:
 - **Training registrations** create a training absence that shows on the calendar and blocks conflicting work.
@@ -177,6 +179,34 @@ Everything is connected and updates in real time:
 - **Low stock:** a work order that reserves catalog items checks the stock straight away.
 - **Weekly summary:** every Sunday morning (Riyadh time), managers and the administrator get the past week's summary and the outstanding employees by email and in-app alert.
 - **Consistent text:** every stored status or type is shown as a proper Arabic or English label. In-app alerts appear in the reader's language. Emails follow one template: header, severity, an Arabic line then an English line, details table, button and footer. WhatsApp and copied messages use a numbered layout, and Excel files have styled headers with filters, notes and zebra rows.
+
+## Extract data from files (`/extract`)
+
+Turns Excel, CSV, Word, PDF and photographed or scanned forms into records, with a human check before anything enters the system.
+
+1. **Upload.** Anyone with the *extract data* permission (managers, foremen, team leaders, HR, safety, warehouse, admin) uploads up to 10 files and picks the target (employees, work orders, items, daily tasks, leave, assets, fleet, courses, holidays and more) or lets the system detect it. A document already attached to a work order, vehicle or employee can be sent to extraction with one click from its list.
+2. **Reading.** Spreadsheets and Word tables are read directly. PDFs are read from their text layer, and Arabic text and table columns are kept in order. Photos and scanned PDFs are read with OCR (Arabic + English). Column headings in Arabic or English are matched to the system fields, and "Label: value" forms become records.
+3. **Review.** The auditor gets a notification and opens a side-by-side page: the original file on one side and an editable grid on the other. Every row is checked with the same rules as the Excel import. The auditor corrects values, approves or rejects each row (or *approve all valid rows*), and can re-read the file as another type.
+4. **Export.** Only approved, valid rows are added or updated, through the same validators as `/data`, and the batch appears in the import history. The uploader is notified. **Four-eyes rule:** the person who uploaded a file cannot approve or export it, even if they are an auditor.
+
+**Optional AI reading.** If `ANTHROPIC_API_KEY` is set, photos and scanned PDFs are read by Claude (model `claude-opus-5-5`, or `EXTRACT_AI_MODEL`), which handles handwriting and complex forms better than OCR. Server-side fallbacks are enabled, so if that model is overloaded the request is retried on a fallback model. **Privacy:** with the key set, those files are sent to Anthropic's API. Leave the key empty to keep everything on your server; OCR is then used. The OCR language files (about 8 MB) download once from the jsDelivr CDN into `DATA_DIR/ocr-cache`. On a server without internet access, copy `ara.traineddata` and `eng.traineddata` into that folder.
+
+## Global search
+
+The box at the top of every page (or `/search`) searches work orders, daily tasks, employees, materials, vehicles, devices, assets, courses, documents and the organisation in one go.
+- **Same visibility as each page.** An employee only finds work orders they can open, the employees group appears only to roles that can open profiles, and documents follow the document permissions.
+- **Arabic-aware.** أ/إ/آ/ا, ة/ه and ى/ي match each other and diacritics are ignored. The list filters on each page work the same way.
+- **Direct jump.** Typing an exact work-order number, employee ID, plate or item code opens that record.
+
+## Needs your attention (dashboard)
+
+The dashboard collects the next step waiting for you in every section, with a count and a link to the page already filtered:
+- extracted files waiting for your review (auditors), and your own extractions that were rejected;
+- items out of stock or below the reorder level, and supplier orders past their date (warehouse);
+- vehicles with registration or papers expiring (fleet managers), devices due for expiry or calibration (safety);
+- employee cards, licences and certificates expiring (HR), or your own documents;
+- improvement plans waiting for a transfer decision (HR and management);
+- your daily tasks from earlier days that are still open.
 
 ## Daily tasks (`/tasks`)
 
@@ -298,6 +328,7 @@ One calendar for everything happening in a year:
 - **Holidays.** Public and company holidays. Eid dates are marked *approximate* until the official announcement; HR and admin can add or remove holidays, or import them from Excel.
 - **Work orders.** Each one appears on its planned days.
 - **Absences.** Annual, sick and emergency leave; training courses (remote or in person); workshops (remote or in person); factory tests (with factory/country); permissions; business travel.
+- **Daily tasks.** Each task appears on its day with its time and the people assigned; done tasks show a ✓. Clicking a task opens that day in *Daily tasks*. Employees see their own tasks, managers their section's.
 - **Acting managers.**
 
 How to use it:

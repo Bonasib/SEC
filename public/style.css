@@ -205,7 +205,10 @@ legend { font-weight: 600; color: var(--text); padding: 0 6px; }
 .search-field .ic { position: absolute; top: 50%; inset-inline-start: 12px; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .inline-form { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin: var(--space-2) 0; }
 .inline-form input, .inline-form select { width: auto; }
-.inline-form label { flex-direction: row; align-items: center; }
+.inline-form label { flex-direction: row; align-items: center; flex-wrap: wrap; max-width: 100%; }
+/* never wider than the card on phones */
+.inline-form > *, .inline-form label > input:not([type=checkbox]):not([type=radio]), .inline-form > input:not([type=checkbox]):not([type=radio]) { min-width: 0; max-width: 100%; }
+.inline-form > input[type=email], .inline-form > input[type=text], .inline-form label > input[type=password] { flex: 1 1 180px; }
 .mini-grid { display: grid; grid-template-columns: repeat(2, minmax(110px, 1fr)); gap: 8px; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); min-width: 270px; margin-top: 8px; }
 .mini-grid label { font-size: 12px; }
 .picker { max-height: 280px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; margin: 8px 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; background: var(--surface-2); }
@@ -551,7 +554,7 @@ body.print .card { box-shadow: none; }
 .mm-day.today { outline: 2px solid var(--primary); outline-offset: -2px; font-weight: 700; }
 .mm-day .marks { display: flex; gap: 2px; height: 5px; margin-top: 1px; }
 .mm-day .mk { width: 5px; height: 5px; border-radius: 50%; background: var(--c); }
-.mm-day .cnt { position: absolute; top: -4px; inset-inline-end: -4px; min-width: 15px; height: 15px; border-radius: 8px; font-size: 9.5px; font-weight: 700; background: var(--text-2); color: var(--surface); display: grid; place-items: center; padding: 0 3px; }
+.mm-day .cnt { position: absolute; top: -4px; inset-inline-end: -4px; min-width: 17px; height: 17px; border-radius: 9px; font-size: 11px; line-height: 1; font-weight: 700; background: var(--text-2); color: var(--surface); display: grid; place-items: center; padding: 0 3px; }
 
 .month-card { padding: var(--space-4); }
 .month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -861,7 +864,7 @@ input[type=file] { max-width: 100%; min-width: 0; }
 .x-preview { width: 100%; max-height: 520px; min-height: 360px; border: 1px solid var(--border); border-radius: var(--radius); object-fit: contain; background: var(--surface-2); display: block; }
 img.x-preview { min-height: 0; height: auto; }
 .x-preview-table { margin: 0; padding: 0; max-height: 420px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); }
-.x-text { white-space: pre-wrap; max-height: 360px; overflow: auto; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3); font-size: 12px; line-height: 1.6; margin: 0; }
+.x-text { font-family: var(--font); white-space: pre-wrap; max-height: 360px; overflow: auto; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3); font-size: 12px; line-height: 1.6; margin: 0; }
 .x-counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
 .x-counts > div { display: flex; flex-direction: column; align-items: center; padding: var(--space-3) 4px; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border); }
 .x-counts b { font-size: 22px; font-variant-numeric: tabular-nums; } .x-counts small { color: var(--muted); font-size: 12px; text-align: center; }
@@ -870,7 +873,7 @@ img.x-preview { min-height: 0; height: auto; }
 .x-grid input { min-width: 140px; width: 100%; padding: 6px 8px; min-height: 34px; font-size: 13px; }
 .x-grid select { min-width: 120px; min-height: 34px; padding: 4px 8px; font-size: 13px; }
 .x-grid .tbl thead th { white-space: nowrap; text-transform: none; letter-spacing: 0; font-size: 12px; }
-.th-sub { display: block; font-family: var(--font-mono); font-weight: 400; font-size: 10px; color: var(--muted); }
+.th-sub { display: block; font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--muted); background: none; border: 0; padding: 0; }
 .x-grid .x-state { position: sticky; inset-inline-start: 0; background: var(--surface); z-index: 2; }
 .x-grid thead .x-state { background: var(--surface-2); z-index: 3; }
 .x-row.x-approved td { background: var(--ok-soft); } .x-row.x-approved .x-state { background: var(--ok-soft); }
@@ -919,3 +922,4 @@ tr:target > td { background: color-mix(in srgb, var(--primary) 9%, transparent);
 .att > .ic { color: var(--muted); flex: none; }
 .att-t { flex: 1; min-width: 0; }
 .att .att-go { color: var(--muted); }
+code { font-family: var(--font-mono); font-size: .9em; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; direction: ltr; unicode-bidi: isolate; overflow-wrap: anywhere; }

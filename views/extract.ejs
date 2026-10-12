@@ -21,7 +21,7 @@
 <section class="card">
   <h2><%- ic('upload') %><%= t('upload_files') %></h2>
   <form method="post" action="/extract" enctype="multipart/form-data" class="form-grid">
-    <label class="file-drop span2"><input type="file" name="files" multiple required accept=".xlsx,.csv,.docx,.pdf,.jpg,.jpeg,.png,.webp,.txt"><span class="fd-text"><%- ic('upload') %> <%= t('choose_files') %> <small class="muted">Excel · CSV · Word · PDF · <%= t('images') %> — 25 MB</small></span></label>
+    <label class="file-drop span2"><input type="file" name="files" multiple required accept=".xlsx,.csv,.docx,.pdf,.jpg,.jpeg,.png,.webp,.txt"><span class="fd-text"><%- ic('upload') %> <%= t('choose_files') %> <small class="muted"><bdi>Excel · CSV · Word · PDF</bdi> · <%= t('images') %> — <%= t('max_size_25') %></small></span></label>
     <label><%= t('target_type') %><select name="entity"><option value="auto"><%= t('auto_detect') %></option><% TARGETS.forEach(e => { %><option value="<%= e %>"><%= t(ENTITIES[e].label) %></option><% }) %></select></label>
     <label><%= t('read_method') %><select name="method">
       <option value="auto"><%= t('rm_auto') %></option>

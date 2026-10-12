@@ -62,7 +62,7 @@
   <div class="card-head"><h2><%- ic('sheet') %><%= t('extracted_rows') %> · <%= t(ENTITIES[x.entity].label) %></h2>
     <a class="small" href="?<%= showAll ? '' : 'all=1' %>#rows"><%= showAll ? t('used_columns_only') : t('show_all_columns') %></a></div>
   <div class="table-wrap x-grid"><table class="tbl small" data-nosort>
-    <thead><tr><th class="x-state"><%= t('decision') %></th><th>#</th><% visible.forEach(([k, ar, en, reqd]) => { %><th title="<%= lang === 'ar' ? ar : en %>"><%= (lang === 'ar' ? ar : en).split(/[:(]/)[0].trim() %><%= reqd ? ' *' : '' %><small class="th-sub"><%= k %></small></th><% }) %></tr></thead>
+    <thead><tr><th class="x-state"><%= t('decision') %></th><th>#</th><% visible.forEach(([k, ar, en, reqd]) => { %><th title="<%= lang === 'ar' ? ar : en %>"><%= (lang === 'ar' ? ar : en).split(/[:(]/)[0].trim() %><%= reqd ? ' *' : '' %><code class="th-sub"><%= k %></code></th><% }) %></tr></thead>
     <tbody>
     <% if (!x.rows.length) { %><tr><td colspan="<%= visible.length + 2 %>" class="empty"><%= t('no_rows_found') %></td></tr><% } %>
     <% x.rows.forEach((r, i) => { const bad = r.state !== 'rejected' && r.errors && r.errors.length; %>

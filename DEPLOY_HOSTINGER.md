@@ -142,6 +142,13 @@ APP_URL=https://wms.yourdomain.com
 انسخ مجلد `/var/lib/sec-wms/backups` دوريًا خارج الخادم (مثل Hostinger Backups أو تخزين خارجي).
 Copy `/var/lib/sec-wms/backups` off the server regularly (Hostinger backups or external storage).
 
+### استخراج البيانات من الملفات · Extracting data from files
+
+- يقرأ النظام الصور والملفات الممسوحة محليًا (OCR). تُنزَّل ملفات اللغة (~8MB) مرة واحدة من jsDelivr إلى `DATA_DIR/ocr-cache`؛ في خادم بلا إنترنت انسخ `ara.traineddata` و`eng.traineddata` إليه.
+  OCR runs on the server. The language files (~8 MB) download once from jsDelivr into `DATA_DIR/ocr-cache`; on an offline server copy `ara.traineddata` and `eng.traineddata` there.
+- اختياري: `ANTHROPIC_API_KEY` لقراءة أدق بالذكاء الاصطناعي. **تنبيه خصوصية:** عند تفعيله تُرسل الصور وملفات PDF الممسوحة إلى Anthropic.
+  Optional: `ANTHROPIC_API_KEY` for AI reading. **Privacy:** with it set, photos and scanned PDFs are sent to Anthropic.
+
 ## 7) قائمة التحقق قبل التشغيل الفعلي · Go-live checklist
 
 - [ ] HTTPS يعمل (ملفات تعريف الارتباط آمنة في الإنتاج) · HTTPS works (cookies are Secure in production)
@@ -151,3 +158,5 @@ Copy `/var/lib/sec-wms/backups` off the server regularly (Hostinger backups or e
 - [ ] اعتماد قيم الإعدادات (المهل، حد 20 مهمة، النقاط) · approve policy values in Settings / Points
 - [ ] النسخ الاحتياطي اليومي يعمل وتمت تجربة الاستعادة · daily backup running, restore tested
 - [ ] `SEED_DEMO=false` (لا بيانات تجريبية) · no sample data
+- [ ] قرار مكتوب بشأن `ANTHROPIC_API_KEY` (إرسال الملفات إلى Anthropic أم لا) · a decision on `ANTHROPIC_API_KEY` (send files to Anthropic or not)
+- [ ] تعيين مدقق واحد على الأقل (دور auditor) لمراجعة البيانات المستخرجة · at least one auditor to review extracted data

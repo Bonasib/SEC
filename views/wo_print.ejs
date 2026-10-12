@@ -46,7 +46,7 @@
 <h2><%= t('photos') %></h2>
 <div class="print-photos"><% photos.forEach(p => { %><figure><img src="/wo/<%= wo.id %>/photos/<%= p.id %>"><figcaption><b><%= t(p.stage) %></b> <%= p.caption || '' %> · <span class="mono">#<%= p.sha256.slice(0, 12) %></span></figcaption></figure><% }) %></div>
 <h2><%= t('approvals') %></h2>
-<table class="tbl"><tr><th><%= t('role') %></th><th><%= t('name') %></th><th><%= t('date') %></th><th><%= t('status') %></th><th>Code</th></tr>
+<table class="tbl"><tr><th><%= t('role') %></th><th><%= t('name') %></th><th><%= t('date') %></th><th><%= t('status') %></th><th><%= t('code') %></th></tr>
 <% approvals.forEach(a => { %><tr><td><%= t('step_' + a.step) %></td><td><%= a.employee_no %> - <%= nm(a) %><%= a.acting ? ' (' + t('acting_label') + ')' : '' %></td><td><%= fmt(a.decided_at) %></td><td><%= t('dec_' + a.decision) %></td><td class="mono"><%= a.verification_code %></td></tr><% }) %></table>
 <h2><%= t('away_during_wo') %></h2>
 <% if (away.holidays.length) { %><p><b><%= t('holidays_during') %>:</b> <%= away.holidays.map(h => lang === 'en' ? h.name_en : h.name_ar).join(' · ') %></p><% } %>

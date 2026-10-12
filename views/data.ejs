@@ -1,4 +1,6 @@
 <%- include('partials/header', { pageTitle: t('data') }) %>
+<% const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+   const codeify = (v) => esc(v).replace(/\b[a-z]+(?:_[a-z0-9]+)+\b/g, (m) => '<code>' + m + '</code>'); %>
 <div class="page-head"><div><div class="eyebrow"><%- ic('transfer') %><%= t('grp_admin') %></div><h1><%= t('data') %></h1></div></div>
 <p class="muted"><%= lang === 'ar'
   ? 'نزّل القالب، املأه في Excel، ثم ارفعه. يعرض النظام معاينة لكل صف مع الأخطاء قبل التأكيد، وبعد التأكيد تنعكس البيانات مباشرة في النظام (أوامر العمل المستوردة تُرسل بريدًا للفريق تلقائيًا). كل عملية تُسجل في سجل التدقيق.'
@@ -18,14 +20,14 @@
       <button class="btn small primary"><%- ic('upload') %><%= t('upload_preview') %></button>
     </form>
     <% } %>
-    <details><summary class="small muted"><%= lang === 'ar' ? 'الأعمدة' : 'Columns' %> (<%= d.columns.length %>)</summary>
-      <table class="tbl small"><% d.columns.forEach(([k, ar, en, req]) => { %><tr><td class="mono"><%= k %><%= req ? ' *' : '' %></td><td><%= lang === 'ar' ? ar : en %></td></tr><% }) %></table>
+    <details><summary class="small muted"><%= t('columns') %> (<%= d.columns.length %>)</summary>
+      <table class="tbl small"><% d.columns.forEach(([k, ar, en, req]) => { %><tr><td class="mono"><%= k %><%= req ? ' *' : '' %></td><td><%- codeify(lang === 'ar' ? ar : en) %></td></tr><% }) %></table>
     </details>
   </section>
 <% }) %>
 </div>
 <section class="card"><h2><%- ic('clock') %><%= t('import_history') %></h2>
-<table class="tbl small"><tr><th>#</th><th><%= t('entity') %></th><th><%= t('file') %></th><th><%= t('status') %></th><th>Σ</th><th><%= t('valid_rows') %></th><th><%= t('invalid_rows') %></th><th><%= t('inserted') %></th><th><%= t('updated') %></th><th><%= t('employee') %></th><th><%= t('date') %></th></tr>
+<div class="table-wrap"><table class="tbl small"><tr><th>#</th><th><%= t('entity') %></th><th><%= t('file') %></th><th><%= t('status') %></th><th>Σ</th><th><%= t('valid_rows') %></th><th><%= t('invalid_rows') %></th><th><%= t('inserted') %></th><th><%= t('updated') %></th><th><%= t('employee') %></th><th><%= t('date') %></th></tr>
 <% batches.forEach(b => { %><tr><td><a class="wo-link" href="/data/import/batch/<%= b.id %>">#<%= b.id %></a></td><td><%= t(b.entity) %></td><td><%= b.file_name %></td><td><span class="pill <%= b.status === 'committed' ? 'ok' : 'warn' %>"><%= lbl('batch', b.status) %></span></td><td><%= b.total %></td><td><%= b.valid %></td><td><%= b.invalid %></td><td><%= b.inserted %></td><td><%= b.updated %></td><td><%= nm(b) %></td><td><%= fmt(b.created_at) %></td></tr><% }) %>
-<% if (!batches.length) { %><tr><td colspan="11" class="muted"><%= t('no_records') %></td></tr><% } %></table></section>
+<% if (!batches.length) { %><tr><td colspan="11" class="muted"><%= t('no_records') %></td></tr><% } %></table></div></section>
 <%- include('partials/footer') %>

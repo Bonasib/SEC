@@ -14,7 +14,7 @@
       <span class="pill pr-<%= wo.priority %>"><%= t('pr_' + wo.priority) %></span>
       <span class="pill"><%- ic('wrench') %><%= t('wt_' + wo.type) %></span>
       <% if (section) { %><span class="pill"><%- ic('network') %><%= section.code %></span><% } %>
-      <% if (wo.imported) { %><span class="pill info"><%- ic('upload') %>import</span><% } %>
+      <% if (wo.imported) { %><span class="pill info" title="<%= t('imported_hint') %>"><%- ic('upload') %><%= t('imported_badge') %></span><% } %>
     </div>
   </div>
   <div class="btns">
@@ -216,7 +216,7 @@
     <label id="pair-wrap" class="hidden"><%= t('pair_with') %><select name="pair_photo_id"><option value=""></option><% befores.forEach((p, i) => { %><option value="<%= p.id %>">#<%= i + 1 %> <%= p.caption || p.original_name %></option><% }) %></select></label>
     <label><%= t('caption') %><input name="caption"></label>
     <label><%= t('defect_location') %><input name="defect_location" list="defects"><datalist id="defects"><% ['insulator','conductor','crossarm','tower body','foundation','bolts','clamps','communication wire','shield wire'].forEach(d => { %><option><%= d %></option><% }) %></datalist></label>
-    <label class="span2 file-drop" style="position:relative"><input type="file" name="photos" accept="image/*" capture="environment" multiple required><%- ic('upload') %><span class="fd-text"><b><%= t('upload_photos') %></b><br><small>JPG · PNG · WEBP · HEIC — ≤ 15MB</small></span></label>
+    <label class="span2 file-drop" style="position:relative"><input type="file" name="photos" accept="image/*" capture="environment" multiple required><%- ic('upload') %><span class="fd-text"><b><%= t('upload_photos') %></b><br><small><bdi>JPG · PNG · WEBP · HEIC</bdi> — <%= t('max_size_15') %></small></span></label>
     <input type="hidden" name="lat"><input type="hidden" name="lng">
     <div class="form-actions" style="align-items:center"><button class="btn primary"><%- ic('upload') %><%= t('upload_photos') %></button> <small class="muted geo-status"></small></div>
   </form>
@@ -364,7 +364,7 @@
       <label><%= t('source') %><select name="source"><% MAT_SOURCES.forEach(s => { %><option value="<%= s %>"><%= lbl('source', s) %></option><% }) %></select></label>
       <label><%= t('reservation_number') %><select name="reservation_id"><option value=""></option><% reservations.forEach(r => { %><option value="<%= r.id %>"><%= r.reservation_number %></option><% }) %></select></label>
       <label><%= t('line_no') %><input name="line_no"></label>
-      <label><%= t('uom') %><input name="uom" list="uoms"><datalist id="uoms"><option>piece</option><option>meter</option><option>kg</option><option>liter</option><option>set</option></datalist></label>
+      <label><%= t('uom') %><input name="uom" list="uoms"><datalist id="uoms"><% ['piece', 'meter', 'kg', 'liter', 'set', 'roll', 'box', 'pair'].forEach(u => { %><option value="<%= u %>" label="<%= lbl('uom', u) %>"></option><% }) %></datalist></label>
       <% ['reserved_qty','issued_qty','used_qty','returned_qty','damaged_qty','transferred_qty','remaining_authorized_qty'].forEach(k => { %><label><%= t(k.replace('_qty','').replace('remaining_authorized','remaining')) %><input type="number" step="any" min="0" name="<%= k %>" value="0"></label><% }) %>
       <label><%= t('transfer_wo') %><input name="transfer_wo_number" placeholder="WO000000" dir="ltr"></label>
       <label><%= t('batch') %><input name="batch"></label><label><%= t('serial_no') %><input name="serial"></label>

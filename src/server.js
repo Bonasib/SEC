@@ -65,7 +65,8 @@ app.use((req, res, next) => {
   // Direction arrow for links and ranges: points the way the text reads
   res.locals.arrow = req.lang === 'ar' ? '←' : '→';
   res.locals.ic = (name, cls = '') => `<svg class="ic ${cls}" aria-hidden="true" focusable="false"><use href="#i-${name}"/></svg>`;
-  res.locals.initials = (o) => String((o && (enName(o) || o.name_ar)) || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('');
+  // First letters of the first two words (brackets and digits ignored, e.g. "Auditor (demo)" → "AD")
+  res.locals.initials = (o) => String((o && (enName(o) || o.name_ar)) || '?').replace(/[^\p{L}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
   res.locals.face = require('./avatars').makeFace(res.locals.initials);
   // Item picture (or an icon by kind) for the inventory lists and the work order picker
   res.locals.thumb = (i, cls = '') => (i && i.photo

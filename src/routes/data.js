@@ -19,8 +19,10 @@ const stamp = () => nowIso().slice(0, 16).replace(/[-:T]/g, '');
 
 router.get('/data', (req, res) => {
   const list = Object.keys(ENTITIES).map((k) => ({ key: k, label: ENTITIES[k].label, canImport: canImport(k, req.user), canExport: canExport(k, req.user), columns: ENTITIES[k].columns }));
+  // Import history: admin and auditor see every batch, others their own (same rule as opening a batch)
+  const everyone = ['admin', 'auditor'].includes(req.user.role);
   const batches = all(`SELECT b.id, b.entity, b.file_name, b.status, b.total, b.valid, b.invalid, b.inserted, b.updated, b.created_at, b.committed_at, e.name_ar, e.name_en
-    FROM import_batches b LEFT JOIN employees e ON e.id = b.created_by ORDER BY b.id DESC LIMIT 30`);
+    FROM import_batches b LEFT JOIN employees e ON e.id = b.created_by ${everyone ? '' : 'WHERE b.created_by = ?'} ORDER BY b.id DESC LIMIT 30`, ...(everyone ? [] : [req.user.id]));
   res.render('data', { list, batches });
 });
 
